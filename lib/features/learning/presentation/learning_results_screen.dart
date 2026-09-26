@@ -32,16 +32,16 @@ class LearningResultsScreen extends StatelessWidget {
                   child: Container(
                     width: 104,
                     height: 104,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         colors: [
                           NorieColors.cyan,
                           NorieColors.primary,
                           NorieColors.magenta,
                         ],
                       ),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
                           color: Color(0x445B5CE2),
                           blurRadius: 32,
