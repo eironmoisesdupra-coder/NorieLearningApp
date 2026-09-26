@@ -30,6 +30,9 @@ jobs:
       - name: Generate Android and web platform scaffolding
         run: flutter create --platforms=android,web --project-name norie_learning .
 
+      - name: Remove generated default test
+        run: rm -f test/widget_test.dart
+
       - name: Install dependencies
         run: flutter pub get
 
