@@ -27,7 +27,7 @@ class AtomicStructureLessonScreen extends StatelessWidget {
                       text: 'Chemistry',
                       color: NorieColors.violet,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _Badge(
                       text: 'Lesson 1',
                       color: NorieColors.cyan,
@@ -56,7 +56,7 @@ class AtomicStructureLessonScreen extends StatelessWidget {
                   title: 'Proton',
                   symbol: '+',
                   color: NorieColors.magenta,
-                  points: const [
+                  points: [
                     'Positive electric charge',
                     'Located in the nucleus',
                     'Number of protons determines the element',
@@ -67,7 +67,7 @@ class AtomicStructureLessonScreen extends StatelessWidget {
                   title: 'Neutron',
                   symbol: '0',
                   color: NorieColors.cyan,
-                  points: const [
+                  points: [
                     'No electric charge',
                     'Located in the nucleus',
                     'Changes in neutron count create isotopes',
@@ -78,7 +78,7 @@ class AtomicStructureLessonScreen extends StatelessWidget {
                   title: 'Electron',
                   symbol: '−',
                   color: NorieColors.green,
-                  points: const [
+                  points: [
                     'Negative electric charge',
                     'Occupies regions around the nucleus',
                     'Electron changes are involved in ion formation and bonding',
