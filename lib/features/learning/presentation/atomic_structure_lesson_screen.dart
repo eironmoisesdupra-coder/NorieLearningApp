@@ -21,7 +21,7 @@ class AtomicStructureLessonScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
               children: [
-                Row(
+                const Row(
                   children: [
                     _Badge(
                       text: 'Chemistry',
@@ -52,7 +52,7 @@ class AtomicStructureLessonScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _ConceptCard(
+                const _ConceptCard(
                   title: 'Proton',
                   symbol: '+',
                   color: NorieColors.magenta,
@@ -63,7 +63,7 @@ class AtomicStructureLessonScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _ConceptCard(
+                const _ConceptCard(
                   title: 'Neutron',
                   symbol: '0',
                   color: NorieColors.cyan,
@@ -74,7 +74,7 @@ class AtomicStructureLessonScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _ConceptCard(
+                const _ConceptCard(
                   title: 'Electron',
                   symbol: '−',
                   color: NorieColors.green,
