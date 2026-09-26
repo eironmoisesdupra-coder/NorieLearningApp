@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
+import '../../learning/presentation/atomic_structure_lesson_screen.dart';
+import '../../learning/presentation/science_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -282,7 +284,13 @@ class _ContinueLearningCard extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           FilledButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AtomicStructureLessonScreen(),
+                ),
+              );
+            },
             icon: const Icon(Icons.play_arrow_rounded),
             label: const Text('Resume Lesson'),
             style: FilledButton.styleFrom(
@@ -333,9 +341,9 @@ class _SubjectGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
-        Expanded(
+        const Expanded(
           child: _SubjectCard(
             title: 'Mathematics',
             icon: Icons.calculate_rounded,
@@ -343,17 +351,26 @@ class _SubjectGrid extends StatelessWidget {
             progress: .68,
           ),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
-          child: _SubjectCard(
-            title: 'Science',
-            icon: Icons.science_rounded,
-            color: NorieColors.green,
-            progress: .72,
+          child: GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ScienceScreen(),
+                ),
+              );
+            },
+            child: const _SubjectCard(
+              title: 'Science',
+              icon: Icons.science_rounded,
+              color: NorieColors.green,
+              progress: .72,
+            ),
           ),
         ),
-        SizedBox(width: 10),
-        Expanded(
+        const SizedBox(width: 10),
+        const Expanded(
           child: _SubjectCard(
             title: 'English',
             icon: Icons.menu_book_rounded,
