@@ -399,7 +399,7 @@ class _SubjectCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 142),
+      height: 150,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Color.alphaBlend(
