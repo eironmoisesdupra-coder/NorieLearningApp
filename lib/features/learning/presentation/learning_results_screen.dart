@@ -28,7 +28,7 @@ class LearningResultsScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 32, 20, 36),
               children: [
-                Center(
+                const Center(
                   child: Container(
                     width: 104,
                     height: 104,
