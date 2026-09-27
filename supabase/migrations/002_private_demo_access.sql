@@ -18,7 +18,7 @@ create policy "demo_access_select_self"
 on public.demo_access
 for select
 using (
-  lower(email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
+  lower(email) = lower(coalesce(((select auth.jwt()) ->> 'email'), ''))
 );
 
 revoke all on public.demo_access from anon;
