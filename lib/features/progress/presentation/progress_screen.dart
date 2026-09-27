@@ -336,7 +336,7 @@ class _RankRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    achievement.title,
+                    title,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
@@ -398,7 +398,6 @@ class _AchievementsGrid extends StatelessWidget {
   }
 
   @override
-  Widget build  @override
   Widget build(BuildContext context) {
     final columns = MediaQuery.sizeOf(context).width >= 650 ? 4 : 2;
 
@@ -474,7 +473,7 @@ class _AchievementCard extends StatelessWidget {
           ),
           const SizedBox(height: 7),
           Text(
-            title,
+            achievement.title,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12,
