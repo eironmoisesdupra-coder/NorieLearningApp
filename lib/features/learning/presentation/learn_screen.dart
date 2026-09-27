@@ -357,7 +357,7 @@ class _AiQaPreview extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               SizedBox(
                 width: 100,
                 height: 100,
