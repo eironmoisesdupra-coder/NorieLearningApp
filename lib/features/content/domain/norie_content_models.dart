@@ -1,0 +1,318 @@
+class NorieSubjectContent {
+  const NorieSubjectContent({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.categories,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final List<NorieCategoryContent> categories;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'categories': categories.map((item) => item.toJson()).toList(),
+      };
+
+  factory NorieSubjectContent.fromJson(Map<String, dynamic> json) {
+    return NorieSubjectContent(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String? ?? '',
+      categories: (json['categories'] as List? ?? const [])
+          .map(
+            (item) => NorieCategoryContent.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class NorieCategoryContent {
+  const NorieCategoryContent({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.topics,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final List<NorieTopicContent> topics;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'topics': topics.map((item) => item.toJson()).toList(),
+      };
+
+  factory NorieCategoryContent.fromJson(Map<String, dynamic> json) {
+    return NorieCategoryContent(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String? ?? '',
+      topics: (json['topics'] as List? ?? const [])
+          .map(
+            (item) => NorieTopicContent.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class NorieTopicContent {
+  const NorieTopicContent({
+    required this.id,
+    required this.subject,
+    required this.category,
+    required this.title,
+    required this.subtitle,
+    required this.order,
+    required this.accent,
+    required this.lesson,
+    required this.quiz,
+    required this.challenge,
+    this.available = true,
+  });
+
+  final String id;
+  final String subject;
+  final String category;
+  final String title;
+  final String subtitle;
+  final int order;
+  final String accent;
+  final NorieLessonContent lesson;
+  final NorieQuizContent quiz;
+  final NorieChallengeContent challenge;
+  final bool available;
+
+  int get totalAssessmentAttempts =>
+      quiz.questions.length + challenge.rounds.length;
+
+  Map<String, dynamic> toJson() => {
+        'schema_version': 1,
+        'id': id,
+        'subject': subject,
+        'category': category,
+        'title': title,
+        'subtitle': subtitle,
+        'order': order,
+        'accent': accent,
+        'available': available,
+        'lesson': lesson.toJson(),
+        'quiz': quiz.toJson(),
+        'challenge': challenge.toJson(),
+      };
+
+  factory NorieTopicContent.fromJson(Map<String, dynamic> json) {
+    return NorieTopicContent(
+      id: json['id'] as String,
+      subject: json['subject'] as String,
+      category: json['category'] as String,
+      title: json['title'] as String,
+      subtitle: json['subtitle'] as String? ?? '',
+      order: (json['order'] as num?)?.toInt() ?? 0,
+      accent: json['accent'] as String? ?? 'cyan',
+      available: json['available'] as bool? ?? true,
+      lesson: NorieLessonContent.fromJson(
+        Map<String, dynamic>.from(json['lesson'] as Map),
+      ),
+      quiz: NorieQuizContent.fromJson(
+        Map<String, dynamic>.from(json['quiz'] as Map),
+      ),
+      challenge: NorieChallengeContent.fromJson(
+        Map<String, dynamic>.from(json['challenge'] as Map),
+      ),
+    );
+  }
+}
+
+class NorieLessonContent {
+  const NorieLessonContent({
+    required this.heading,
+    required this.introduction,
+    required this.sections,
+    required this.keyConceptTitle,
+    required this.keyConceptBody,
+    this.completionXp = 50,
+  });
+
+  final String heading;
+  final String introduction;
+  final List<NorieLessonSection> sections;
+  final String keyConceptTitle;
+  final String keyConceptBody;
+  final int completionXp;
+
+  Map<String, dynamic> toJson() => {
+        'heading': heading,
+        'introduction': introduction,
+        'sections': sections.map((item) => item.toJson()).toList(),
+        'key_concept_title': keyConceptTitle,
+        'key_concept_body': keyConceptBody,
+        'completion_xp': completionXp,
+      };
+
+  factory NorieLessonContent.fromJson(Map<String, dynamic> json) {
+    return NorieLessonContent(
+      heading: json['heading'] as String,
+      introduction: json['introduction'] as String? ?? '',
+      sections: (json['sections'] as List? ?? const [])
+          .map(
+            (item) => NorieLessonSection.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+      keyConceptTitle: json['key_concept_title'] as String? ?? '',
+      keyConceptBody: json['key_concept_body'] as String? ?? '',
+      completionXp: (json['completion_xp'] as num?)?.toInt() ?? 50,
+    );
+  }
+}
+
+class NorieLessonSection {
+  const NorieLessonSection({
+    required this.title,
+    required this.symbol,
+    required this.points,
+    this.accent = 'cyan',
+  });
+
+  final String title;
+  final String symbol;
+  final List<String> points;
+  final String accent;
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'symbol': symbol,
+        'points': points,
+        'accent': accent,
+      };
+
+  factory NorieLessonSection.fromJson(Map<String, dynamic> json) {
+    return NorieLessonSection(
+      title: json['title'] as String,
+      symbol: json['symbol'] as String? ?? '',
+      points: List<String>.from(json['points'] as List? ?? const []),
+      accent: json['accent'] as String? ?? 'cyan',
+    );
+  }
+}
+
+class NorieQuizContent {
+  const NorieQuizContent({
+    required this.questions,
+    this.xpPerCorrect = 20,
+  });
+
+  final List<NorieQuestionContent> questions;
+  final int xpPerCorrect;
+
+  Map<String, dynamic> toJson() => {
+        'xp_per_correct': xpPerCorrect,
+        'questions': questions.map((item) => item.toJson()).toList(),
+      };
+
+  factory NorieQuizContent.fromJson(Map<String, dynamic> json) {
+    return NorieQuizContent(
+      xpPerCorrect: (json['xp_per_correct'] as num?)?.toInt() ?? 20,
+      questions: (json['questions'] as List? ?? const [])
+          .map(
+            (item) => NorieQuestionContent.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class NorieQuestionContent {
+  const NorieQuestionContent({
+    required this.id,
+    required this.prompt,
+    required this.options,
+    required this.correctIndex,
+    required this.explanation,
+    this.difficulty = 'foundation',
+  });
+
+  final String id;
+  final String prompt;
+  final List<String> options;
+  final int correctIndex;
+  final String explanation;
+  final String difficulty;
+
+  bool get hasValidAnswer =>
+      options.isNotEmpty && correctIndex >= 0 && correctIndex < options.length;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'prompt': prompt,
+        'options': options,
+        'correct_index': correctIndex,
+        'explanation': explanation,
+        'difficulty': difficulty,
+      };
+
+  factory NorieQuestionContent.fromJson(Map<String, dynamic> json) {
+    return NorieQuestionContent(
+      id: json['id'] as String,
+      prompt: json['prompt'] as String,
+      options: List<String>.from(json['options'] as List? ?? const []),
+      correctIndex: (json['correct_index'] as num?)?.toInt() ?? 0,
+      explanation: json['explanation'] as String? ?? '',
+      difficulty: json['difficulty'] as String? ?? 'foundation',
+    );
+  }
+}
+
+class NorieChallengeContent {
+  const NorieChallengeContent({
+    required this.title,
+    required this.description,
+    required this.rounds,
+    this.xpPerCorrect = 25,
+  });
+
+  final String title;
+  final String description;
+  final List<NorieQuestionContent> rounds;
+  final int xpPerCorrect;
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'description': description,
+        'xp_per_correct': xpPerCorrect,
+        'rounds': rounds.map((item) => item.toJson()).toList(),
+      };
+
+  factory NorieChallengeContent.fromJson(Map<String, dynamic> json) {
+    return NorieChallengeContent(
+      title: json['title'] as String,
+      description: json['description'] as String? ?? '',
+      xpPerCorrect: (json['xp_per_correct'] as num?)?.toInt() ?? 25,
+      rounds: (json['rounds'] as List? ?? const [])
+          .map(
+            (item) => NorieQuestionContent.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
