@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -98,6 +99,79 @@ class NorieChallengeCompletion {
   int get totalXpAwarded => baseXp + bonusXp;
   bool get leveledUp => after.level > before.level;
   bool get rankChanged => after.title != before.title;
+}
+
+enum NorieMasteryLevel {
+  learning,
+  practicing,
+  proficient,
+  mastered,
+}
+
+class NorieTopicMastery {
+  const NorieTopicMastery({
+    required this.category,
+    required this.topic,
+    required this.correct,
+    required this.attempts,
+  });
+
+  final String category;
+  final String topic;
+  final int correct;
+  final int attempts;
+
+  double get accuracy => attempts == 0 ? 0 : correct / attempts;
+
+  double get confidence =>
+      (attempts / 5).clamp(0.0, 1.0).toDouble();
+
+  double get score =>
+      (accuracy * confidence).clamp(0.0, 1.0).toDouble();
+
+  NorieMasteryLevel get level {
+    if (score < .40) return NorieMasteryLevel.learning;
+    if (score < .65) return NorieMasteryLevel.practicing;
+    if (score < .85) return NorieMasteryLevel.proficient;
+    return NorieMasteryLevel.mastered;
+  }
+
+  String get levelLabel => switch (level) {
+        NorieMasteryLevel.learning => 'Learning',
+        NorieMasteryLevel.practicing => 'Practicing',
+        NorieMasteryLevel.proficient => 'Proficient',
+        NorieMasteryLevel.mastered => 'Mastered',
+      };
+
+  bool get isWeak => attempts >= 2 && accuracy < .70;
+
+  NorieTopicMastery add({
+    required int correctAnswers,
+    required int totalAttempts,
+  }) {
+    return NorieTopicMastery(
+      category: category,
+      topic: topic,
+      correct: correct + correctAnswers,
+      attempts: attempts + totalAttempts,
+    );
+  }
+
+  Map<String, Object> toJson() => {
+        'category': category,
+        'topic': topic,
+        'correct': correct,
+        'attempts': attempts,
+      };
+
+  static NorieTopicMastery fromJson(Map<String, dynamic> json) {
+    return NorieTopicMastery(
+      category: json['category'] as String? ?? 'General',
+      topic: json['topic'] as String? ?? 'Unknown Topic',
+      correct: json['correct'] as int? ?? 0,
+      attempts: json['attempts'] as int? ?? 0,
+    );
+  }
 }
 
 abstract final class NorieLevelSystem {
@@ -211,6 +285,7 @@ class NorieProgression extends ChangeNotifier {
   static const _speedRewardDatesKey = 'norie.speedRewardDates';
   static const _speedBestScoreKey = 'norie.speedBestScore';
   static const _weeklyRewardedWeeksKey = 'norie.weeklyRewardedWeeks';
+  static const _topicMasteryKey = 'norie.topicMastery';
 
   int _totalXp = 1250;
   int _completedLessons = 0;
@@ -224,6 +299,7 @@ class NorieProgression extends ChangeNotifier {
   Set<String> _dailyChallengeDates = <String>{};
   Set<String> _speedRewardDates = <String>{};
   Set<String> _weeklyRewardedWeeks = <String>{};
+  Map<String, NorieTopicMastery> _topicMastery = <String, NorieTopicMastery>{};
   bool _onboardingComplete = false;
 
   int get totalXp => _totalXp;
@@ -235,6 +311,34 @@ class NorieProgression extends ChangeNotifier {
   int get speedBestScore => _speedBestScore;
   Set<String> get exploredSubjects => Set.unmodifiable(_exploredSubjects);
   bool get onboardingComplete => _onboardingComplete;
+
+  List<NorieTopicMastery> get topicMastery {
+    final items = _topicMastery.values.toList()
+      ..sort((a, b) {
+        final categoryCompare = a.category.compareTo(b.category);
+        if (categoryCompare != 0) return categoryCompare;
+        return a.topic.compareTo(b.topic);
+      });
+    return List.unmodifiable(items);
+  }
+
+  List<NorieTopicMastery> get weakTopics {
+    final items = _topicMastery.values
+        .where((topic) => topic.isWeak)
+        .toList()
+      ..sort((a, b) => a.score.compareTo(b.score));
+    return List.unmodifiable(items);
+  }
+
+  int get masteredTopicCount => _topicMastery.values
+      .where((topic) => topic.level == NorieMasteryLevel.mastered)
+      .length;
+
+  NorieTopicMastery? masteryFor({
+    required String category,
+    required String topic,
+  }) =>
+      _topicMastery[_topicKey(category, topic)];
 
   NorieLevelSnapshot get snapshot => NorieLevelSystem.snapshotForXp(_totalXp);
 
@@ -346,6 +450,24 @@ class NorieProgression extends ChangeNotifier {
     _weeklyRewardedWeeks =
         (prefs.getStringList(_weeklyRewardedWeeksKey) ?? const <String>[])
             .toSet();
+
+    final rawMastery = prefs.getString(_topicMasteryKey);
+    if (rawMastery != null && rawMastery.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawMastery) as Map<String, dynamic>;
+        _topicMastery = decoded.map(
+          (key, value) => MapEntry(
+            key,
+            NorieTopicMastery.fromJson(
+              Map<String, dynamic>.from(value as Map),
+            ),
+          ),
+        );
+      } on FormatException {
+        _topicMastery = <String, NorieTopicMastery>{};
+      }
+    }
+
     _onboardingComplete = prefs.getBool(_onboardingKey) ?? false;
     notifyListeners();
   }
@@ -389,6 +511,12 @@ class NorieProgression extends ChangeNotifier {
     _correctAnswers += quizScore + challengeScore;
     _questionsAnswered += 8;
     _recordStudyDay(DateTime.now());
+    _recordTopicBatch(
+      category: 'Science',
+      topic: 'Atomic Structure',
+      correctAnswers: quizScore + challengeScore,
+      totalAttempts: 8,
+    );
     _changed();
   }
 
@@ -396,6 +524,45 @@ class NorieProgression extends ChangeNotifier {
     _studySessions++;
     _recordStudyDay(DateTime.now());
     _changed();
+  }
+
+  void recordTopicAnswer({
+    required String category,
+    required String topic,
+    required bool correct,
+  }) {
+    _recordTopicBatch(
+      category: category,
+      topic: topic,
+      correctAnswers: correct ? 1 : 0,
+      totalAttempts: 1,
+    );
+    _changed();
+  }
+
+  void _recordTopicBatch({
+    required String category,
+    required String topic,
+    required int correctAnswers,
+    required int totalAttempts,
+  }) {
+    if (totalAttempts <= 0) return;
+
+    final safeAttempts = totalAttempts < 0 ? 0 : totalAttempts;
+    final safeCorrect = correctAnswers.clamp(0, safeAttempts).toInt();
+    final key = _topicKey(category, topic);
+    final existing = _topicMastery[key] ??
+        NorieTopicMastery(
+          category: category,
+          topic: topic,
+          correct: 0,
+          attempts: 0,
+        );
+
+    _topicMastery[key] = existing.add(
+      correctAnswers: safeCorrect,
+      totalAttempts: safeAttempts,
+    );
   }
 
   NorieChallengeCompletion recordChallengeCompletion({
@@ -523,9 +690,20 @@ class NorieProgression extends ChangeNotifier {
         _weeklyRewardedWeeksKey,
         _weeklyRewardedWeeks.toList()..sort(),
       ),
+      prefs.setString(
+        _topicMasteryKey,
+        jsonEncode(
+          _topicMastery.map(
+            (key, value) => MapEntry(key, value.toJson()),
+          ),
+        ),
+      ),
       prefs.setBool(_onboardingKey, _onboardingComplete),
     ]);
   }
+
+  static String _topicKey(String category, String topic) =>
+      '${category.trim()}::${topic.trim()}';
 
   static DateTime _dateOnly(DateTime date) =>
       DateTime(date.year, date.month, date.day);
