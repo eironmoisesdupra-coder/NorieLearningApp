@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/account/norie_account_service.dart';
 import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
 import '../../account/presentation/account_screen.dart';
+import '../../account/presentation/private_demo_gate.dart';
 import '../../navigation/presentation/main_shell.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -44,18 +44,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _openWelcome() {
     if (!mounted) return;
-    final destination =
-        NorieProgression.instance.onboardingComplete ||
-                NorieAccountService.instance.isSignedIn
-            ? const MainShell()
-            : const WelcomeScreen();
-
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 450),
         pageBuilder: (_, animation, __) => FadeTransition(
           opacity: animation,
-          child: destination,
+          child: const PrivateDemoGate(),
         ),
       ),
     );
