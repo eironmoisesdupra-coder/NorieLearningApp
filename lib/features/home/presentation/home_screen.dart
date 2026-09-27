@@ -53,7 +53,9 @@ class HomeScreen extends StatelessWidget {
                           const SizedBox(height: 22),
                           const _ContinueLearningCard(),
                           const SizedBox(height: 20),
-                          const _DailyChallengeCard(),
+                          _DailyChallengeCard(
+                            onTap: () => onTabSelected?.call(2),
+                          ),
                           const SizedBox(height: 16),
                           const _LevelCard(),
                         ],
@@ -318,16 +320,27 @@ class _ContinueLearningCard extends StatelessWidget {
 }
 
 class _DailyChallengeCard extends StatelessWidget {
-  const _DailyChallengeCard();
+  const _DailyChallengeCard({this.onTap});
+
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return const _InfoCard(
-      icon: Icons.track_changes_rounded,
-      iconColor: NorieColors.magenta,
-      title: 'Daily Challenge',
-      subtitle: 'Solve 5 questions correctly and earn rewards.',
-      trailing: '+100 XP',
+    final progression = NorieProgression.instance;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: _InfoCard(
+        icon: Icons.track_changes_rounded,
+        iconColor: NorieColors.magenta,
+        title: 'Daily Challenge',
+        subtitle: progression.dailyChallengeCompletedToday
+            ? 'Completed today · replay available in Challenge.'
+            : 'Solve 5 mixed questions and earn today’s bonus.',
+        trailing: progression.dailyChallengeCompletedToday
+            ? 'DONE'
+            : '+100 XP',
+      ),
     );
   }
 }
