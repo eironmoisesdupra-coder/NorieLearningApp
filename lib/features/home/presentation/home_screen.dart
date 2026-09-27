@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
+import '../../../core/widgets/norie_logo_mark.dart';
 import '../../learning/presentation/atomic_structure_lesson_screen.dart';
 import '../../learning/presentation/science_screen.dart';
 
@@ -64,29 +65,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            gradient: const LinearGradient(
-              colors: [
-                NorieColors.cyan,
-                NorieColors.primary,
-                NorieColors.magenta,
-              ],
-            ),
-          ),
-          alignment: Alignment.center,
-          child: const Text(
-            'N',
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-            ),
-          ),
-        ),
+        const NorieLogoMark(size: 42, showGlow: false),
         const SizedBox(width: 10),
         const Expanded(
           child: Column(
