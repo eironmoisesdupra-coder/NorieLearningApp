@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../account/norie_account_service.dart';
 import '../progression/norie_progression.dart';
@@ -26,6 +27,8 @@ class NorieCloudSync extends ChangeNotifier {
   NorieCloudSyncStatus _status = NorieCloudSyncStatus.localOnly;
   String? _message;
   DateTime? _lastSyncedAt;
+
+  static const _cloudOwnerKey = 'norie.cloudOwnerUserId';
 
   NorieCloudSyncStatus get status => _status;
   String? get message => _message;
@@ -108,7 +111,20 @@ class NorieCloudSync extends ChangeNotifier {
           .eq('user_id', user.id)
           .maybeSingle();
 
+      final prefs = await SharedPreferences.getInstance();
+      final localOwner = prefs.getString(_cloudOwnerKey);
+      final switchingAccounts =
+          localOwner != null && localOwner.isNotEmpty && localOwner != user.id;
+
       if (row == null) {
+        if (switchingAccounts) {
+          _applyingRemote = true;
+          try {
+            await NorieProgression.instance.resetForNewAccount();
+          } finally {
+            _applyingRemote = false;
+          }
+        }
         await _uploadForUser(user.id);
       } else {
         final rawState = row['state'];
@@ -123,7 +139,7 @@ class NorieCloudSync extends ChangeNotifier {
         final cloudIsNewer = cloudUpdatedAt != null &&
             cloudUpdatedAt.isAfter(localModified);
 
-        if (cloudIsNewer && cloudState.isNotEmpty) {
+        if (switchingAccounts || (cloudIsNewer && cloudState.isNotEmpty)) {
           _applyingRemote = true;
           try {
             await NorieProgression.instance.importCloudState(
@@ -137,6 +153,8 @@ class NorieCloudSync extends ChangeNotifier {
           await _uploadForUser(user.id);
         }
       }
+
+      await prefs.setString(_cloudOwnerKey, user.id);
 
       _lastSyncedAt = DateTime.now().toUtc();
       _message = null;
@@ -161,6 +179,8 @@ class NorieCloudSync extends ChangeNotifier {
 
     try {
       await _uploadForUser(user.id);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_cloudOwnerKey, user.id);
       _lastSyncedAt = DateTime.now().toUtc();
       _message = null;
       _setStatus(NorieCloudSyncStatus.synced);
