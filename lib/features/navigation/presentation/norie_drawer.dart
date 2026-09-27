@@ -75,7 +75,7 @@ class NorieDrawer extends StatelessWidget {
                   label: 'AI-Based Q&A',
                   color: NorieColors.violet,
                   trailing: const _SampleBadge(),
-                  onTap: () => _open(context, const LearnScreen()),
+                  onTap: () => _switchTab(context, 1, const LearnScreen()),
                 ),
                 const SizedBox(height: 14),
                 const _SectionLabel('PROGRESS'),
@@ -90,7 +90,8 @@ class NorieDrawer extends StatelessWidget {
                   icon: Icons.workspace_premium_rounded,
                   label: 'Achievements',
                   color: NorieColors.orange,
-                  onTap: () => _open(context, const ProgressScreen()),
+                  onTap: () =>
+                      _switchTab(context, 3, const ProgressScreen()),
                 ),
                 _MenuItem(
                   icon: Icons.local_fire_department_rounded,
