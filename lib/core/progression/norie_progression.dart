@@ -288,7 +288,7 @@ class NorieProgression extends ChangeNotifier {
   static const _topicMasteryKey = 'norie.topicMastery';
   static const _lastModifiedKey = 'norie.lastModifiedAt';
 
-  int _totalXp = 1250;
+  int _totalXp = 0;
   int _completedLessons = 0;
   int _studySessions = 0;
   int _correctAnswers = 0;
@@ -710,6 +710,27 @@ class NorieProgression extends ChangeNotifier {
       prefs.setBool(_onboardingKey, _onboardingComplete),
       prefs.setString(_lastModifiedKey, _lastModifiedAt.toIso8601String()),
     ]);
+  }
+
+  Future<void> resetForNewAccount() async {
+    _totalXp = 0;
+    _completedLessons = 0;
+    _studySessions = 0;
+    _correctAnswers = 0;
+    _questionsAnswered = 0;
+    _challengeSessions = 0;
+    _speedBestScore = 0;
+    _exploredSubjects = <String>{};
+    _studyDates = <String>{};
+    _dailyChallengeDates = <String>{};
+    _speedRewardDates = <String>{};
+    _weeklyRewardedWeeks = <String>{};
+    _topicMastery = <String, NorieTopicMastery>{};
+    _onboardingComplete = true;
+    _lastModifiedAt = DateTime.now().toUtc();
+
+    notifyListeners();
+    await _save();
   }
 
   Map<String, dynamic> exportCloudState() => {
