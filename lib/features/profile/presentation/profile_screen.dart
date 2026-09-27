@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/account/norie_account_service.dart';
 import '../../../core/assets/norie_assets.dart';
+import '../../../core/cloud/norie_cloud_sync.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../account/presentation/account_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -34,6 +37,7 @@ class ProfileScreen extends StatelessWidget {
           animation: NorieProgression.instance,
           builder: (context, _) {
             final progression = NorieProgression.instance;
+            final account = NorieAccountService.instance;
             final snapshot = progression.snapshot;
             final accuracy = (progression.quizAccuracy * 100).round();
 
@@ -70,6 +74,8 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                     if (embedded) const SizedBox(height: 22),
+                    _AccountSummaryCard(account: account),
+                    const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
@@ -103,9 +109,11 @@ class ProfileScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Norie Learner',
-                                  style: TextStyle(
+                                Text(
+                                  account.displayName?.isNotEmpty == true
+                                      ? account.displayName!
+                                      : 'Norie Learner',
+                                  style: const TextStyle(
                                     fontSize: 23,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -430,6 +438,113 @@ class _AchievementStatus extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+class _AccountSummaryCard extends StatelessWidget {
+  const _AccountSummaryCard({required this.account});
+
+  final NorieAccountService account;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: NorieCloudSync.instance,
+      builder: (context, _) {
+        final sync = NorieCloudSync.instance;
+        final signedIn = account.isSignedIn;
+        final status = signedIn
+            ? switch (sync.status) {
+                NorieCloudSyncStatus.syncing => 'Synchronizing…',
+                NorieCloudSyncStatus.synced => 'Cloud synchronized',
+                NorieCloudSyncStatus.error => 'Sync needs attention',
+                _ => 'Cloud account connected',
+              }
+            : account.isCloudConfigured
+                ? 'Sign in to sync across devices'
+                : 'Local-only build';
+
+        final statusColor = signedIn
+            ? switch (sync.status) {
+                NorieCloudSyncStatus.synced => NorieColors.green,
+                NorieCloudSyncStatus.error => NorieColors.magenta,
+                NorieCloudSyncStatus.syncing => NorieColors.orange,
+                _ => NorieColors.cyan,
+              }
+            : NorieColors.textSecondary;
+
+        return Material(
+          color: NorieColors.surface,
+          borderRadius: BorderRadius.circular(19),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(19),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AccountScreen(),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(19),
+                border: Border.all(color: NorieColors.border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: .10),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(
+                      signedIn
+                          ? Icons.cloud_done_rounded
+                          : Icons.cloud_outlined,
+                      color: statusColor,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          signedIn
+                              ? account.email ?? 'Norie Account'
+                              : 'Norie Account',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          status,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: NorieColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
