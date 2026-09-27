@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../cloud/supabase_config.dart';
+import '../cloud/supabase_config.dart';
 
 enum NorieAccountStatus {
   localOnly,
@@ -42,8 +42,9 @@ class NorieAccountService extends ChangeNotifier {
 
     final client = NorieSupabase.client!;
     _user = client.auth.currentUser;
-    _status =
-        _user == null ? NorieAccountStatus.signedOut : NorieAccountStatus.signedIn;
+    _status = _user == null
+        ? NorieAccountStatus.signedOut
+        : NorieAccountStatus.signedIn;
 
     if (_user != null) {
       await _loadProfile();
