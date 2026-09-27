@@ -2,11 +2,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract final class NorieSupabase {
   static const url = String.fromEnvironment('SUPABASE_URL');
-  static const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const publishableKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   static bool _initialized = false;
 
-  static bool get isConfigured => url.isNotEmpty && anonKey.isNotEmpty;
+  static bool get isConfigured => url.isNotEmpty && publishableKey.isNotEmpty;
   static bool get isInitialized => _initialized;
 
   static SupabaseClient? get client {
@@ -21,7 +21,7 @@ abstract final class NorieSupabase {
     try {
       await Supabase.initialize(
         url: url,
-        anonKey: anonKey,
+        publishableKey: publishableKey,
       );
       _initialized = true;
       return true;
