@@ -670,7 +670,20 @@ class _OnboardingScaffold extends StatelessWidget {
                           icon: const Icon(Icons.arrow_back_rounded),
                         ),
                       ),
-                    Expanded(child: child),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: IntrinsicHeight(child: child),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
