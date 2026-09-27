@@ -70,9 +70,17 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
     if (_selectedIndex == null || _checked || _finished) return;
 
     final question = _questions[_current];
+    final isCorrect = _selectedIndex == question.correctIndex;
+
+    NorieProgression.instance.recordTopicAnswer(
+      category: question.category,
+      topic: question.topic,
+      correct: isCorrect,
+    );
+
     setState(() {
       _checked = true;
-      if (_selectedIndex == question.correctIndex) {
+      if (isCorrect) {
         _score++;
       }
     });
