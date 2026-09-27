@@ -201,6 +201,14 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     _ActivityCard(
+                      icon: Icons.emoji_events_rounded,
+                      title: 'Challenge sessions',
+                      value: '${progression.challengeSessions}',
+                      subtitle:
+                          'Speed best: ${progression.speedBestScore}/10 · Weekly: ${progression.weeklyChallengeDays}/${NorieChallengeRules.weeklyGoalDays}',
+                    ),
+                    const SizedBox(height: 10),
+                    _ActivityCard(
                       icon: Icons.explore_rounded,
                       title: 'Subjects explored',
                       value: '${progression.exploredSubjects.length}',
