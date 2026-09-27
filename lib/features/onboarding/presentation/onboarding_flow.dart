@@ -211,7 +211,7 @@ class WelcomeScreen extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => const AccountScreen(),
+                  builder: (_) => const AccountScreen(enterAppAfterAuth: true),
                 ),
               );
             },
