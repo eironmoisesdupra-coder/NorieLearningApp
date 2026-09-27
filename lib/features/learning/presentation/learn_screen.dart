@@ -29,7 +29,7 @@ class _LearnScreenState extends State<LearnScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const NorieDrawer(),
+      drawer: const NorieDrawer(selectedSection: NorieDrawerSection.learn),
       drawerEdgeDragWidth: 48,
       body: SafeArea(
         child: Center(
