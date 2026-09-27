@@ -207,7 +207,10 @@ class WelcomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           TextButton(
-            onPressed: () => _replaceAll(context, const HomeScreen()),
+            onPressed: () {
+              NorieProgression.instance.markOnboardingComplete();
+              _replaceAll(context, const MainShell());
+            },
             child: const Text('I already have an account'),
           ),
         ],
