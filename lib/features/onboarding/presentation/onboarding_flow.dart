@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
@@ -140,7 +141,14 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const NorieLogoMark(size: 172),
+                SizedBox(
+                  width: 210,
+                  height: 210,
+                  child: Image.asset(
+                    NorieAssets.mascotBase,
+                    fit: BoxFit.contain,
+                  ),
+                ),
                 const Positioned(
                   left: 16,
                   top: 34,
@@ -323,9 +331,24 @@ class _SubjectInterestScreenState extends State<SubjectInterestScreen> {
         children: [
           const _Progress(step: 2, total: 4),
           const SizedBox(height: 28),
-          const Text(
-            'What do you\nwant to learn?',
-            style: _headingStyle,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Text(
+                  'What do you\nwant to learn?',
+                  style: _headingStyle,
+                ),
+              ),
+              SizedBox(
+                width: 92,
+                height: 92,
+                child: Image.asset(
+                  NorieAssets.mascotStudying,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           const Text(
@@ -513,7 +536,14 @@ class _ReadyScreenState extends State<ReadyScreen>
         children: [
           const _Progress(step: 4, total: 4),
           const Spacer(),
-          const NorieLogoMark(size: 150),
+          SizedBox(
+            width: 170,
+            height: 170,
+            child: Image.asset(
+              NorieAssets.mascotCelebrating,
+              fit: BoxFit.contain,
+            ),
+          ),
           const SizedBox(height: 26),
           const Text(
             'Your Norie path\nis ready.',
