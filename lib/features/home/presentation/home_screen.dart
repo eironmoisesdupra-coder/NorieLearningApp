@@ -5,6 +5,7 @@ import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
 import '../../learning/presentation/atomic_structure_lesson_screen.dart';
 import '../../learning/presentation/science_screen.dart';
+import '../../navigation/presentation/norie_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -12,6 +13,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const NorieDrawer(),
+      drawerEdgeDragWidth: 48,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -26,24 +29,29 @@ class HomeScreen extends StatelessWidget {
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
                       sliver: SliverList.list(
-                        children: const [
-                          _Header(),
-                          SizedBox(height: 26),
-                          _Greeting(),
-                          SizedBox(height: 22),
-                          _ContinueLearningCard(),
-                          SizedBox(height: 26),
-                          _SectionTitle(title: 'Explore Subjects'),
-                          SizedBox(height: 14),
-                          _SubjectGrid(),
-                          SizedBox(height: 22),
-                          _DailyChallengeCard(),
-                          SizedBox(height: 16),
-                          _LevelCard(),
-                          SizedBox(height: 26),
-                          _SectionTitle(title: 'Achievements'),
-                          SizedBox(height: 14),
-                          _AchievementsRow(),
+                        children: [
+                          Builder(
+                            builder: (drawerContext) => _Header(
+                              onMenuPressed: () =>
+                                  Scaffold.of(drawerContext).openDrawer(),
+                            ),
+                          ),
+                          const SizedBox(height: 26),
+                          const _Greeting(),
+                          const SizedBox(height: 22),
+                          const _ContinueLearningCard(),
+                          const SizedBox(height: 26),
+                          const _SectionTitle(title: 'Explore Subjects'),
+                          const SizedBox(height: 14),
+                          const _SubjectGrid(),
+                          const SizedBox(height: 22),
+                          const _DailyChallengeCard(),
+                          const SizedBox(height: 16),
+                          const _LevelCard(),
+                          const SizedBox(height: 26),
+                          const _SectionTitle(title: 'Achievements'),
+                          const SizedBox(height: 14),
+                          const _AchievementsRow(),
                         ],
                       ),
                     ),
@@ -60,7 +68,9 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header();
+  const _Header({required this.onMenuPressed});
+
+  final VoidCallback onMenuPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +81,18 @@ class _Header extends StatelessWidget {
 
         return Row(
           children: [
+            IconButton(
+              onPressed: onMenuPressed,
+              tooltip: 'Open menu',
+              style: IconButton.styleFrom(
+                backgroundColor: NorieColors.surface,
+                foregroundColor: NorieColors.textPrimary,
+                side: const BorderSide(color: NorieColors.border),
+                minimumSize: const Size(42, 42),
+              ),
+              icon: const Icon(Icons.menu_rounded),
+            ),
+            const SizedBox(width: 8),
             const NorieLogoMark(size: 42, showGlow: false),
             const SizedBox(width: 10),
             const Expanded(
