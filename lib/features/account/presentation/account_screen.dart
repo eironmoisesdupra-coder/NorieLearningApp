@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/account/norie_account_service.dart';
 import '../../../core/cloud/norie_cloud_sync.dart';
-import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
-import '../../navigation/presentation/main_shell.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({
@@ -78,24 +76,11 @@ class _AccountScreenState extends State<AccountScreen> {
     }
 
     if (account.isSignedIn) {
-      await NorieCloudSync.instance.syncNow();
       if (!mounted) return;
-
-      if (widget.enterAppAfterAuth) {
-        NorieProgression.instance.markOnboardingComplete();
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute<void>(
-            builder: (_) => const MainShell(),
-          ),
-          (_) => false,
-        );
-        return;
-      }
-
       _show(
         _createAccount
-            ? 'Account connected. Your Norie progress can now sync.'
-            : 'Signed in. Cloud progress has been synchronized.',
+            ? 'Account connected. Norie is verifying private-demo access.'
+            : 'Signed in. Norie is restoring your private-demo progress.',
       );
       return;
     }
@@ -103,6 +88,89 @@ class _AccountScreenState extends State<AccountScreen> {
     if (result != null && mounted) {
       _show(result);
     }
+  }
+
+  Future<void> _resendConfirmation() async {
+    if (_submitting) return;
+
+    final email = _emailController.text.trim().isNotEmpty
+        ? _emailController.text.trim()
+        : NorieAccountService.instance.pendingEmail ?? '';
+
+    setState(() => _submitting = true);
+    final result =
+        await NorieAccountService.instance.resendConfirmation(email);
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    _show(
+      result ??
+          'Confirmation email resent. Check your inbox and spam folder.',
+    );
+  }
+
+  Future<void> _forgotPassword() async {
+    if (_submitting) return;
+
+    final email = _emailController.text.trim();
+    if (!email.contains('@')) {
+      _show('Enter your account email first.');
+      return;
+    }
+
+    setState(() => _submitting = true);
+    final result =
+        await NorieAccountService.instance.requestPasswordReset(email);
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    _show(
+      result ??
+          'Password reset email sent. Open the link to return to Norie.',
+    );
+  }
+
+  Future<void> _editDisplayName() async {
+    final account = NorieAccountService.instance;
+    final controller = TextEditingController(
+      text: account.displayName ?? '',
+    );
+
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit display name'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (value) =>
+              Navigator.of(dialogContext).pop(value),
+          decoration: const InputDecoration(
+            labelText: 'Display name',
+            prefixIcon: Icon(Icons.person_rounded),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+    if (value == null || !mounted) return;
+
+    final result = await account.updateDisplayName(value);
+    if (!mounted) return;
+    _show(result ?? 'Display name updated.');
   }
 
   void _show(String message) {
@@ -145,6 +213,7 @@ class _AccountScreenState extends State<AccountScreen> {
                             account: account,
                             sync: sync,
                             onSync: () => sync.syncNow(),
+                            onEditName: _editDisplayName,
                             onSignOut: () async {
                               await account.signOut();
                               if (mounted) {
@@ -163,7 +232,11 @@ class _AccountScreenState extends State<AccountScreen> {
                               setState(() => _createAccount = value);
                             },
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 12),
+                          if (_createAccount)
+                            const _PrivateDemoInviteNote(),
+                          if (_createAccount)
+                            const SizedBox(height: 12),
                           if (_createAccount) ...[
                             TextField(
                               controller: _nameController,
@@ -209,7 +282,17 @@ class _AccountScreenState extends State<AccountScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          if (!_createAccount)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _submitting
+                                    ? null
+                                    : _forgotPassword,
+                                child: const Text('Forgot password?'),
+                              ),
+                            ),
+                          const SizedBox(height: 10),
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton.icon(
@@ -233,7 +316,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                     ),
                               label: Text(
                                 _createAccount
-                                    ? 'Create Norie Account'
+                                    ? 'Create Approved Demo Account'
                                     : 'Sign In',
                               ),
                               style: FilledButton.styleFrom(
@@ -244,6 +327,15 @@ class _AccountScreenState extends State<AccountScreen> {
                               ),
                             ),
                           ),
+                          if (account.emailConfirmationRequired) ...[
+                            const SizedBox(height: 14),
+                            _ConfirmationRequiredCard(
+                              email: account.pendingEmail ??
+                                  _emailController.text.trim(),
+                              submitting: _submitting,
+                              onResend: _resendConfirmation,
+                            ),
+                          ],
                           if (account.message != null) ...[
                             const SizedBox(height: 12),
                             Text(
@@ -357,17 +449,140 @@ class _ModeSelector extends StatelessWidget {
   }
 }
 
+class _PrivateDemoInviteNote extends StatelessWidget {
+  const _PrivateDemoInviteNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: NorieColors.violet.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: NorieColors.violet.withValues(alpha: .3),
+        ),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.lock_person_rounded,
+            color: NorieColors.violet,
+            size: 20,
+          ),
+          SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              'Private demo: account creation only works for email addresses approved by the Norie tester allowlist.',
+              style: TextStyle(
+                color: NorieColors.textSecondary,
+                fontSize: 10,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConfirmationRequiredCard extends StatelessWidget {
+  const _ConfirmationRequiredCard({
+    required this.email,
+    required this.submitting,
+    required this.onResend,
+  });
+
+  final String email;
+  final bool submitting;
+  final VoidCallback onResend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: NorieColors.orange.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(
+          color: NorieColors.orange.withValues(alpha: .4),
+        ),
+      ),
+      child: Column(
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.mark_email_unread_rounded,
+                color: NorieColors.orange,
+              ),
+              SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'Email confirmation required',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          Text(
+            email.isEmpty
+                ? 'Confirm the email you used to create this account.'
+                : 'Confirm $email before signing in.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: NorieColors.textSecondary,
+              fontSize: 10,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: submitting ? null : onResend,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Resend Confirmation Email'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _lastSyncLabel(DateTime? value) {
+  if (value == null) return 'Not synced in this session yet';
+
+  final difference = DateTime.now().toUtc().difference(value);
+  if (difference.inSeconds < 60) return 'Last synced just now';
+  if (difference.inMinutes < 60) {
+    return 'Last synced ${difference.inMinutes} min ago';
+  }
+  if (difference.inHours < 24) {
+    return 'Last synced ${difference.inHours} h ago';
+  }
+  return 'Last synced ${difference.inDays} d ago';
+}
+
 class _SignedInAccount extends StatelessWidget {
   const _SignedInAccount({
     required this.account,
     required this.sync,
     required this.onSync,
+    required this.onEditName,
     required this.onSignOut,
   });
 
   final NorieAccountService account;
   final NorieCloudSync sync;
   final VoidCallback onSync;
+  final VoidCallback onEditName;
   final VoidCallback onSignOut;
 
   @override
@@ -404,14 +619,31 @@ class _SignedInAccount extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 13),
-              Text(
-                account.displayName?.isNotEmpty == true
-                    ? account.displayName!
-                    : 'Norie Learner',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      account.displayName?.isNotEmpty == true
+                          ? account.displayName!
+                          : 'Norie Learner',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    onPressed: onEditName,
+                    tooltip: 'Edit display name',
+                    icon: const Icon(
+                      Icons.edit_rounded,
+                      size: 18,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
@@ -426,6 +658,14 @@ class _SignedInAccount extends StatelessWidget {
                 icon: syncInfo.$1,
                 label: syncInfo.$2,
                 color: syncInfo.$3,
+              ),
+              const SizedBox(height: 7),
+              Text(
+                _lastSyncLabel(sync.lastSyncedAt),
+                style: const TextStyle(
+                  color: NorieColors.textSecondary,
+                  fontSize: 9,
+                ),
               ),
               if (sync.message != null) ...[
                 const SizedBox(height: 10),
