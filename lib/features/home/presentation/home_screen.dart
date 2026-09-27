@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
 import '../../learning/presentation/atomic_structure_lesson_screen.dart';
@@ -63,39 +64,46 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const NorieLogoMark(size: 42, showGlow: false),
-        const SizedBox(width: 10),
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Norie Learning',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+    return AnimatedBuilder(
+      animation: NorieProgression.instance,
+      builder: (context, _) {
+        final progression = NorieProgression.instance.snapshot;
+
+        return Row(
+          children: [
+            const NorieLogoMark(size: 42, showGlow: false),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Norie Learning',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                  ),
+                  Text(
+                    'PLAY · LEARN · GROW FURTHER',
+                    style: TextStyle(
+                      fontSize: 8,
+                      letterSpacing: 1.2,
+                      color: NorieColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'PLAY · LEARN · GROW FURTHER',
-                style: TextStyle(
-                  fontSize: 8,
-                  letterSpacing: 1.2,
-                  color: NorieColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const _StatusPill(
-          icon: Icons.local_fire_department,
-          value: '12',
-        ),
-        const SizedBox(width: 8),
-        const _StatusPill(
-          icon: Icons.star_rounded,
-          value: '1,250 XP',
-        ),
-      ],
+            ),
+            const _StatusPill(
+              icon: Icons.local_fire_department,
+              value: '12',
+            ),
+            const SizedBox(width: 8),
+            _StatusPill(
+              icon: Icons.star_rounded,
+              value: '${progression.totalXp} XP',
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -441,47 +449,81 @@ class _LevelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: NorieColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: NorieColors.border),
-      ),
-      child: const Column(
-        children: [
-          Row(
+    return AnimatedBuilder(
+      animation: NorieProgression.instance,
+      builder: (context, _) {
+        final progression = NorieProgression.instance.snapshot;
+
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: NorieColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: NorieColors.border),
+          ),
+          child: Column(
             children: [
-              Icon(
-                Icons.workspace_premium_rounded,
-                color: NorieColors.orange,
+              Row(
+                children: [
+                  const Icon(
+                    Icons.workspace_premium_rounded,
+                    color: NorieColors.orange,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Level ${progression.level} · ${progression.title}',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  Text(
+                    progression.isMaxLevel
+                        ? 'MAX LEVEL'
+                        : '${progression.xpIntoLevel} / ${progression.xpRequiredForNextLevel} XP',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: NorieColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Level 8 · Future Achiever',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+              const SizedBox(height: 12),
+              LinearProgressIndicator(
+                value: progression.progress,
+                minHeight: 8,
+                borderRadius: const BorderRadius.all(Radius.circular(99)),
+                color: NorieColors.violet,
+                backgroundColor: NorieColors.surfaceElevated,
+              ),
+              if (!progression.isMaxLevel &&
+                  progression.nextRankTitle != null &&
+                  progression.nextRankLevel != null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.lock_open_rounded,
+                      size: 15,
+                      color: NorieColors.cyan,
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        'Next rank: ${progression.nextRankTitle} at Level ${progression.nextRankLevel}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: NorieColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              Text(
-                '350 / 500 XP',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: NorieColors.textSecondary,
-                ),
-              ),
+              ],
             ],
           ),
-          SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: .7,
-            minHeight: 8,
-            borderRadius: BorderRadius.all(Radius.circular(99)),
-            color: NorieColors.violet,
-            backgroundColor: NorieColors.surfaceElevated,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
