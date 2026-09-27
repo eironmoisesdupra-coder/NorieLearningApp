@@ -41,11 +41,14 @@ class NorieDrawer extends StatelessWidget {
       ),
       child: SafeArea(
         child: AnimatedBuilder(
-          animation: NorieProgression.instance,
+          animation: NorieAccountService.instance,
           builder: (context, _) {
-            final progression = NorieProgression.instance.snapshot;
+            return AnimatedBuilder(
+              animation: NorieProgression.instance,
+              builder: (context, _) {
+                final progression = NorieProgression.instance.snapshot;
 
-            return ListView(
+                return ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
                 _ProfileHeader(progression: progression),
@@ -222,6 +225,8 @@ class NorieDrawer extends StatelessWidget {
                   ),
                 ),
               ],
+                );
+              },
             );
           },
         ),
