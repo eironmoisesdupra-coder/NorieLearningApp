@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
+import '../../common/presentation/coming_soon_screen.dart';
 import '../../learning/presentation/atomic_structure_lesson_screen.dart';
-import '../../learning/presentation/science_screen.dart';
+import '../../learning/presentation/learn_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
+import '../../progress/presentation/progress_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -40,18 +42,10 @@ class HomeScreen extends StatelessWidget {
                           const _Greeting(),
                           const SizedBox(height: 22),
                           const _ContinueLearningCard(),
-                          const SizedBox(height: 26),
-                          const _SectionTitle(title: 'Explore Subjects'),
-                          const SizedBox(height: 14),
-                          const _SubjectGrid(),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 20),
                           const _DailyChallengeCard(),
                           const SizedBox(height: 16),
                           const _LevelCard(),
-                          const SizedBox(height: 26),
-                          const _SectionTitle(title: 'Achievements'),
-                          const SizedBox(height: 14),
-                          const _AchievementsRow(),
                         ],
                       ),
                     ),
@@ -312,140 +306,6 @@ class _ContinueLearningCard extends StatelessWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-          ),
-        ),
-        const Text(
-          'See all',
-          style: TextStyle(
-            color: NorieColors.cyan,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SubjectGrid extends StatelessWidget {
-  const _SubjectGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(
-          child: _SubjectCard(
-            title: 'Mathematics',
-            icon: Icons.calculate_rounded,
-            color: NorieColors.primary,
-            progress: .68,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const ScienceScreen(),
-                ),
-              );
-            },
-            child: const _SubjectCard(
-              title: 'Science',
-              icon: Icons.science_rounded,
-              color: NorieColors.green,
-              progress: .72,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        const Expanded(
-          child: _SubjectCard(
-            title: 'English',
-            icon: Icons.menu_book_rounded,
-            color: NorieColors.orange,
-            progress: .45,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SubjectCard extends StatelessWidget {
-  const _SubjectCard({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.progress,
-  });
-
-  final String title;
-  final IconData icon;
-  final Color color;
-  final double progress;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 150,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Color.alphaBlend(
-          color.withValues(alpha: .18),
-          NorieColors.surface,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: .75)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const Spacer(),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: progress,
-            minHeight: 5,
-            borderRadius: BorderRadius.circular(99),
-            color: color,
-            backgroundColor: color.withValues(alpha: .18),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            '${(progress * 100).round()}% complete',
-            style: const TextStyle(
-              fontSize: 9,
-              color: NorieColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _DailyChallengeCard extends StatelessWidget {
   const _DailyChallengeCard();
 
@@ -604,72 +464,6 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-class _AchievementsRow extends StatelessWidget {
-  const _AchievementsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _Achievement(
-          icon: Icons.local_fire_department,
-          label: '7-Day\nStreak',
-        ),
-        _Achievement(
-          icon: Icons.star_rounded,
-          label: 'Lesson\nMaster',
-        ),
-        _Achievement(
-          icon: Icons.school_rounded,
-          label: 'Subject\nExplorer',
-        ),
-        _Achievement(
-          icon: Icons.diamond_rounded,
-          label: 'Consistent\nLearner',
-        ),
-      ],
-    );
-  }
-}
-
-class _Achievement extends StatelessWidget {
-  const _Achievement({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 74,
-      child: Column(
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: NorieColors.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: NorieColors.primary),
-            ),
-            child: Icon(icon, color: NorieColors.cyan),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 9,
-              color: NorieColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _BottomNavigation extends StatelessWidget {
   const _BottomNavigation();
 
@@ -677,6 +471,41 @@ class _BottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     return NavigationBar(
       selectedIndex: 0,
+      onDestinationSelected: (index) {
+        if (index == 0) return;
+
+        if (index == 1) {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const LearnScreen(),
+            ),
+          );
+          return;
+        }
+
+        if (index == 3) {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const ProgressScreen(),
+            ),
+          );
+          return;
+        }
+
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => ComingSoonScreen(
+              title: index == 2 ? 'Challenge' : 'Profile',
+              subtitle: index == 2
+                  ? 'Daily and weekly challenges are being built.'
+                  : 'Your learner profile and preferences are being built.',
+              icon: index == 2
+                  ? Icons.emoji_events_rounded
+                  : Icons.person_rounded,
+            ),
+          ),
+        );
+      },
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.home_rounded),
