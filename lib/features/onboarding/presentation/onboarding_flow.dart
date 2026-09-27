@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
 import '../../home/presentation/home_screen.dart';
@@ -605,7 +606,10 @@ class _ReadyScreenState extends State<ReadyScreen>
           _PrimaryButton(
             label: 'Start Learning',
             icon: Icons.play_arrow_rounded,
-            onPressed: () => _replaceAll(context, const HomeScreen()),
+            onPressed: () {
+              NorieProgression.instance.addXp(50);
+              _replaceAll(context, const HomeScreen());
+            },
           ),
         ],
       ),
