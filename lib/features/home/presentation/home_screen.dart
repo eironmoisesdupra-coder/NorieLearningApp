@@ -10,12 +10,22 @@ import '../../navigation/presentation/norie_drawer.dart';
 import '../../progress/presentation/progress_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.embedded = false,
+    this.onTabSelected,
+  });
+
+  final bool embedded;
+  final ValueChanged<int>? onTabSelected;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const NorieDrawer(),
+      drawer: NorieDrawer(
+        selectedSection: NorieDrawerSection.home,
+        onTabSelected: onTabSelected,
+      ),
       drawerEdgeDragWidth: 48,
       body: SafeArea(
         child: LayoutBuilder(
@@ -56,7 +66,8 @@ class HomeScreen extends StatelessWidget {
           },
         ),
       ),
-      bottomNavigationBar: const _BottomNavigation(),
+      bottomNavigationBar:
+          embedded ? null : _BottomNavigation(onTabSelected: onTabSelected),
     );
   }
 }
@@ -465,13 +476,19 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _BottomNavigation extends StatelessWidget {
-  const _BottomNavigation();
+  const _BottomNavigation({this.onTabSelected});
+
+  final ValueChanged<int>? onTabSelected;
 
   @override
   Widget build(BuildContext context) {
     return NavigationBar(
       selectedIndex: 0,
       onDestinationSelected: (index) {
+        if (onTabSelected != null) {
+          onTabSelected!(index);
+          return;
+        }
         if (index == 0) return;
 
         if (index == 1) {
