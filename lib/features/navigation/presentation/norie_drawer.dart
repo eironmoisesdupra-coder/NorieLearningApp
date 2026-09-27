@@ -96,7 +96,7 @@ class NorieDrawer extends StatelessWidget {
                   icon: Icons.local_fire_department_rounded,
                   label: 'Streaks',
                   color: NorieColors.orange,
-                  trailing: const _CountBadge('12'),
+                  trailing: _CountBadge('${NorieProgression.instance.currentStreak}'),
                   onTap: () => _openUpcoming(
                     context,
                     title: 'Streaks',
@@ -131,7 +131,7 @@ class NorieDrawer extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                const _QuickActions(),
+                _QuickActions(onTabSelected: onTabSelected),
                 const SizedBox(height: 18),
                 const _SectionLabel('ACCOUNT'),
                 _MenuItem(
@@ -360,18 +360,18 @@ class _ProfileHeader extends StatelessWidget {
                 color: NorieColors.orange.withValues(alpha: .35),
               ),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.local_fire_department_rounded,
                   size: 16,
                   color: NorieColors.orange,
                 ),
-                SizedBox(width: 5),
+                const SizedBox(width: 5),
                 Text(
-                  '12 day streak',
-                  style: TextStyle(
+                  '${NorieProgression.instance.currentStreak} day streak',
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                   ),
@@ -530,7 +530,9 @@ class _SampleBadge extends StatelessWidget {
 }
 
 class _QuickActions extends StatelessWidget {
-  const _QuickActions();
+  const _QuickActions({this.onTabSelected});
+
+  final ValueChanged<int>? onTabSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -567,10 +569,18 @@ class _QuickActions extends StatelessWidget {
             icon: Icons.auto_awesome_rounded,
             label: 'Generate Sample Q&A',
             color: NorieColors.violet,
-            onTap: () => NorieDrawer._open(
-              context,
-              const LearnScreen(),
-            ),
+            onTap: () {
+              Navigator.of(context).pop();
+              if (onTabSelected != null) {
+                onTabSelected!(1);
+              } else {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const LearnScreen(),
+                  ),
+                );
+              }
+            },
           ),
           _QuickAction(
             icon: Icons.psychology_alt_rounded,
