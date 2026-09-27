@@ -24,11 +24,11 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    _index = widget.initialIndex.clamp(0, 4);
+    _index = widget.initialIndex.clamp(0, 4).toInt();
   }
 
   void _selectTab(int index) {
-    final safeIndex = index.clamp(0, 4);
+    final safeIndex = index.clamp(0, 4).toInt();
     if (_index == safeIndex) return;
     setState(() => _index = safeIndex);
   }
