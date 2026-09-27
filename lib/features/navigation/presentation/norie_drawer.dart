@@ -6,7 +6,7 @@ import '../../../core/widgets/norie_logo_mark.dart';
 import '../../common/presentation/coming_soon_screen.dart';
 import '../../learning/presentation/atomic_structure_lesson_screen.dart';
 import '../../learning/presentation/chemistry_screen.dart';
-import '../../learning/presentation/subject_hub_screen.dart';
+import '../../learning/presentation/learn_screen.dart';
 import '../../progress/presentation/progress_screen.dart';
 
 class NorieDrawer extends StatelessWidget {
@@ -44,18 +44,26 @@ class NorieDrawer extends StatelessWidget {
                   selected: true,
                   onTap: () => Navigator.of(context).pop(),
                 ),
-                const SizedBox(height: 4),
                 _MenuItem(
                   icon: Icons.menu_book_rounded,
-                  label: 'Subjects',
+                  label: 'Learn',
                   color: NorieColors.primary,
-                  onTap: () => _open(context, const SubjectHubScreen()),
+                  onTap: () => _open(context, const LearnScreen()),
                 ),
                 _MenuItem(
                   icon: Icons.route_rounded,
                   label: 'My Learning Path',
                   color: NorieColors.green,
                   onTap: () => _open(context, const ChemistryScreen()),
+                ),
+                const SizedBox(height: 14),
+                const _SectionLabel('AI TOOLS'),
+                _MenuItem(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'AI-Based Q&A',
+                  color: NorieColors.violet,
+                  trailing: const _SampleBadge(),
+                  onTap: () => _open(context, const LearnScreen()),
                 ),
                 const SizedBox(height: 14),
                 const _SectionLabel('PROGRESS'),
@@ -69,13 +77,7 @@ class NorieDrawer extends StatelessWidget {
                   icon: Icons.workspace_premium_rounded,
                   label: 'Achievements',
                   color: NorieColors.orange,
-                  onTap: () => _openUpcoming(
-                    context,
-                    title: 'Achievements',
-                    subtitle:
-                        'Badges, mastery milestones, and achievement collections are being prepared.',
-                    icon: Icons.workspace_premium_rounded,
-                  ),
+                  onTap: () => _open(context, const ProgressScreen()),
                 ),
                 _MenuItem(
                   icon: Icons.local_fire_department_rounded,
@@ -400,9 +402,7 @@ class _MenuItem extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: compact ? 1 : 4),
       child: Material(
-        color: selected
-            ? color.withValues(alpha: .11)
-            : Colors.transparent,
+        color: selected ? color.withValues(alpha: .11) : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: onTap,
@@ -477,6 +477,29 @@ class _CountBadge extends StatelessWidget {
   }
 }
 
+class _SampleBadge extends StatelessWidget {
+  const _SampleBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: NorieColors.violet.withValues(alpha: .15),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Text(
+        'SAMPLE',
+        style: TextStyle(
+          fontSize: 8,
+          color: NorieColors.violet,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
 class _QuickActions extends StatelessWidget {
   const _QuickActions();
 
@@ -512,15 +535,12 @@ class _QuickActions extends StatelessWidget {
             ),
           ),
           _QuickAction(
-            icon: Icons.track_changes_rounded,
-            label: 'Start Daily Challenge',
-            color: NorieColors.magenta,
-            onTap: () => NorieDrawer._openUpcoming(
+            icon: Icons.auto_awesome_rounded,
+            label: 'Generate Sample Q&A',
+            color: NorieColors.violet,
+            onTap: () => NorieDrawer._open(
               context,
-              title: 'Daily Challenge',
-              subtitle:
-                  'Daily mixed-subject challenges with XP bonuses are coming next.',
-              icon: Icons.track_changes_rounded,
+              const LearnScreen(),
             ),
           ),
           _QuickAction(
