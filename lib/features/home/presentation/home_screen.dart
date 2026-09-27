@@ -114,11 +114,6 @@ class _Header extends StatelessWidget {
                 ],
               ),
             ),
-            const _StatusPill(
-              icon: Icons.local_fire_department,
-              value: '12',
-            ),
-            const SizedBox(width: 8),
             _StatusPill(
               icon: Icons.star_rounded,
               value: '${progression.totalXp} XP',
