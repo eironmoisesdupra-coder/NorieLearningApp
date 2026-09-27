@@ -209,6 +209,15 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     _ActivityCard(
+                      icon: Icons.psychology_alt_rounded,
+                      title: 'Topic mastery',
+                      value:
+                          '${progression.masteredTopicCount}/${progression.topicMastery.length}',
+                      subtitle:
+                          '${progression.weakTopics.length} weak topics detected',
+                    ),
+                    const SizedBox(height: 10),
+                    _ActivityCard(
                       icon: Icons.explore_rounded,
                       title: 'Subjects explored',
                       value: '${progression.exploredSubjects.length}',
