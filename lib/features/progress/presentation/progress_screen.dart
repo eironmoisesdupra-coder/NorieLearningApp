@@ -6,24 +6,36 @@ import '../../../core/theme/norie_theme.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 
 class ProgressScreen extends StatelessWidget {
-  const ProgressScreen({super.key});
+  const ProgressScreen({
+    super.key,
+    this.embedded = false,
+    this.onTabSelected,
+  });
+
+  final bool embedded;
+  final ValueChanged<int>? onTabSelected;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const NorieDrawer(selectedSection: NorieDrawerSection.progress),
-      drawerEdgeDragWidth: 48,
-      appBar: AppBar(
-        title: const Text('Progress'),
-        backgroundColor: Colors.transparent,
-        leading: Builder(
-          builder: (drawerContext) => IconButton(
-            onPressed: () => Scaffold.of(drawerContext).openDrawer(),
-            tooltip: 'Open menu',
-            icon: const Icon(Icons.menu_rounded),
-          ),
-        ),
+      drawer: NorieDrawer(
+        selectedSection: NorieDrawerSection.progress,
+        onTabSelected: onTabSelected,
       ),
+      drawerEdgeDragWidth: 48,
+      appBar: embedded
+          ? null
+          : AppBar(
+              title: const Text('Progress'),
+              backgroundColor: Colors.transparent,
+              leading: Builder(
+                builder: (drawerContext) => IconButton(
+                  onPressed: () => Scaffold.of(drawerContext).openDrawer(),
+                  tooltip: 'Open menu',
+                  icon: const Icon(Icons.menu_rounded),
+                ),
+              ),
+            ),
       body: SafeArea(
         top: false,
         child: AnimatedBuilder(
@@ -37,6 +49,34 @@ class ProgressScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
                   children: [
+                    if (embedded)
+                      Builder(
+                        builder: (drawerContext) => Row(
+                          children: [
+                            IconButton(
+                              onPressed: () =>
+                                  Scaffold.of(drawerContext).openDrawer(),
+                              tooltip: 'Open menu',
+                              style: IconButton.styleFrom(
+                                backgroundColor: NorieColors.surface,
+                                side: const BorderSide(
+                                  color: NorieColors.border,
+                                ),
+                              ),
+                              icon: const Icon(Icons.menu_rounded),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'Progress',
+                              style: TextStyle(
+                                fontSize: 21,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (embedded) const SizedBox(height: 22),
                     _CurrentRankCard(snapshot: snapshot),
                     const SizedBox(height: 26),
                     const Text(
@@ -93,7 +133,7 @@ class ProgressScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '4 collected',
+                          '${NorieProgression.instance.unlockedAchievementCount} / 4 unlocked',
                           style: TextStyle(
                             color: NorieColors.cyan.withValues(alpha: .9),
                             fontSize: 11,
@@ -111,7 +151,9 @@ class ProgressScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const _AchievementsGrid(),
+                    _AchievementsGrid(
+                      achievements: NorieProgression.instance.achievements,
+                    ),
                   ],
                 ),
               ),
@@ -294,7 +336,7 @@ class _RankRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    achievement.title,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
@@ -340,39 +382,30 @@ class _RankRow extends StatelessWidget {
 }
 
 class _AchievementsGrid extends StatelessWidget {
-  const _AchievementsGrid();
+  const _AchievementsGrid({required this.achievements});
 
-  static const _items = [
-    (
-      '7-Day Streak',
-      NorieAssets.achievementStreak,
-      'Keep your study streak alive for seven days.',
-    ),
-    (
-      'Lesson Master',
-      NorieAssets.achievementLessonMaster,
-      'Complete a lesson and its learning checks.',
-    ),
-    (
-      'Subject Explorer',
-      NorieAssets.achievementSubjectExplorer,
-      'Explore your first subject learning path.',
-    ),
-    (
-      'Consistent Learner',
-      NorieAssets.achievementConsistentLearner,
-      'Keep returning and building steady progress.',
-    ),
-  ];
+  final List<NorieAchievement> achievements;
+
+  static String _assetFor(NorieAchievementId id) {
+    return switch (id) {
+      NorieAchievementId.sevenDayStreak => NorieAssets.achievementStreak,
+      NorieAchievementId.lessonMaster => NorieAssets.achievementLessonMaster,
+      NorieAchievementId.subjectExplorer =>
+        NorieAssets.achievementSubjectExplorer,
+      NorieAchievementId.consistentLearner =>
+        NorieAssets.achievementConsistentLearner,
+    };
+  }
 
   @override
+  Widget build  @override
   Widget build(BuildContext context) {
     final columns = MediaQuery.sizeOf(context).width >= 650 ? 4 : 2;
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _items.length,
+      itemCount: achievements.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: columns,
         crossAxisSpacing: 12,
@@ -380,11 +413,10 @@ class _AchievementsGrid extends StatelessWidget {
         childAspectRatio: .83,
       ),
       itemBuilder: (context, index) {
-        final item = _items[index];
+        final achievement = achievements[index];
         return _AchievementCard(
-          title: item.$1,
-          asset: item.$2,
-          subtitle: item.$3,
+          achievement: achievement,
+          asset: _assetFor(achievement.id),
         );
       },
     );
@@ -393,14 +425,12 @@ class _AchievementsGrid extends StatelessWidget {
 
 class _AchievementCard extends StatelessWidget {
   const _AchievementCard({
-    required this.title,
+    required this.achievement,
     required this.asset,
-    required this.subtitle,
   });
 
-  final String title;
+  final NorieAchievement achievement;
   final String asset;
-  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -423,9 +453,23 @@ class _AchievementCard extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: Image.asset(
-              asset,
-              fit: BoxFit.contain,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Opacity(
+                  opacity: achievement.unlocked ? 1 : .28,
+                  child: Image.asset(
+                    asset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                if (!achievement.unlocked)
+                  const Icon(
+                    Icons.lock_rounded,
+                    color: Colors.white70,
+                    size: 28,
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 7),
@@ -439,7 +483,9 @@ class _AchievementCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            subtitle,
+            achievement.unlocked
+                ? 'Unlocked'
+                : achievement.progressLabel,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
