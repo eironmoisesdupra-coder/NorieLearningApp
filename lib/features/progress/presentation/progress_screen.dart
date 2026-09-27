@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../navigation/presentation/norie_drawer.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
@@ -10,9 +11,18 @@ class ProgressScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const NorieDrawer(selectedSection: NorieDrawerSection.progress),
+      drawerEdgeDragWidth: 48,
       appBar: AppBar(
         title: const Text('Progress'),
         backgroundColor: Colors.transparent,
+        leading: Builder(
+          builder: (drawerContext) => IconButton(
+            onPressed: () => Scaffold.of(drawerContext).openDrawer(),
+            tooltip: 'Open menu',
+            icon: const Icon(Icons.menu_rounded),
+          ),
+        ),
       ),
       body: SafeArea(
         top: false,
