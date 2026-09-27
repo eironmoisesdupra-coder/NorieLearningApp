@@ -6,7 +6,7 @@ import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
-import '../../home/presentation/home_screen.dart';
+import '../../navigation/presentation/main_shell.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -42,12 +42,16 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _openWelcome() {
     if (!mounted) return;
+    final destination = NorieProgression.instance.onboardingComplete
+        ? const MainShell()
+        : const WelcomeScreen();
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 450),
         pageBuilder: (_, animation, __) => FadeTransition(
           opacity: animation,
-          child: const WelcomeScreen(),
+          child: destination,
         ),
       ),
     );
@@ -637,8 +641,12 @@ class _ReadyScreenState extends State<ReadyScreen>
             label: 'Start Learning',
             icon: Icons.play_arrow_rounded,
             onPressed: () {
-              NorieProgression.instance.addXp(50);
-              _replaceAll(context, const HomeScreen());
+              final progression = NorieProgression.instance;
+              if (!progression.onboardingComplete) {
+                progression.addXp(50);
+                progression.markOnboardingComplete();
+              }
+              _replaceAll(context, const MainShell());
             },
           ),
         ],
