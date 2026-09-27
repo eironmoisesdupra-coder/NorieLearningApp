@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 
-class LearningResultsScreen extends StatelessWidget {
+class LearningResultsScreen extends StatefulWidget {
   const LearningResultsScreen({
     required this.quizScore,
     required this.challengeScore,
@@ -13,12 +14,30 @@ class LearningResultsScreen extends StatelessWidget {
   final int challengeScore;
 
   @override
+  State<LearningResultsScreen> createState() => _LearningResultsScreenState();
+}
+
+class _LearningResultsScreenState extends State<LearningResultsScreen> {
+  late final int _quizXp;
+  late final int _challengeXp;
+  late final int _completionXp;
+  late final int _totalXp;
+  late final NorieXpAward _award;
+
+  @override
+  void initState() {
+    super.initState();
+    _quizXp = widget.quizScore * 20;
+    _challengeXp = widget.challengeScore * 25;
+    _completionXp = 50;
+    _totalXp = _quizXp + _challengeXp + _completionXp;
+    _award = NorieProgression.instance.addXp(_totalXp);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final quizXp = quizScore * 20;
-    final challengeXp = challengeScore * 25;
-    final completionXp = 50;
-    final totalXp = quizXp + challengeXp + completionXp;
-    final percent = quizScore / 5;
+    final percent = widget.quizScore / 5;
+    final after = _award.after;
 
     return Scaffold(
       body: SafeArea(
@@ -56,23 +75,59 @@ class LearningResultsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Lesson complete!',
+                Text(
+                  _award.leveledUp ? 'Level up!' : 'Lesson complete!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 31,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 7),
-                const Text(
-                  'Atomic Structure · Chemistry',
+                Text(
+                  _award.leveledUp
+                      ? 'Level ${_award.before.level} → Level ${after.level} · ${after.title}'
+                      : 'Atomic Structure · Chemistry',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: NorieColors.textSecondary,
                     fontSize: 15,
                   ),
                 ),
+                if (_award.rankChanged) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: NorieColors.violet.withValues(alpha: .14),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: NorieColors.violet.withValues(alpha: .65),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 18,
+                          color: NorieColors.violet,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'New rank unlocked: ${after.title}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: NorieColors.violet,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 28),
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -85,14 +140,14 @@ class LearningResultsScreen extends StatelessWidget {
                     children: [
                       _ResultRow(
                         label: 'Quiz',
-                        value: '$quizScore / 5 correct',
+                        value: '${widget.quizScore} / 5 correct',
                         icon: Icons.quiz_rounded,
                         color: NorieColors.cyan,
                       ),
                       const Divider(height: 28),
                       _ResultRow(
                         label: 'Atom challenge',
-                        value: '$challengeScore / 3 correct',
+                        value: '${widget.challengeScore} / 3 correct',
                         icon: Icons.hub_outlined,
                         color: NorieColors.violet,
                       ),
@@ -134,7 +189,7 @@ class LearningResultsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '+$totalXp XP',
+                        '+$_totalXp XP',
                         style: const TextStyle(
                           fontSize: 34,
                           color: NorieColors.orange,
@@ -143,12 +198,43 @@ class LearningResultsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Quiz +$quizXp  ·  Challenge +$challengeXp  ·  Completion +$completionXp',
+                        'Quiz +$_quizXp  ·  Challenge +$_challengeXp  ·  Completion +$_completionXp',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: NorieColors.textSecondary,
                           fontSize: 11,
                         ),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Level ${after.level} · ${after.title}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            after.isMaxLevel
+                                ? 'MAX LEVEL'
+                                : '${after.xpIntoLevel} / ${after.xpRequiredForNextLevel} XP',
+                            style: const TextStyle(
+                              color: NorieColors.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 9),
+                      LinearProgressIndicator(
+                        value: after.progress,
+                        minHeight: 8,
+                        borderRadius: BorderRadius.circular(99),
+                        color: NorieColors.cyan,
+                        backgroundColor: NorieColors.surfaceElevated,
                       ),
                     ],
                   ),
