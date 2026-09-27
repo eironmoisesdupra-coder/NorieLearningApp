@@ -264,7 +264,11 @@ class _TopicCard extends StatelessWidget {
     final accuracy = (mastery.accuracy * 100).round();
     final masteryPercent = (mastery.score * 100).round();
     final availableQuestions = NorieChallengeBank.questions
-        .where((question) => question.topic == mastery.topic)
+        .where(
+          (question) =>
+              question.topic == mastery.topic &&
+              question.category == mastery.category,
+        )
         .length;
 
     return Container(
@@ -465,7 +469,11 @@ class _TopicReviewScreenState extends State<TopicReviewScreen> {
   void initState() {
     super.initState();
     _questions = NorieChallengeBank.questions
-        .where((question) => question.topic == widget.topic)
+        .where(
+          (question) =>
+              question.topic == widget.topic &&
+              question.category == widget.category,
+        )
         .toList(growable: false);
   }
 
