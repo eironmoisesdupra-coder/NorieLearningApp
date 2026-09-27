@@ -11,6 +11,9 @@ abstract final class NorieSupabase {
     defaultValue: 'sb_publishable_OiH83RLCfyWZ1uzjRw240Q_dY9FwV-W',
   );
 
+  static const appUrl =
+      'https://eironmoisesdupra-coder.github.io/NorieLearningApp/';
+
   static bool _initialized = false;
 
   static bool get isConfigured => url.isNotEmpty && publishableKey.isNotEmpty;
