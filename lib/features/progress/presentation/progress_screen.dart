@@ -4,6 +4,7 @@ import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../navigation/presentation/norie_drawer.dart';
+import 'weak_topics_screen.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({
@@ -119,6 +120,10 @@ class ProgressScreen extends StatelessWidget {
                       level: 50,
                       title: 'Master',
                       asset: NorieAssets.rankMaster,
+                    ),
+                    const SizedBox(height: 26),
+                    _MasterySummaryCard(
+                      progression: NorieProgression.instance,
                     ),
                     const SizedBox(height: 26),
                     Row(
@@ -492,6 +497,154 @@ class _AchievementCard extends StatelessWidget {
               fontSize: 9,
               height: 1.25,
               color: NorieColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _MasterySummaryCard extends StatelessWidget {
+  const _MasterySummaryCard({required this.progression});
+
+  final NorieProgression progression;
+
+  @override
+  Widget build(BuildContext context) {
+    final tracked = progression.topicMastery.length;
+    final weak = progression.weakTopics.length;
+    final mastered = progression.masteredTopicCount;
+
+    return Container(
+      padding: const EdgeInsets.all(19),
+      decoration: BoxDecoration(
+        color: NorieColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: NorieColors.violet.withValues(alpha: .42),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.psychology_alt_rounded,
+                color: NorieColors.violet,
+              ),
+              SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'Knowledge Mastery',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'Accuracy plus repeated evidence determines mastery. Weak topics are detected automatically.',
+            style: TextStyle(
+              color: NorieColors.textSecondary,
+              fontSize: 10,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _MasteryMiniStat(
+                  label: 'Tracked',
+                  value: '$tracked',
+                  color: NorieColors.cyan,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MasteryMiniStat(
+                  label: 'Mastered',
+                  value: '$mastered',
+                  color: NorieColors.green,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MasteryMiniStat(
+                  label: 'Weak',
+                  value: '$weak',
+                  color: NorieColors.magenta,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const WeakTopicsScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(
+                weak > 0 ? 'Review Weak Topics' : 'View Mastery',
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: NorieColors.violet,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MasteryMiniStat extends StatelessWidget {
+  const _MasteryMiniStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: NorieColors.textSecondary,
+              fontSize: 9,
             ),
           ),
         ],
