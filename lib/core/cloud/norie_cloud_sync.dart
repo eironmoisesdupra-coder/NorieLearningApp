@@ -44,6 +44,7 @@ class NorieCloudSync extends ChangeNotifier {
     final progression = NorieProgression.instance;
 
     account.addListener(_handleAccountChange);
+    NorieDemoAccessService.instance.addListener(_handleAccessChange);
     progression.addListener(_handleProgressionChange);
 
     if (!NorieSupabase.isInitialized) {
@@ -74,6 +75,21 @@ class NorieCloudSync extends ChangeNotifier {
     }
 
     unawaited(syncNow());
+  }
+
+  void _handleAccessChange() {
+    if (!NorieDemoAccessService.instance.isAllowed) {
+      _debounce?.cancel();
+      _setStatus(NorieAccountService.instance.isSignedIn
+          ? NorieCloudSyncStatus.signedOut
+          : NorieCloudSyncStatus.signedOut);
+      return;
+    }
+
+    if (NorieAccountService.instance.isSignedIn &&
+        NorieSupabase.isInitialized) {
+      unawaited(syncNow());
+    }
   }
 
   void _handleProgressionChange() {
