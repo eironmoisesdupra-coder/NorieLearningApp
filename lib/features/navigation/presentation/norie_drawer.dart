@@ -123,12 +123,10 @@ class NorieDrawer extends StatelessWidget {
                   icon: Icons.emoji_events_rounded,
                   label: 'Weekly Goals',
                   color: NorieColors.cyan,
-                  onTap: () => _openUpcoming(
+                  onTap: () => _switchTab(
                     context,
-                    title: 'Weekly Goals',
-                    subtitle:
-                        'Weekly XP, lesson, and mastery goals will be tracked here.',
-                    icon: Icons.emoji_events_rounded,
+                    2,
+                    const ChallengeScreen(),
                   ),
                 ),
                 const SizedBox(height: 18),
