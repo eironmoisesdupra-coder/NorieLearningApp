@@ -6,6 +6,7 @@ import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
+import '../../account/presentation/account_screen.dart';
 import '../../navigation/presentation/main_shell.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -208,8 +209,11 @@ class WelcomeScreen extends StatelessWidget {
           const SizedBox(height: 10),
           TextButton(
             onPressed: () {
-              NorieProgression.instance.markOnboardingComplete();
-              _replaceAll(context, const MainShell());
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AccountScreen(),
+                ),
+              );
             },
             child: const Text('I already have an account'),
           ),
