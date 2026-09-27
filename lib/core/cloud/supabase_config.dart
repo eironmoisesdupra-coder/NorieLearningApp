@@ -1,8 +1,15 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract final class NorieSupabase {
-  static const url = String.fromEnvironment('SUPABASE_URL');
-  static const publishableKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const url = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://lafuuwoohizgwnrbbgqj.supabase.co',
+  );
+
+  static const publishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: 'sb_publishable_OiH83RLCfyWZ1uzjRw240Q_dY9FwV-W',
+  );
 
   static bool _initialized = false;
 
