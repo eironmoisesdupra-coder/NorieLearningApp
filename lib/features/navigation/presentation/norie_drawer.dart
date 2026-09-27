@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/account/norie_account_service.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
+import '../../account/presentation/account_screen.dart';
 import '../../challenge/presentation/challenge_screen.dart';
 import '../../common/presentation/coming_soon_screen.dart';
 import '../../learning/presentation/atomic_structure_lesson_screen.dart';
@@ -143,6 +145,17 @@ class NorieDrawer extends StatelessWidget {
                 _QuickActions(onTabSelected: onTabSelected),
                 const SizedBox(height: 18),
                 const _SectionLabel('ACCOUNT'),
+                _MenuItem(
+                  icon: Icons.cloud_sync_rounded,
+                  label: NorieAccountService.instance.isSignedIn
+                      ? 'Cloud Account'
+                      : 'Sign In / Cloud Sync',
+                  color: NorieColors.violet,
+                  onTap: () => _open(
+                    context,
+                    const AccountScreen(),
+                  ),
+                ),
                 _MenuItem(
                   icon: Icons.person_rounded,
                   label: 'Profile',
@@ -302,8 +315,11 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      'Guest learner',
-                      style: TextStyle(
+                      NorieAccountService.instance.isSignedIn
+                          ? (NorieAccountService.instance.displayName ??
+                              'Cloud learner')
+                          : 'Local learner',
+                      style: const TextStyle(
                         fontSize: 11,
                         color: NorieColors.textSecondary,
                       ),
