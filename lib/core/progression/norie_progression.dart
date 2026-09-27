@@ -511,17 +511,28 @@ class NorieProgression extends ChangeNotifier {
   void recordLessonCompletion({
     required int quizScore,
     required int challengeScore,
+    String category = 'Science',
+    String topic = 'Atomic Structure',
+    int quizAttempts = 5,
+    int challengeAttempts = 3,
   }) {
+    final safeQuizAttempts = quizAttempts < 0 ? 0 : quizAttempts;
+    final safeChallengeAttempts =
+        challengeAttempts < 0 ? 0 : challengeAttempts;
+    final totalAttempts = safeQuizAttempts + safeChallengeAttempts;
+    final totalCorrect =
+        (quizScore + challengeScore).clamp(0, totalAttempts).toInt();
+
     _completedLessons++;
     _studySessions++;
-    _correctAnswers += quizScore + challengeScore;
-    _questionsAnswered += 8;
+    _correctAnswers += totalCorrect;
+    _questionsAnswered += totalAttempts;
     _recordStudyDay(DateTime.now());
     _recordTopicBatch(
-      category: 'Science',
-      topic: 'Atomic Structure',
-      correctAnswers: quizScore + challengeScore,
-      totalAttempts: 8,
+      category: category,
+      topic: topic,
+      correctAnswers: totalCorrect,
+      totalAttempts: totalAttempts,
     );
     _changed();
   }
