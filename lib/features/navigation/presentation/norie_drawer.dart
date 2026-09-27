@@ -298,22 +298,22 @@ class _ProfileHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              NorieLogoMark(size: 48, showGlow: false),
-              SizedBox(width: 11),
+              const NorieLogoMark(size: 48, showGlow: false),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Norie Learning',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       NorieAccountService.instance.isSignedIn
                           ? (NorieAccountService.instance.displayName ??
@@ -327,7 +327,7 @@ class _ProfileHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.auto_awesome_rounded,
                 color: NorieColors.cyan,
               ),
