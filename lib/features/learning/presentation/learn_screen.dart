@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/assets/norie_assets.dart';
+import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../common/presentation/coming_soon_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
@@ -8,7 +9,14 @@ import '../../progress/presentation/progress_screen.dart';
 import 'science_screen.dart';
 
 class LearnScreen extends StatefulWidget {
-  const LearnScreen({super.key});
+  const LearnScreen({
+    super.key,
+    this.embedded = false,
+    this.onTabSelected,
+  });
+
+  final bool embedded;
+  final ValueChanged<int>? onTabSelected;
 
   @override
   State<LearnScreen> createState() => _LearnScreenState();
@@ -29,7 +37,10 @@ class _LearnScreenState extends State<LearnScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const NorieDrawer(selectedSection: NorieDrawerSection.learn),
+      drawer: NorieDrawer(
+        selectedSection: NorieDrawerSection.learn,
+        onTabSelected: widget.onTabSelected,
+      ),
       drawerEdgeDragWidth: 48,
       body: SafeArea(
         child: Center(
@@ -68,12 +79,16 @@ class _LearnScreenState extends State<LearnScreen> {
                   icon: Icons.calculate_rounded,
                   color: NorieColors.primary,
                   progress: .68,
-                  onTap: () => _openUpcoming(
-                    context,
-                    'Mathematics',
+                  onTap: () {
+                    NorieProgression.instance
+                        .recordSubjectExplored('Mathematics');
+                    _openUpcoming(
+                      context,
+                      'Mathematics',
                     'The Mathematics learning path is the next major subject expansion.',
-                    Icons.calculate_rounded,
-                  ),
+                      Icons.calculate_rounded,
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 _SubjectTile(
@@ -83,6 +98,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   color: NorieColors.green,
                   progress: .72,
                   onTap: () {
+                    NorieProgression.instance.recordSubjectExplored('Science');
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const ScienceScreen(),
@@ -97,12 +113,15 @@ class _LearnScreenState extends State<LearnScreen> {
                   icon: Icons.menu_book_rounded,
                   color: NorieColors.orange,
                   progress: .45,
-                  onTap: () => _openUpcoming(
-                    context,
-                    'English',
+                  onTap: () {
+                    NorieProgression.instance.recordSubjectExplored('English');
+                    _openUpcoming(
+                      context,
+                      'English',
                     'The English proficiency path will include grammar, vocabulary, reading, and communication practice.',
-                    Icons.menu_book_rounded,
-                  ),
+                      Icons.menu_book_rounded,
+                    );
+                  },
                 ),
                 const SizedBox(height: 28),
                 _AiQaPreview(
@@ -123,7 +142,9 @@ class _LearnScreenState extends State<LearnScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const _LearnBottomNavigation(),
+      bottomNavigationBar: widget.embedded
+          ? null
+          : _LearnBottomNavigation(onTabSelected: widget.onTabSelected),
     );
   }
 
@@ -595,13 +616,19 @@ class _SourceOption extends StatelessWidget {
 }
 
 class _LearnBottomNavigation extends StatelessWidget {
-  const _LearnBottomNavigation();
+  const _LearnBottomNavigation({this.onTabSelected});
+
+  final ValueChanged<int>? onTabSelected;
 
   @override
   Widget build(BuildContext context) {
     return NavigationBar(
       selectedIndex: 1,
       onDestinationSelected: (index) {
+        if (onTabSelected != null) {
+          onTabSelected!(index);
+          return;
+        }
         if (index == 1) return;
         if (index == 3) {
           Navigator.of(context).pushReplacement(
