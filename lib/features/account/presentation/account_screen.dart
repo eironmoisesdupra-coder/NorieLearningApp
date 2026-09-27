@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../../core/account/norie_account_service.dart';
 import '../../../core/cloud/norie_cloud_sync.dart';
+import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../navigation/presentation/main_shell.dart';
 
 class AccountScreen extends StatefulWidget {
-  const AccountScreen({super.key});
+  const AccountScreen({
+    super.key,
+    this.enterAppAfterAuth = false,
+  });
+
+  final bool enterAppAfterAuth;
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -72,13 +79,24 @@ class _AccountScreenState extends State<AccountScreen> {
 
     if (account.isSignedIn) {
       await NorieCloudSync.instance.syncNow();
-      if (mounted) {
-        _show(
-          _createAccount
-              ? 'Account connected. Your Norie progress can now sync.'
-              : 'Signed in. Cloud progress has been synchronized.',
+      if (!mounted) return;
+
+      if (widget.enterAppAfterAuth) {
+        NorieProgression.instance.markOnboardingComplete();
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute<void>(
+            builder: (_) => const MainShell(),
+          ),
+          (_) => false,
         );
+        return;
       }
+
+      _show(
+        _createAccount
+            ? 'Account connected. Your Norie progress can now sync.'
+            : 'Signed in. Cloud progress has been synchronized.',
+      );
       return;
     }
 
