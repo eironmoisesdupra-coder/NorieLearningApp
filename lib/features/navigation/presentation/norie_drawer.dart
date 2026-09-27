@@ -3,21 +3,25 @@ import 'package:flutter/material.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
+import '../../challenge/presentation/challenge_screen.dart';
 import '../../common/presentation/coming_soon_screen.dart';
 import '../../learning/presentation/atomic_structure_lesson_screen.dart';
 import '../../learning/presentation/chemistry_screen.dart';
 import '../../learning/presentation/learn_screen.dart';
+import '../../profile/presentation/profile_screen.dart';
 import '../../progress/presentation/progress_screen.dart';
 
-enum NorieDrawerSection { home, learn, progress }
+enum NorieDrawerSection { home, learn, challenge, progress, profile }
 
 class NorieDrawer extends StatelessWidget {
   const NorieDrawer({
     super.key,
     this.selectedSection = NorieDrawerSection.home,
+    this.onTabSelected,
   });
 
   final NorieDrawerSection selectedSection;
+  final ValueChanged<int>? onTabSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -49,14 +53,14 @@ class NorieDrawer extends StatelessWidget {
                   label: 'Home',
                   color: NorieColors.cyan,
                   selected: selectedSection == NorieDrawerSection.home,
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: () => _switchTab(context, 0),
                 ),
                 _MenuItem(
                   icon: Icons.menu_book_rounded,
                   label: 'Learn',
                   color: NorieColors.primary,
                   selected: selectedSection == NorieDrawerSection.learn,
-                  onTap: () => _open(context, const LearnScreen()),
+                  onTap: () => _switchTab(context, 1, const LearnScreen()),
                 ),
                 _MenuItem(
                   icon: Icons.route_rounded,
@@ -80,7 +84,7 @@ class NorieDrawer extends StatelessWidget {
                   label: 'XP & Levels',
                   color: NorieColors.violet,
                   selected: selectedSection == NorieDrawerSection.progress,
-                  onTap: () => _open(context, const ProgressScreen()),
+                  onTap: () => _switchTab(context, 3, const ProgressScreen()),
                 ),
                 _MenuItem(
                   icon: Icons.workspace_premium_rounded,
@@ -107,12 +111,11 @@ class NorieDrawer extends StatelessWidget {
                   icon: Icons.track_changes_rounded,
                   label: 'Daily Challenge',
                   color: NorieColors.magenta,
-                  onTap: () => _openUpcoming(
+                  selected: selectedSection == NorieDrawerSection.challenge,
+                  onTap: () => _switchTab(
                     context,
-                    title: 'Daily Challenge',
-                    subtitle:
-                        'Daily mixed-subject challenges with XP bonuses are coming next.',
-                    icon: Icons.track_changes_rounded,
+                    2,
+                    const ChallengeScreen(),
                   ),
                 ),
                 _MenuItem(
@@ -135,12 +138,11 @@ class NorieDrawer extends StatelessWidget {
                   icon: Icons.person_rounded,
                   label: 'Profile',
                   color: NorieColors.cyan,
-                  onTap: () => _openUpcoming(
+                  selected: selectedSection == NorieDrawerSection.profile,
+                  onTap: () => _switchTab(
                     context,
-                    title: 'Profile',
-                    subtitle:
-                        'Your learner profile, selected subjects, and personal learning preferences will live here.',
-                    icon: Icons.person_rounded,
+                    4,
+                    const ProfileScreen(),
                   ),
                 ),
                 _MenuItem(
@@ -203,6 +205,24 @@ class NorieDrawer extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _switchTab(
+    BuildContext context,
+    int index, [
+    Widget? fallback,
+  ]) {
+    Navigator.of(context).pop();
+    if (onTabSelected != null) {
+      onTabSelected!(index);
+      return;
+    }
+
+    if (fallback != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => fallback),
+      );
+    }
   }
 
   static void _open(BuildContext context, Widget screen) {
