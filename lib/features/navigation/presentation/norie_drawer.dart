@@ -9,8 +9,15 @@ import '../../learning/presentation/chemistry_screen.dart';
 import '../../learning/presentation/learn_screen.dart';
 import '../../progress/presentation/progress_screen.dart';
 
+enum NorieDrawerSection { home, learn, progress }
+
 class NorieDrawer extends StatelessWidget {
-  const NorieDrawer({super.key});
+  const NorieDrawer({
+    super.key,
+    this.selectedSection = NorieDrawerSection.home,
+  });
+
+  final NorieDrawerSection selectedSection;
 
   @override
   Widget build(BuildContext context) {
@@ -41,13 +48,14 @@ class NorieDrawer extends StatelessWidget {
                   icon: Icons.home_rounded,
                   label: 'Home',
                   color: NorieColors.cyan,
-                  selected: true,
+                  selected: selectedSection == NorieDrawerSection.home,
                   onTap: () => Navigator.of(context).pop(),
                 ),
                 _MenuItem(
                   icon: Icons.menu_book_rounded,
                   label: 'Learn',
                   color: NorieColors.primary,
+                  selected: selectedSection == NorieDrawerSection.learn,
                   onTap: () => _open(context, const LearnScreen()),
                 ),
                 _MenuItem(
@@ -71,6 +79,7 @@ class NorieDrawer extends StatelessWidget {
                   icon: Icons.bar_chart_rounded,
                   label: 'XP & Levels',
                   color: NorieColors.violet,
+                  selected: selectedSection == NorieDrawerSection.progress,
                   onTap: () => _open(context, const ProgressScreen()),
                 ),
                 _MenuItem(
