@@ -23,57 +23,57 @@ drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
 on public.profiles
 for select
-using (auth.uid() = id);
+using ((select auth.uid()) = id);
 
 drop policy if exists "profiles_insert_own" on public.profiles;
 create policy "profiles_insert_own"
 on public.profiles
 for insert
-with check (auth.uid() = id);
+with check ((select auth.uid()) = id);
 
 drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own"
 on public.profiles
 for update
-using (auth.uid() = id)
-with check (auth.uid() = id);
+using ((select auth.uid()) = id)
+with check ((select auth.uid()) = id);
 
 drop policy if exists "profiles_delete_own" on public.profiles;
 create policy "profiles_delete_own"
 on public.profiles
 for delete
-using (auth.uid() = id);
+using ((select auth.uid()) = id);
 
 drop policy if exists "learner_state_select_own" on public.learner_state;
 create policy "learner_state_select_own"
 on public.learner_state
 for select
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "learner_state_insert_own" on public.learner_state;
 create policy "learner_state_insert_own"
 on public.learner_state
 for insert
-with check (auth.uid() = user_id);
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "learner_state_update_own" on public.learner_state;
 create policy "learner_state_update_own"
 on public.learner_state
 for update
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "learner_state_delete_own" on public.learner_state;
 create policy "learner_state_delete_own"
 on public.learner_state
 for delete
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 create or replace function public.handle_new_norie_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   insert into public.profiles (id, display_name)
@@ -85,7 +85,11 @@ begin
 
   return new;
 end;
-$$;
+$;
+
+revoke execute on function public.handle_new_norie_user() from public;
+revoke execute on function public.handle_new_norie_user() from anon;
+revoke execute on function public.handle_new_norie_user() from authenticated;
 
 drop trigger if exists on_auth_user_created_norie on auth.users;
 create trigger on_auth_user_created_norie
@@ -95,7 +99,8 @@ for each row execute procedure public.handle_new_norie_user();
 create or replace function public.set_norie_updated_at()
 returns trigger
 language plpgsql
-as $$
+set search_path = ''
+as $
 begin
   new.updated_at = now();
   return new;
