@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../account/norie_account_service.dart';
+import '../account/norie_demo_access_service.dart';
 import '../progression/norie_progression.dart';
 import 'supabase_config.dart';
 
@@ -50,7 +51,8 @@ class NorieCloudSync extends ChangeNotifier {
       return;
     }
 
-    if (!account.isSignedIn) {
+    if (!account.isSignedIn ||
+        !NorieDemoAccessService.instance.isAllowed) {
       _setStatus(NorieCloudSyncStatus.signedOut);
       return;
     }
@@ -64,7 +66,8 @@ class NorieCloudSync extends ChangeNotifier {
       return;
     }
 
-    if (!NorieAccountService.instance.isSignedIn) {
+    if (!NorieAccountService.instance.isSignedIn ||
+        !NorieDemoAccessService.instance.isAllowed) {
       _debounce?.cancel();
       _setStatus(NorieCloudSyncStatus.signedOut);
       return;
@@ -76,6 +79,7 @@ class NorieCloudSync extends ChangeNotifier {
   void _handleProgressionChange() {
     if (_applyingRemote ||
         !NorieAccountService.instance.isSignedIn ||
+        !NorieDemoAccessService.instance.isAllowed ||
         !NorieSupabase.isInitialized) {
       return;
     }
@@ -92,6 +96,10 @@ class NorieCloudSync extends ChangeNotifier {
 
     final client = NorieSupabase.client;
     final user = NorieAccountService.instance.user;
+    if (!NorieDemoAccessService.instance.isAllowed) {
+      _setStatus(NorieCloudSyncStatus.signedOut);
+      return;
+    }
     if (client == null) {
       _setStatus(NorieCloudSyncStatus.localOnly);
       return;
@@ -169,6 +177,7 @@ class NorieCloudSync extends ChangeNotifier {
 
   Future<void> uploadLocal() async {
     if (_syncInProgress) return;
+    if (!NorieDemoAccessService.instance.isAllowed) return;
 
     final client = NorieSupabase.client;
     final user = NorieAccountService.instance.user;
