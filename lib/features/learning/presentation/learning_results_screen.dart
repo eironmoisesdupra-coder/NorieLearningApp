@@ -23,6 +23,7 @@ class _LearningResultsScreenState extends State<LearningResultsScreen> {
   late final int _completionXp;
   late final int _totalXp;
   late final NorieXpAward _award;
+  late final List<NorieAchievement> _newAchievements;
 
   @override
   void initState() {
@@ -31,7 +32,26 @@ class _LearningResultsScreenState extends State<LearningResultsScreen> {
     _challengeXp = widget.challengeScore * 25;
     _completionXp = 50;
     _totalXp = _quizXp + _challengeXp + _completionXp;
-    _award = NorieProgression.instance.addXp(_totalXp);
+
+    final progression = NorieProgression.instance;
+    final unlockedBefore = progression.achievements
+        .where((achievement) => achievement.unlocked)
+        .map((achievement) => achievement.id)
+        .toSet();
+
+    progression.recordLessonCompletion(
+      quizScore: widget.quizScore,
+      challengeScore: widget.challengeScore,
+    );
+    _award = progression.addXp(_totalXp);
+
+    _newAchievements = progression.achievements
+        .where(
+          (achievement) =>
+              achievement.unlocked &&
+              !unlockedBefore.contains(achievement.id),
+        )
+        .toList();
   }
 
   @override
@@ -94,6 +114,39 @@ class _LearningResultsScreenState extends State<LearningResultsScreen> {
                     fontSize: 15,
                   ),
                 ),
+                if (_newAchievements.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: NorieColors.green.withValues(alpha: .10),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: NorieColors.green.withValues(alpha: .55),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.emoji_events_rounded,
+                          color: NorieColors.green,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _newAchievements.length == 1
+                                ? 'Achievement unlocked: ${_newAchievements.first.title}'
+                                : '${_newAchievements.length} achievements unlocked!',
+                            style: const TextStyle(
+                              color: NorieColors.green,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (_award.rankChanged) ...[
                   const SizedBox(height: 14),
                   Container(
