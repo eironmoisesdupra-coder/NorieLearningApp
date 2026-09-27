@@ -5,12 +5,7 @@ import '../../../core/cloud/norie_cloud_sync.dart';
 import '../../../core/theme/norie_theme.dart';
 
 class AccountScreen extends StatefulWidget {
-  const AccountScreen({
-    super.key,
-    this.enterAppAfterAuth = false,
-  });
-
-  final bool enterAppAfterAuth;
+  const AccountScreen({super.key});
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -327,6 +322,15 @@ class _AccountScreenState extends State<AccountScreen> {
                               ),
                             ),
                           ),
+                          if (account.emailConfirmationRequired) ...[
+                            const SizedBox(height: 14),
+                            _ConfirmationRequiredCard(
+                              email: account.pendingEmail ??
+                                  _emailController.text.trim(),
+                              submitting: _submitting,
+                              onResend: _resendConfirmation,
+                            ),
+                          ],
                           if (account.emailConfirmationRequired) ...[
                             const SizedBox(height: 14),
                             _ConfirmationRequiredCard(
