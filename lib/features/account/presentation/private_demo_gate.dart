@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/account/norie_account_service.dart';
 import '../../../core/account/norie_demo_access_service.dart';
-import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
 import '../../account/presentation/account_screen.dart';
 import '../../navigation/presentation/main_shell.dart';
-import '../../onboarding/presentation/onboarding_flow.dart';
 
 class PrivateDemoGate extends StatelessWidget {
   const PrivateDemoGate({super.key});
@@ -29,9 +27,7 @@ class PrivateDemoGate extends StatelessWidget {
 
             switch (access.status) {
               case NorieDemoAccessStatus.allowed:
-                return NorieProgression.instance.onboardingComplete
-                    ? const MainShell()
-                    : const WelcomeScreen();
+                return const MainShell();
               case NorieDemoAccessStatus.checking:
                 return const _CheckingAccess();
               case NorieDemoAccessStatus.denied:
