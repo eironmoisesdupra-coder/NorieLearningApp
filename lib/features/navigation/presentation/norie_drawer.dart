@@ -10,6 +10,7 @@ import '../../learning/presentation/chemistry_screen.dart';
 import '../../learning/presentation/learn_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../progress/presentation/progress_screen.dart';
+import '../../progress/presentation/weak_topics_screen.dart';
 
 enum NorieDrawerSection { home, learn, challenge, progress, profile }
 
@@ -85,6 +86,15 @@ class NorieDrawer extends StatelessWidget {
                   color: NorieColors.violet,
                   selected: selectedSection == NorieDrawerSection.progress,
                   onTap: () => _switchTab(context, 3, const ProgressScreen()),
+                ),
+                _MenuItem(
+                  icon: Icons.psychology_alt_rounded,
+                  label: 'Mastery & Weak Topics',
+                  color: NorieColors.cyan,
+                  onTap: () => _open(
+                    context,
+                    const WeakTopicsScreen(),
+                  ),
                 ),
                 _MenuItem(
                   icon: Icons.workspace_premium_rounded,
@@ -585,12 +595,9 @@ class _QuickActions extends StatelessWidget {
             icon: Icons.psychology_alt_rounded,
             label: 'Review Weak Topics',
             color: NorieColors.orange,
-            onTap: () => NorieDrawer._openUpcoming(
+            onTap: () => NorieDrawer._open(
               context,
-              title: 'Review Weak Topics',
-              subtitle:
-                  'Norie will eventually identify weak areas from quiz performance and build a review queue.',
-              icon: Icons.psychology_alt_rounded,
+              const WeakTopicsScreen(),
             ),
           ),
         ],
