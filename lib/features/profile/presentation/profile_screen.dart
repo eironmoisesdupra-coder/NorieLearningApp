@@ -34,10 +34,13 @@ class ProfileScreen extends StatelessWidget {
             ),
       body: SafeArea(
         child: AnimatedBuilder(
-          animation: NorieProgression.instance,
+          animation: NorieAccountService.instance,
           builder: (context, _) {
-            final progression = NorieProgression.instance;
-            final account = NorieAccountService.instance;
+            return AnimatedBuilder(
+              animation: NorieProgression.instance,
+              builder: (context, _) {
+                final progression = NorieProgression.instance;
+                final account = NorieAccountService.instance;
             final snapshot = progression.snapshot;
             final accuracy = (progression.quizAccuracy * 100).round();
 
@@ -266,6 +269,8 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
+                );
+              },
             );
           },
         ),
