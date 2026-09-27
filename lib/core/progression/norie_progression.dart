@@ -68,6 +68,38 @@ class NorieAchievement {
   final String progressLabel;
 }
 
+enum NorieChallengeMode { daily, speed }
+
+class NorieChallengeCompletion {
+  const NorieChallengeCompletion({
+    required this.mode,
+    required this.correct,
+    required this.total,
+    required this.baseXp,
+    required this.bonusXp,
+    required this.dailyRewardAwarded,
+    required this.weeklyRewardAwarded,
+    required this.bestScoreImproved,
+    required this.before,
+    required this.after,
+  });
+
+  final NorieChallengeMode mode;
+  final int correct;
+  final int total;
+  final int baseXp;
+  final int bonusXp;
+  final bool dailyRewardAwarded;
+  final bool weeklyRewardAwarded;
+  final bool bestScoreImproved;
+  final NorieLevelSnapshot before;
+  final NorieLevelSnapshot after;
+
+  int get totalXpAwarded => baseXp + bonusXp;
+  bool get leveledUp => after.level > before.level;
+  bool get rankChanged => after.title != before.title;
+}
+
 abstract final class NorieLevelSystem {
   static const int maxLevel = 50;
   static const int baseXpRequirement = 100;
@@ -140,6 +172,27 @@ abstract final class NorieLevelSystem {
   }
 }
 
+abstract final class NorieChallengeRules {
+  static const int dailyQuestionCount = 5;
+  static const int speedQuestionCount = 10;
+  static const int speedDurationSeconds = 60;
+  static const int weeklyGoalDays = 5;
+  static const int dailyCompletionBonus = 100;
+  static const int weeklyGoalBonus = 250;
+  static const int speedPerfectBonus = 50;
+
+  static int baseXp({
+    required NorieChallengeMode mode,
+    required int correct,
+  }) {
+    final safeCorrect = correct < 0 ? 0 : correct;
+    return switch (mode) {
+      NorieChallengeMode.daily => safeCorrect * 12,
+      NorieChallengeMode.speed => safeCorrect * 10,
+    };
+  }
+}
+
 class NorieProgression extends ChangeNotifier {
   NorieProgression._();
 
@@ -153,14 +206,24 @@ class NorieProgression extends ChangeNotifier {
   static const _subjectsKey = 'norie.exploredSubjects';
   static const _studyDatesKey = 'norie.studyDates';
   static const _onboardingKey = 'norie.onboardingComplete';
+  static const _challengeSessionsKey = 'norie.challengeSessions';
+  static const _dailyChallengeDatesKey = 'norie.dailyChallengeDates';
+  static const _speedRewardDatesKey = 'norie.speedRewardDates';
+  static const _speedBestScoreKey = 'norie.speedBestScore';
+  static const _weeklyRewardedWeeksKey = 'norie.weeklyRewardedWeeks';
 
   int _totalXp = 1250;
   int _completedLessons = 0;
   int _studySessions = 0;
   int _correctAnswers = 0;
   int _questionsAnswered = 0;
+  int _challengeSessions = 0;
+  int _speedBestScore = 0;
   Set<String> _exploredSubjects = <String>{};
   Set<String> _studyDates = <String>{};
+  Set<String> _dailyChallengeDates = <String>{};
+  Set<String> _speedRewardDates = <String>{};
+  Set<String> _weeklyRewardedWeeks = <String>{};
   bool _onboardingComplete = false;
 
   int get totalXp => _totalXp;
@@ -168,6 +231,8 @@ class NorieProgression extends ChangeNotifier {
   int get studySessions => _studySessions;
   int get correctAnswers => _correctAnswers;
   int get questionsAnswered => _questionsAnswered;
+  int get challengeSessions => _challengeSessions;
+  int get speedBestScore => _speedBestScore;
   Set<String> get exploredSubjects => Set.unmodifiable(_exploredSubjects);
   bool get onboardingComplete => _onboardingComplete;
 
@@ -200,6 +265,26 @@ class NorieProgression extends ChangeNotifier {
     }
     return streak;
   }
+
+  bool get dailyChallengeCompletedToday =>
+      _dailyChallengeDates.contains(_dateKey(DateTime.now()));
+
+  bool get speedRewardEarnedToday =>
+      _speedRewardDates.contains(_dateKey(DateTime.now()));
+
+  int get weeklyChallengeDays =>
+      _weeklyChallengeDaysAt(DateTime.now());
+
+  double get weeklyChallengeProgress =>
+      (weeklyChallengeDays / NorieChallengeRules.weeklyGoalDays)
+          .clamp(0.0, 1.0)
+          .toDouble();
+
+  bool get weeklyGoalComplete =>
+      weeklyChallengeDays >= NorieChallengeRules.weeklyGoalDays;
+
+  bool get weeklyRewardClaimed =>
+      _weeklyRewardedWeeks.contains(_weekKey(DateTime.now()));
 
   List<NorieAchievement> get achievements => [
         NorieAchievement(
@@ -247,10 +332,20 @@ class NorieProgression extends ChangeNotifier {
     _studySessions = prefs.getInt(_sessionsKey) ?? 0;
     _correctAnswers = prefs.getInt(_correctKey) ?? 0;
     _questionsAnswered = prefs.getInt(_questionsKey) ?? 0;
+    _challengeSessions = prefs.getInt(_challengeSessionsKey) ?? 0;
+    _speedBestScore = prefs.getInt(_speedBestScoreKey) ?? 0;
     _exploredSubjects = (prefs.getStringList(_subjectsKey) ?? const <String>[])
         .toSet();
     _studyDates =
         (prefs.getStringList(_studyDatesKey) ?? const <String>[]).toSet();
+    _dailyChallengeDates =
+        (prefs.getStringList(_dailyChallengeDatesKey) ?? const <String>[])
+            .toSet();
+    _speedRewardDates =
+        (prefs.getStringList(_speedRewardDatesKey) ?? const <String>[]).toSet();
+    _weeklyRewardedWeeks =
+        (prefs.getStringList(_weeklyRewardedWeeksKey) ?? const <String>[])
+            .toSet();
     _onboardingComplete = prefs.getBool(_onboardingKey) ?? false;
     notifyListeners();
   }
@@ -303,6 +398,98 @@ class NorieProgression extends ChangeNotifier {
     _changed();
   }
 
+  NorieChallengeCompletion recordChallengeCompletion({
+    required NorieChallengeMode mode,
+    required int correct,
+    required int total,
+    DateTime? completedAt,
+  }) {
+    final now = completedAt ?? DateTime.now();
+    final safeTotal = total < 1 ? 1 : total;
+    final safeCorrect = correct.clamp(0, safeTotal).toInt();
+    final before = snapshot;
+    final dateKey = _dateKey(now);
+
+    var baseXp = 0;
+    var bonusXp = 0;
+    var dailyRewardAwarded = false;
+    var weeklyRewardAwarded = false;
+    var bestScoreImproved = false;
+
+    _challengeSessions++;
+    _studySessions++;
+    _correctAnswers += safeCorrect;
+    _questionsAnswered += safeTotal;
+    _recordStudyDay(now);
+
+    if (mode == NorieChallengeMode.daily) {
+      final wasCompleted = _dailyChallengeDates.contains(dateKey);
+      if (!wasCompleted) {
+        final weeklyDaysBefore = _weeklyChallengeDaysAt(now);
+        _dailyChallengeDates.add(dateKey);
+        baseXp = NorieChallengeRules.baseXp(
+          mode: mode,
+          correct: safeCorrect,
+        );
+        bonusXp += NorieChallengeRules.dailyCompletionBonus;
+        dailyRewardAwarded = true;
+
+        final weeklyDaysAfter = _weeklyChallengeDaysAt(now);
+        final weekKey = _weekKey(now);
+        if (weeklyDaysBefore < NorieChallengeRules.weeklyGoalDays &&
+            weeklyDaysAfter >= NorieChallengeRules.weeklyGoalDays &&
+            !_weeklyRewardedWeeks.contains(weekKey)) {
+          _weeklyRewardedWeeks.add(weekKey);
+          bonusXp += NorieChallengeRules.weeklyGoalBonus;
+          weeklyRewardAwarded = true;
+        }
+      }
+    } else {
+      if (safeCorrect > _speedBestScore) {
+        _speedBestScore = safeCorrect;
+        bestScoreImproved = true;
+      }
+
+      if (!_speedRewardDates.contains(dateKey)) {
+        _speedRewardDates.add(dateKey);
+        baseXp = NorieChallengeRules.baseXp(
+          mode: mode,
+          correct: safeCorrect,
+        );
+        if (safeCorrect == safeTotal) {
+          bonusXp += NorieChallengeRules.speedPerfectBonus;
+        }
+      }
+    }
+
+    _totalXp += baseXp + bonusXp;
+    final after = snapshot;
+    _changed();
+
+    return NorieChallengeCompletion(
+      mode: mode,
+      correct: safeCorrect,
+      total: safeTotal,
+      baseXp: baseXp,
+      bonusXp: bonusXp,
+      dailyRewardAwarded: dailyRewardAwarded,
+      weeklyRewardAwarded: weeklyRewardAwarded,
+      bestScoreImproved: bestScoreImproved,
+      before: before,
+      after: after,
+    );
+  }
+
+  int _weeklyChallengeDaysAt(DateTime date) {
+    final start = _weekStart(date);
+    final end = start.add(const Duration(days: 7));
+
+    return _dailyChallengeDates.where((value) {
+      final challengeDate = DateTime.parse(value);
+      return !challengeDate.isBefore(start) && challengeDate.isBefore(end);
+    }).length;
+  }
+
   void _recordStudyDay(DateTime date) {
     _studyDates.add(_dateKey(date));
   }
@@ -320,14 +507,35 @@ class NorieProgression extends ChangeNotifier {
       prefs.setInt(_sessionsKey, _studySessions),
       prefs.setInt(_correctKey, _correctAnswers),
       prefs.setInt(_questionsKey, _questionsAnswered),
+      prefs.setInt(_challengeSessionsKey, _challengeSessions),
+      prefs.setInt(_speedBestScoreKey, _speedBestScore),
       prefs.setStringList(_subjectsKey, _exploredSubjects.toList()..sort()),
       prefs.setStringList(_studyDatesKey, _studyDates.toList()..sort()),
+      prefs.setStringList(
+        _dailyChallengeDatesKey,
+        _dailyChallengeDates.toList()..sort(),
+      ),
+      prefs.setStringList(
+        _speedRewardDatesKey,
+        _speedRewardDates.toList()..sort(),
+      ),
+      prefs.setStringList(
+        _weeklyRewardedWeeksKey,
+        _weeklyRewardedWeeks.toList()..sort(),
+      ),
       prefs.setBool(_onboardingKey, _onboardingComplete),
     ]);
   }
 
   static DateTime _dateOnly(DateTime date) =>
       DateTime(date.year, date.month, date.day);
+
+  static DateTime _weekStart(DateTime date) {
+    final day = _dateOnly(date);
+    return day.subtract(Duration(days: day.weekday - DateTime.monday));
+  }
+
+  static String _weekKey(DateTime date) => _dateKey(_weekStart(date));
 
   static String _dateKey(DateTime date) {
     final day = _dateOnly(date);
