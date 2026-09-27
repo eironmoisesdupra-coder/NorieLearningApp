@@ -286,6 +286,7 @@ class NorieProgression extends ChangeNotifier {
   static const _speedBestScoreKey = 'norie.speedBestScore';
   static const _weeklyRewardedWeeksKey = 'norie.weeklyRewardedWeeks';
   static const _topicMasteryKey = 'norie.topicMastery';
+  static const _lastModifiedKey = 'norie.lastModifiedAt';
 
   int _totalXp = 1250;
   int _completedLessons = 0;
@@ -300,6 +301,7 @@ class NorieProgression extends ChangeNotifier {
   Set<String> _speedRewardDates = <String>{};
   Set<String> _weeklyRewardedWeeks = <String>{};
   Map<String, NorieTopicMastery> _topicMastery = <String, NorieTopicMastery>{};
+  DateTime _lastModifiedAt = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   bool _onboardingComplete = false;
 
   int get totalXp => _totalXp;
@@ -311,6 +313,7 @@ class NorieProgression extends ChangeNotifier {
   int get speedBestScore => _speedBestScore;
   Set<String> get exploredSubjects => Set.unmodifiable(_exploredSubjects);
   bool get onboardingComplete => _onboardingComplete;
+  DateTime get lastModifiedAt => _lastModifiedAt;
 
   List<NorieTopicMastery> get topicMastery {
     final items = _topicMastery.values.toList()
@@ -468,6 +471,9 @@ class NorieProgression extends ChangeNotifier {
       }
     }
 
+    final rawModified = prefs.getString(_lastModifiedKey);
+    _lastModifiedAt = DateTime.tryParse(rawModified ?? '')?.toUtc() ??
+        DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     _onboardingComplete = prefs.getBool(_onboardingKey) ?? false;
     notifyListeners();
   }
@@ -661,7 +667,10 @@ class NorieProgression extends ChangeNotifier {
     _studyDates.add(_dateKey(date));
   }
 
-  void _changed() {
+  void _changed({bool touchModified = true}) {
+    if (touchModified) {
+      _lastModifiedAt = DateTime.now().toUtc();
+    }
     notifyListeners();
     unawaited(_save());
   }
@@ -699,7 +708,91 @@ class NorieProgression extends ChangeNotifier {
         ),
       ),
       prefs.setBool(_onboardingKey, _onboardingComplete),
+      prefs.setString(_lastModifiedKey, _lastModifiedAt.toIso8601String()),
     ]);
+  }
+
+  Map<String, dynamic> exportCloudState() => {
+        'schema_version': 1,
+        'total_xp': _totalXp,
+        'completed_lessons': _completedLessons,
+        'study_sessions': _studySessions,
+        'correct_answers': _correctAnswers,
+        'questions_answered': _questionsAnswered,
+        'challenge_sessions': _challengeSessions,
+        'speed_best_score': _speedBestScore,
+        'explored_subjects': _exploredSubjects.toList()..sort(),
+        'study_dates': _studyDates.toList()..sort(),
+        'daily_challenge_dates': _dailyChallengeDates.toList()..sort(),
+        'speed_reward_dates': _speedRewardDates.toList()..sort(),
+        'weekly_rewarded_weeks': _weeklyRewardedWeeks.toList()..sort(),
+        'topic_mastery': _topicMastery.map(
+          (key, value) => MapEntry(key, value.toJson()),
+        ),
+        'onboarding_complete': _onboardingComplete,
+        'modified_at': _lastModifiedAt.toIso8601String(),
+      };
+
+  Future<void> importCloudState(
+    Map<String, dynamic> state, {
+    DateTime? remoteModifiedAt,
+  }) async {
+    _totalXp = _readInt(state['total_xp'], fallback: _totalXp);
+    _completedLessons =
+        _readInt(state['completed_lessons'], fallback: _completedLessons);
+    _studySessions =
+        _readInt(state['study_sessions'], fallback: _studySessions);
+    _correctAnswers =
+        _readInt(state['correct_answers'], fallback: _correctAnswers);
+    _questionsAnswered =
+        _readInt(state['questions_answered'], fallback: _questionsAnswered);
+    _challengeSessions =
+        _readInt(state['challenge_sessions'], fallback: _challengeSessions);
+    _speedBestScore =
+        _readInt(state['speed_best_score'], fallback: _speedBestScore);
+
+    _exploredSubjects = _readStringSet(state['explored_subjects']);
+    _studyDates = _readStringSet(state['study_dates']);
+    _dailyChallengeDates = _readStringSet(state['daily_challenge_dates']);
+    _speedRewardDates = _readStringSet(state['speed_reward_dates']);
+    _weeklyRewardedWeeks = _readStringSet(state['weekly_rewarded_weeks']);
+
+    final rawMastery = state['topic_mastery'];
+    if (rawMastery is Map) {
+      _topicMastery = rawMastery.map(
+        (key, value) => MapEntry(
+          key.toString(),
+          NorieTopicMastery.fromJson(
+            Map<String, dynamic>.from(value as Map),
+          ),
+        ),
+      );
+    }
+
+    final cloudOnboarding = state['onboarding_complete'];
+    if (cloudOnboarding is bool) {
+      _onboardingComplete = cloudOnboarding;
+    }
+
+    final stateModified = DateTime.tryParse(
+      state['modified_at']?.toString() ?? '',
+    );
+    _lastModifiedAt = (remoteModifiedAt ?? stateModified ?? DateTime.now())
+        .toUtc();
+
+    _changed(touchModified: false);
+    await _save();
+  }
+
+  static int _readInt(Object? value, {required int fallback}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  static Set<String> _readStringSet(Object? value) {
+    if (value is! List) return <String>{};
+    return value.map((item) => item.toString()).toSet();
   }
 
   static String _topicKey(String category, String topic) =>
