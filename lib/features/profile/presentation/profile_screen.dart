@@ -5,6 +5,9 @@ import '../../../core/assets/norie_assets.dart';
 import '../../../core/cloud/norie_cloud_sync.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../../core/widgets/norie_ambient_backdrop.dart';
+import '../../commerce/presentation/norie_shop_placeholder_screen.dart';
+import '../../commerce/presentation/subscription_placeholder_screen.dart';
 import '../../account/presentation/account_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 
@@ -32,8 +35,16 @@ class ProfileScreen extends StatelessWidget {
               title: const Text('Profile'),
               backgroundColor: Colors.transparent,
             ),
-      body: SafeArea(
-        child: AnimatedBuilder(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: NorieAmbientBackdrop(
+              primary: NorieColors.cyan,
+              secondary: NorieColors.violet,
+            ),
+          ),
+          SafeArea(
+            child: AnimatedBuilder(
           animation: NorieAccountService.instance,
           builder: (context, _) {
             return AnimatedBuilder(
@@ -79,10 +90,28 @@ class ProfileScreen extends StatelessWidget {
                     if (embedded) const SizedBox(height: 22),
                     _AccountSummaryCard(account: account),
                     const SizedBox(height: 14),
+                    _CommercePreviewRow(
+                      onMembershipTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                const SubscriptionPlaceholderScreen(),
+                          ),
+                        );
+                      },
+                      onShopTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const NorieShopPlaceholderScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(30),
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -93,8 +122,15 @@ class ProfileScreen extends StatelessWidget {
                           ],
                         ),
                         border: Border.all(
-                          color: NorieColors.violet.withValues(alpha: .55),
+                          color: NorieColors.cyan.withValues(alpha: .34),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: NorieColors.violet.withValues(alpha: .12),
+                            blurRadius: 32,
+                            offset: const Offset(0, 14),
+                          ),
+                        ],
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -273,6 +309,140 @@ class ProfileScreen extends StatelessWidget {
               },
             );
           },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommercePreviewRow extends StatelessWidget {
+  const _CommercePreviewRow({
+    required this.onMembershipTap,
+    required this.onShopTap,
+  });
+
+  final VoidCallback onMembershipTap;
+  final VoidCallback onShopTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 520;
+        final membership = _CommerceTile(
+          icon: Icons.workspace_premium_rounded,
+          title: 'Membership',
+          subtitle: 'Free · Plus · Pro preview',
+          accent: NorieColors.violet,
+          onTap: onMembershipTap,
+        );
+        final shop = _CommerceTile(
+          icon: Icons.storefront_rounded,
+          title: 'Norie Shop',
+          subtitle: 'Credits · boosts · themes',
+          accent: NorieColors.orange,
+          onTap: onShopTap,
+        );
+
+        if (compact) {
+          return Column(
+            children: [
+              membership,
+              const SizedBox(height: 10),
+              shop,
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: membership),
+            const SizedBox(width: 10),
+            Expanded(child: shop),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CommerceTile extends StatelessWidget {
+  const _CommerceTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                accent.withValues(alpha: .13),
+                NorieColors.surface.withValues(alpha: .92),
+              ],
+            ),
+            border: Border.all(color: accent.withValues(alpha: .27)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: accent),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: NorieColors.textSecondary,
+                        fontSize: 9.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: accent,
+              ),
+            ],
+          ),
         ),
       ),
     );
