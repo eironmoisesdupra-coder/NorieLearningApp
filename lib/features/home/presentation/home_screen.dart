@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
@@ -27,8 +28,11 @@ class HomeScreen extends StatelessWidget {
         onTabSelected: onTabSelected,
       ),
       drawerEdgeDragWidth: 48,
-      body: SafeArea(
-        child: LayoutBuilder(
+      body: Stack(
+        children: [
+          const Positioned.fill(child: _HomeBackdrop()),
+          SafeArea(
+            child: LayoutBuilder(
           builder: (context, constraints) {
             final contentWidth =
                 constraints.maxWidth > 760 ? 720.0 : constraints.maxWidth;
@@ -48,13 +52,16 @@ class HomeScreen extends StatelessWidget {
                                   Scaffold.of(drawerContext).openDrawer(),
                             ),
                           ),
-                          const SizedBox(height: 26),
-                          const _Greeting(),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 18),
+                          _HomeHero(
+                            onLearnTap: () => onTabSelected?.call(1),
+                          ),
+                          const SizedBox(height: 18),
                           const _ContinueLearningCard(),
-                          const SizedBox(height: 20),
-                          _DailyChallengeCard(
-                            onTap: () => onTabSelected?.call(2),
+                          const SizedBox(height: 16),
+                          _HomeActionGrid(
+                            onChallengeTap: () => onTabSelected?.call(2),
+                            onStudyTap: () => onTabSelected?.call(1),
                           ),
                           const SizedBox(height: 16),
                           const _LevelCard(),
@@ -66,7 +73,9 @@ class HomeScreen extends StatelessWidget {
               ),
             );
           },
-        ),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar:
           embedded ? null : _BottomNavigation(onTabSelected: onTabSelected),
@@ -162,29 +171,330 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class _Greeting extends StatelessWidget {
-  const _Greeting();
+class _HomeBackdrop extends StatelessWidget {
+  const _HomeBackdrop();
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Good morning,',
-          style: TextStyle(color: NorieColors.textSecondary, fontSize: 15),
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: NorieColors.background,
+        gradient: RadialGradient(
+          center: Alignment(.65, -.82),
+          radius: 1.15,
+          colors: [
+            Color(0x243D7CFF),
+            Color(0x151A31A3),
+            Color(0x00071126),
+          ],
         ),
-        SizedBox(height: 2),
-        Text(
-          'Keep going!',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
+      ),
+      child: Stack(
+        children: const [
+          Positioned(
+            right: -70,
+            top: 170,
+            child: _BackdropOrb(
+              size: 190,
+              color: Color(0x1622D3EE),
+            ),
+          ),
+          Positioned(
+            left: -80,
+            top: 470,
+            child: _BackdropOrb(
+              size: 220,
+              color: Color(0x12EC4899),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BackdropOrb extends StatelessWidget {
+  const _BackdropOrb({
+    required this.size,
+    required this.color,
+  });
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+      ),
+    );
+  }
+}
+
+class _HomeHero extends StatelessWidget {
+  const _HomeHero({this.onLearnTap});
+
+  final VoidCallback? onLearnTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: NorieProgression.instance,
+      builder: (context, _) {
+        final progression = NorieProgression.instance;
+        final snapshot = progression.snapshot;
+
+        return Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF102956),
+                Color(0xFF1C285D),
+                Color(0xFF3B1D63),
+              ],
+            ),
+            border: Border.all(
+              color: NorieColors.cyan.withValues(alpha: .28),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: NorieColors.primary.withValues(alpha: .14),
+                blurRadius: 34,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -32,
+                top: -42,
+                child: Container(
+                  width: 170,
+                  height: 170,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: NorieColors.cyan.withValues(alpha: .07),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 9, 18),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'WELCOME BACK',
+                            style: TextStyle(
+                              color: Color(0xFF9BF6FF),
+                              fontSize: 9,
+                              letterSpacing: 1.7,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          Text(
+                            snapshot.isMaxLevel
+                                ? 'You reached\nMaster rank.'
+                                : 'Ready for your\nnext level?',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              height: .98,
+                              letterSpacing: -.8,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Level ${snapshot.level} · ${snapshot.title}',
+                            style: const TextStyle(
+                              color: Color(0xFFD1DCF2),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 13),
+                          Wrap(
+                            spacing: 7,
+                            runSpacing: 7,
+                            children: [
+                              _HeroStat(
+                                icon: Icons.local_fire_department_rounded,
+                                value: '${progression.currentStreak} day',
+                                label: 'streak',
+                                color: NorieColors.orange,
+                              ),
+                              _HeroStat(
+                                icon: Icons.star_rounded,
+                                value: '${snapshot.totalXp}',
+                                label: 'XP',
+                                color: NorieColors.cyan,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          FilledButton.icon(
+                            onPressed: onLearnTap,
+                            icon: const Icon(
+                              Icons.explore_rounded,
+                              size: 17,
+                            ),
+                            label: const Text('Explore Learning'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: NorieColors.cyan,
+                              foregroundColor: NorieColors.background,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 11,
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 132,
+                      height: 170,
+                      child: Image.asset(
+                        NorieAssets.mascotCelebrating,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HeroStat extends StatelessWidget {
+  const _HeroStat({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .055),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: .08),
         ),
-        SizedBox(height: 4),
-        Text(
-          'Small steps make big progress.',
-          style: TextStyle(color: NorieColors.textSecondary),
-        ),
-      ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 9,
+              color: NorieColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeActionGrid extends StatelessWidget {
+  const _HomeActionGrid({
+    required this.onChallengeTap,
+    required this.onStudyTap,
+  });
+
+  final VoidCallback onChallengeTap;
+  final VoidCallback onStudyTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 560;
+
+        final challenge = _DailyChallengeCard(onTap: onChallengeTap);
+        final study = _StudyLabCard(onTap: onStudyTap);
+
+        if (compact) {
+          return Column(
+            children: [
+              challenge,
+              const SizedBox(height: 12),
+              study,
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: challenge),
+            const SizedBox(width: 12),
+            Expanded(child: study),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StudyLabCard extends StatelessWidget {
+  const _StudyLabCard({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: const _InfoCard(
+        icon: Icons.auto_awesome_rounded,
+        iconColor: NorieColors.cyan,
+        title: 'Norie AI Study Lab',
+        subtitle: 'Turn your notes and files into grounded practice sets.',
+        trailing: 'CREATE',
+      ),
     );
   }
 }
