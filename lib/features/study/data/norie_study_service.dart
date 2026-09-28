@@ -15,6 +15,21 @@ class NorieStudyService {
 
   SupabaseClient? get _client => NorieSupabase.client;
 
+  Future<NorieAiQuota?> getAiQuota() async {
+    final client = _client;
+    if (client == null || client.auth.currentUser == null) return null;
+
+    try {
+      final raw = await client.rpc('get_my_ai_quota');
+      if (raw is Map) {
+        return NorieAiQuota.fromMap(Map<String, dynamic>.from(raw));
+      }
+    } catch (_) {
+      // Quota display is advisory on the client; enforcement remains server-side.
+    }
+    return null;
+  }
+
   Future<List<NorieStudySet>> listStudySets() async {
     final client = _client;
     final user = client?.auth.currentUser;
@@ -150,6 +165,13 @@ class NorieStudyService {
       throw StateError('Sign in before generating a study set.');
     }
 
+    final quota = await getAiQuota();
+    if (quota != null && !quota.canGenerate) {
+      throw StateError(
+        'Daily AI generation limit reached. Your free allowance resets tomorrow.',
+      );
+    }
+
     try {
       final response = await client.functions.invoke(
         'generate-study-set',
@@ -207,6 +229,13 @@ class NorieStudyService {
     final client = _client;
     if (client == null || client.auth.currentUser == null) {
       throw StateError('Sign in before using source Q&A.');
+    }
+
+    final quota = await getAiQuota();
+    if (quota != null && !quota.canAskNorie) {
+      throw StateError(
+        'Daily Ask Norie limit reached. Your allowance resets tomorrow.',
+      );
     }
 
     try {
@@ -334,6 +363,12 @@ class NorieStudyService {
         'The source did not contain enough supported material for a study set.',
       'source_download_failed' =>
         'Norie could not read the uploaded source file.',
+      'daily_ai_limit_reached' =>
+        'Daily AI generation limit reached. Your free allowance resets tomorrow.',
+      'daily_qa_limit_reached' =>
+        'Daily Ask Norie limit reached. Your allowance resets tomorrow.',
+      'quota_check_failed' =>
+        'Norie could not check your AI allowance right now.',
       _ => 'Norie could not generate this study set right now.',
     };
   }
