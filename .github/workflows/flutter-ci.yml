@@ -30,6 +30,15 @@ jobs:
       - name: Generate Android and web platform scaffolding
         run: flutter create --platforms=android,web --project-name norie_learning .
 
+      - name: Apply Norie platform branding
+        run: |
+          cp branding/web/index.html web/index.html
+          cp branding/web/manifest.json web/manifest.json
+          cp branding/web/norie-logo.svg web/norie-logo.svg
+          mkdir -p android/app/src/main/res/drawable
+          cp branding/android/norie_launcher_icon.xml android/app/src/main/res/drawable/norie_launcher_icon.xml
+          cp branding/android/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+
       - name: Remove generated default test
         run: rm -f test/widget_test.dart
 
