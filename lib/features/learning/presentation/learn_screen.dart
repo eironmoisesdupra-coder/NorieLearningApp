@@ -8,6 +8,7 @@ import '../../navigation/presentation/norie_drawer.dart';
 import '../../progress/presentation/progress_screen.dart';
 import '../../study/presentation/study_generator_screen.dart';
 import '../../study/presentation/study_hub_screen.dart';
+import 'anatomy_lab_placeholder_screen.dart';
 import 'science_screen.dart';
 
 class LearnScreen extends StatefulWidget {
@@ -57,7 +58,19 @@ class _LearnScreenState extends State<LearnScreen> {
                         Scaffold.of(drawerContext).openDrawer(),
                   ),
                 ),
-                const SizedBox(height: 26),
+                const SizedBox(height: 18),
+                _LearnHero(
+                  onAiTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => StudyGeneratorScreen(
+                          initialQuestionCount: _questionCount,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 28),
                 const Text(
                   'Explore Subjects',
                   style: TextStyle(
@@ -81,6 +94,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   icon: Icons.calculate_rounded,
                   color: NorieColors.primary,
                   progress: .68,
+                  badge: 'EXPANDING',
                   onTap: () {
                     NorieProgression.instance
                         .recordSubjectExplored('Mathematics');
@@ -99,6 +113,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   icon: Icons.science_rounded,
                   color: NorieColors.green,
                   progress: .72,
+                  badge: 'LIVE',
                   onTap: () {
                     NorieProgression.instance.recordSubjectExplored('Science');
                     Navigator.of(context).push(
@@ -110,11 +125,30 @@ class _LearnScreenState extends State<LearnScreen> {
                 ),
                 const SizedBox(height: 12),
                 _SubjectTile(
+                  title: '3D Anatomy Lab',
+                  subtitle: 'Human · Animal · Interactive 3D · Identification',
+                  icon: Icons.accessibility_new_rounded,
+                  color: NorieColors.cyan,
+                  progress: 0,
+                  badge: 'PREVIEW',
+                  onTap: () {
+                    NorieProgression.instance
+                        .recordSubjectExplored('3D Anatomy Lab');
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AnatomyLabPlaceholderScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _SubjectTile(
                   title: 'English',
                   subtitle: 'Grammar · Vocabulary · Reading · Communication',
                   icon: Icons.menu_book_rounded,
                   color: NorieColors.orange,
                   progress: .45,
+                  badge: 'EXPANDING',
                   onTap: () {
                     NorieProgression.instance.recordSubjectExplored('English');
                     _openUpcoming(
@@ -242,6 +276,168 @@ class _LearnHeader extends StatelessWidget {
   }
 }
 
+class _LearnHero extends StatelessWidget {
+  const _LearnHero({required this.onAiTap});
+
+  final VoidCallback onAiTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF10295A),
+            Color(0xFF20235D),
+            Color(0xFF441A5F),
+          ],
+        ),
+        border: Border.all(
+          color: NorieColors.violet.withValues(alpha: .42),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: NorieColors.violet.withValues(alpha: .13),
+            blurRadius: 32,
+            offset: const Offset(0, 15),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          const Positioned(
+            right: -24,
+            top: -34,
+            child: _HeroGlow(
+              size: 150,
+              color: Color(0x3322D3EE),
+            ),
+          ),
+          const Positioned(
+            left: -38,
+            bottom: -70,
+            child: _HeroGlow(
+              size: 180,
+              color: Color(0x22EC4899),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 10, 18),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .07),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: .10),
+                          ),
+                        ),
+                        child: const Text(
+                          'YOUR LEARNING UNIVERSE',
+                          style: TextStyle(
+                            fontSize: 8,
+                            letterSpacing: 1.35,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFB7F5FF),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 11),
+                      const Text(
+                        'Choose a path.\nBuild real mastery.',
+                        style: TextStyle(
+                          fontSize: 25,
+                          height: 1.02,
+                          letterSpacing: -.65,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 9),
+                      const Text(
+                        'Lessons, challenges, AI study tools, and future interactive labs all connect to one progression system.',
+                        style: TextStyle(
+                          color: Color(0xFFC5D0EA),
+                          fontSize: 11,
+                          height: 1.42,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      FilledButton.icon(
+                        onPressed: onAiTap,
+                        icon: const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 17,
+                        ),
+                        label: const Text('Create with Norie AI'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: NorieColors.cyan,
+                          foregroundColor: NorieColors.background,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 13,
+                            vertical: 11,
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                SizedBox(
+                  width: 124,
+                  height: 150,
+                  child: Image.asset(
+                    NorieAssets.mascotStudying,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroGlow extends StatelessWidget {
+  const _HeroGlow({
+    required this.size,
+    required this.color,
+  });
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+      ),
+    );
+  }
+}
+
 class _SubjectTile extends StatelessWidget {
   const _SubjectTile({
     required this.title,
@@ -250,6 +446,7 @@ class _SubjectTile extends StatelessWidget {
     required this.color,
     required this.progress,
     required this.onTap,
+    this.badge,
   });
 
   final String title;
@@ -258,67 +455,162 @@ class _SubjectTile extends StatelessWidget {
   final Color color;
   final double progress;
   final VoidCallback onTap;
+  final String? badge;
 
   @override
   Widget build(BuildContext context) {
+    final safeProgress = progress.clamp(0.0, 1.0).toDouble();
+
     return Material(
-      color: NorieColors.surface,
-      borderRadius: BorderRadius.circular(21),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(21),
-        child: Container(
+        borderRadius: BorderRadius.circular(24),
+        child: Ink(
           padding: const EdgeInsets.all(17),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(21),
-            border: Border.all(color: color.withValues(alpha: .42)),
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withValues(alpha: .13),
+                NorieColors.surface.withValues(alpha: .96),
+                NorieColors.surface.withValues(alpha: .82),
+              ],
+            ),
+            border: Border.all(
+              color: color.withValues(alpha: .33),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: .055),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
           child: Row(
             children: [
               Container(
-                width: 54,
-                height: 54,
+                width: 58,
+                height: 58,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: .14),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      color.withValues(alpha: .30),
+                      color.withValues(alpha: .08),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: color.withValues(alpha: .34),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: .14),
+                      blurRadius: 18,
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: color, size: 29),
+                child: Icon(icon, color: color, size: 30),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        if (badge != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: .10),
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(
+                                color: color.withValues(alpha: .27),
+                              ),
+                            ),
+                            child: Text(
+                              badge!,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 7,
+                                letterSpacing: .7,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: const TextStyle(
                         color: NorieColors.textSecondary,
-                        fontSize: 11,
+                        fontSize: 10.5,
+                        height: 1.35,
                       ),
                     ),
-                    const SizedBox(height: 9),
-                    LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 5,
-                      borderRadius: BorderRadius.circular(99),
-                      color: color,
-                      backgroundColor: color.withValues(alpha: .13),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: LinearProgressIndicator(
+                            value: safeProgress,
+                            minHeight: 5,
+                            borderRadius: BorderRadius.circular(99),
+                            color: color,
+                            backgroundColor: color.withValues(alpha: .10),
+                          ),
+                        ),
+                        const SizedBox(width: 9),
+                        Text(
+                          safeProgress == 0
+                              ? 'Preview'
+                              : '${(safeProgress * 100).round()}%',
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: color,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 10),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: NorieColors.textSecondary,
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .04),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: .08),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 17,
+                  color: NorieColors.textSecondary,
+                ),
               ),
             ],
           ),
