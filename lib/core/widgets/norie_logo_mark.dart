@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 class NorieLogoMark extends StatelessWidget {
@@ -19,7 +17,7 @@ class NorieLogoMark extends StatelessWidget {
       height: size,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(size * .24),
+          borderRadius: BorderRadius.circular(size * .22),
           boxShadow: showGlow
               ? [
                   BoxShadow(
@@ -31,7 +29,7 @@ class NorieLogoMark extends StatelessWidget {
               : null,
         ),
         child: CustomPaint(
-          painter: _NorieLogoPainter(),
+          painter: const _NorieLogoPainter(),
         ),
       ),
     );
@@ -39,18 +37,23 @@ class NorieLogoMark extends StatelessWidget {
 }
 
 class _NorieLogoPainter extends CustomPainter {
+  const _NorieLogoPainter();
+
   static const _cyan = Color(0xFF22D3EE);
   static const _blue = Color(0xFF2563EB);
   static const _violet = Color(0xFF7C3AED);
   static const _magenta = Color(0xFFE879F9);
-  static const _navy = Color(0xFF0B1E58);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final radius = Radius.circular(size.width * .22);
+    final sx = size.width / 512;
+    final sy = size.height / 512;
 
-    final bg = Paint()
+    canvas.save();
+    canvas.scale(sx, sy);
+
+    const designRect = Rect.fromLTWH(0, 0, 512, 512);
+    final background = Paint()
       ..shader = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -59,170 +62,111 @@ class _NorieLogoPainter extends CustomPainter {
           Color(0xFF0C1F4D),
           Color(0xFF15164D),
         ],
-      ).createShader(rect);
-    canvas.drawRRect(RRect.fromRectAndRadius(rect, radius), bg);
+        stops: [0, .55, 1],
+      ).createShader(designRect);
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        designRect,
+        const Radius.circular(112),
+      ),
+      background,
+    );
+
+    final brandShader = const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [_cyan, _blue, _violet, _magenta],
+      stops: [0, .38, .72, 1],
+    ).createShader(designRect);
 
     final nPath = Path()
-      ..moveTo(size.width * .21, size.height * .69)
-      ..lineTo(size.width * .21, size.height * .25)
-      ..quadraticBezierTo(
-        size.width * .21,
-        size.height * .18,
-        size.width * .29,
-        size.height * .18,
-      )
-      ..cubicTo(
-        size.width * .40,
-        size.height * .18,
-        size.width * .47,
-        size.height * .38,
-        size.width * .58,
-        size.height * .50,
-      )
-      ..lineTo(size.width * .72, size.height * .66)
-      ..lineTo(size.width * .72, size.height * .25)
-      ..quadraticBezierTo(
-        size.width * .72,
-        size.height * .19,
-        size.width * .80,
-        size.height * .19,
-      )
-      ..lineTo(size.width * .80, size.height * .70)
-      ..quadraticBezierTo(
-        size.width * .80,
-        size.height * .79,
-        size.width * .70,
-        size.height * .79,
-      )
-      ..cubicTo(
-        size.width * .58,
-        size.height * .78,
-        size.width * .49,
-        size.height * .57,
-        size.width * .38,
-        size.height * .45,
-      )
-      ..lineTo(size.width * .29, size.height * .35)
-      ..lineTo(size.width * .29, size.height * .69)
+      ..moveTo(108, 352)
+      ..lineTo(108, 132)
+      ..cubicTo(108, 105, 121, 93, 146, 93)
+      ..cubicTo(194, 93, 236, 163, 276, 212)
+      ..lineTo(370, 327)
+      ..lineTo(370, 132)
+      ..cubicTo(370, 108, 382, 96, 409, 96)
+      ..lineTo(409, 352)
+      ..cubicTo(409, 383, 394, 395, 366, 395)
+      ..cubicTo(315, 395, 275, 324, 234, 275)
+      ..lineTo(148, 173)
+      ..lineTo(148, 352)
       ..close();
 
-    final nPaint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [_cyan, _blue, _violet, _magenta],
-        stops: [0, .38, .72, 1],
-      ).createShader(rect);
-    canvas.drawPath(nPath, nPaint);
-
-    final shadowPath = Path()
-      ..moveTo(size.width * .29, size.height * .35)
-      ..lineTo(size.width * .38, size.height * .45)
-      ..cubicTo(
-        size.width * .49,
-        size.height * .57,
-        size.width * .58,
-        size.height * .78,
-        size.width * .70,
-        size.height * .79,
-      )
-      ..lineTo(size.width * .62, size.height * .80)
-      ..cubicTo(
-        size.width * .53,
-        size.height * .71,
-        size.width * .44,
-        size.height * .55,
-        size.width * .34,
-        size.height * .45,
-      )
-      ..close();
     canvas.drawPath(
-      shadowPath,
-      Paint()..color = _navy.withValues(alpha: .68),
-    );
-
-    final leftPage = Path()
-      ..moveTo(size.width * .20, size.height * .66)
-      ..quadraticBezierTo(
-        size.width * .35,
-        size.height * .61,
-        size.width * .50,
-        size.height * .82,
-      )
-      ..quadraticBezierTo(
-        size.width * .36,
-        size.height * .74,
-        size.width * .20,
-        size.height * .77,
-      )
-      ..close();
-    final rightPage = Path()
-      ..moveTo(size.width * .50, size.height * .82)
-      ..quadraticBezierTo(
-        size.width * .65,
-        size.height * .61,
-        size.width * .82,
-        size.height * .66,
-      )
-      ..lineTo(size.width * .82, size.height * .77)
-      ..quadraticBezierTo(
-        size.width * .65,
-        size.height * .74,
-        size.width * .50,
-        size.height * .82,
-      )
-      ..close();
-
-    final pagePaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [_cyan, _blue, _violet],
-      ).createShader(rect);
-    canvas.drawPath(leftPage, pagePaint);
-    canvas.drawPath(rightPage, pagePaint);
-
-    final whiteLine = Paint()
-      ..color = Colors.white.withValues(alpha: .95)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * .024
-      ..strokeCap = StrokeCap.round;
-    canvas.drawPath(
-      Path()
-        ..moveTo(size.width * .21, size.height * .67)
-        ..quadraticBezierTo(
-          size.width * .36,
-          size.height * .64,
-          size.width * .50,
-          size.height * .82,
-        )
-        ..quadraticBezierTo(
-          size.width * .65,
-          size.height * .64,
-          size.width * .81,
-          size.height * .67,
-        ),
-      whiteLine,
-    );
-
-    final sparkleCenter = Offset(size.width * .77, size.height * .14);
-    final sparkle = Path();
-    for (var i = 0; i < 8; i++) {
-      final angle = -math.pi / 2 + (math.pi / 4 * i);
-      final r = i.isEven ? size.width * .075 : size.width * .028;
-      final p = sparkleCenter + Offset(math.cos(angle) * r, math.sin(angle) * r);
-      if (i == 0) {
-        sparkle.moveTo(p.dx, p.dy);
-      } else {
-        sparkle.lineTo(p.dx, p.dy);
-      }
-    }
-    sparkle.close();
-    canvas.drawPath(
-      sparkle,
+      nPath,
       Paint()
-        ..shader = const LinearGradient(
-          colors: [_cyan, _violet, _magenta],
-        ).createShader(rect),
+        ..shader = brandShader
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
     );
+    canvas.drawPath(
+      nPath,
+      Paint()..shader = brandShader,
+    );
+
+    final bookPath = Path()
+      ..moveTo(106, 334)
+      ..cubicTo(169, 314, 210, 335, 256, 399)
+      ..cubicTo(301, 335, 345, 313, 408, 334)
+      ..lineTo(408, 396)
+      ..cubicTo(344, 383, 297, 400, 256, 450)
+      ..cubicTo(213, 400, 168, 383, 106, 396)
+      ..close();
+
+    canvas.drawPath(
+      bookPath,
+      Paint()..shader = brandShader,
+    );
+
+    final pageLine = Path()
+      ..moveTo(108, 341)
+      ..cubicTo(170, 328, 213, 352, 256, 399)
+      ..cubicTo(299, 352, 344, 328, 406, 341);
+
+    canvas.drawPath(
+      pageLine,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 12
+        ..strokeCap = StrokeCap.round,
+    );
+
+    final sparkleOuter = Path()
+      ..moveTo(390, 58)
+      ..lineTo(400, 85)
+      ..lineTo(427, 95)
+      ..lineTo(400, 105)
+      ..lineTo(390, 132)
+      ..lineTo(380, 105)
+      ..lineTo(353, 95)
+      ..lineTo(380, 85)
+      ..close();
+
+    canvas.drawPath(
+      sparkleOuter,
+      Paint()..color = _cyan,
+    );
+
+    final sparkleInner = Path()
+      ..moveTo(390, 65)
+      ..lineTo(397, 85)
+      ..lineTo(417, 92)
+      ..lineTo(397, 99)
+      ..lineTo(390, 119)
+      ..lineTo(383, 99)
+      ..lineTo(363, 92)
+      ..lineTo(383, 85)
+      ..close();
+
+    canvas.drawPath(
+      sparkleInner,
+      Paint()..color = _magenta.withValues(alpha: .75),
+    );
+
+    canvas.restore();
   }
 
   @override
