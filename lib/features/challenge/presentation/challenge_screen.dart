@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../../core/widgets/norie_ambient_backdrop.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 import 'challenge_quiz_screen.dart';
 
@@ -21,8 +22,16 @@ class ChallengeScreen extends StatelessWidget {
         onTabSelected: onTabSelected,
       ),
       drawerEdgeDragWidth: 48,
-      body: SafeArea(
-        child: AnimatedBuilder(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: NorieAmbientBackdrop(
+              primary: NorieColors.magenta,
+              secondary: NorieColors.cyan,
+            ),
+          ),
+          SafeArea(
+            child: AnimatedBuilder(
           animation: NorieProgression.instance,
           builder: (context, _) {
             final progression = NorieProgression.instance;
@@ -78,24 +87,9 @@ class ChallengeScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Train what you know.',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -.7,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    const Text(
-                      'Complete challenges to build your streak, earn XP, and prepare your learning data for mastery tracking.',
-                      style: TextStyle(
-                        color: NorieColors.textSecondary,
-                        height: 1.45,
-                      ),
-                    ),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 20),
+                    _ChallengeHero(progression: progression),
+                    const SizedBox(height: 20),
                     _WeeklyGoalCard(progression: progression),
                     const SizedBox(height: 14),
                     _ModeCard(
@@ -192,7 +186,9 @@ class ChallengeScreen extends StatelessWidget {
               ),
             );
           },
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -494,6 +490,89 @@ class _RewardRulesCard extends StatelessWidget {
                 fontSize: 10,
                 height: 1.4,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _ChallengeHero extends StatelessWidget {
+  const _ChallengeHero({required this.progression});
+  final NorieProgression progression;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3D174C), Color(0xFF20245E), Color(0xFF0B4052)],
+        ),
+        border: Border.all(color: NorieColors.magenta.withValues(alpha: .42)),
+        boxShadow: [
+          BoxShadow(
+            color: NorieColors.magenta.withValues(alpha: .10),
+            blurRadius: 30,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'CHALLENGE ARENA',
+                  style: TextStyle(
+                    color: NorieColors.cyan,
+                    fontSize: 9,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Train what you know.\nPush your score higher.',
+                  style: TextStyle(
+                    fontSize: 26,
+                    height: 1.02,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '${progression.currentStreak} day streak · ${progression.challengeSessions} challenge sessions',
+                  style: const TextStyle(
+                    color: NorieColors.textSecondary,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 86,
+            height: 86,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const RadialGradient(
+                colors: [Color(0x55EC4899), Color(0x225B5CE2), Colors.transparent],
+              ),
+              border: Border.all(color: NorieColors.magenta.withValues(alpha: .35)),
+            ),
+            child: const Icon(
+              Icons.emoji_events_rounded,
+              size: 46,
+              color: NorieColors.orange,
             ),
           ),
         ],
