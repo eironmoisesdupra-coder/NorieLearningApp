@@ -273,6 +273,7 @@ class NorieProgression extends ChangeNotifier {
   static final NorieProgression instance = NorieProgression._();
 
   static const _xpKey = 'norie.totalXp';
+  static const _creditsKey = 'norie.credits';
   static const _lessonsKey = 'norie.completedLessons';
   static const _sessionsKey = 'norie.studySessions';
   static const _correctKey = 'norie.correctAnswers';
@@ -290,6 +291,7 @@ class NorieProgression extends ChangeNotifier {
   static const _lastModifiedKey = 'norie.lastModifiedAt';
 
   int _totalXp = 0;
+  int _credits = 0;
   int _completedLessons = 0;
   int _studySessions = 0;
   int _correctAnswers = 0;
@@ -307,6 +309,7 @@ class NorieProgression extends ChangeNotifier {
   bool _onboardingComplete = false;
 
   int get totalXp => _totalXp;
+  int get credits => _credits;
   int get completedLessons => _completedLessons;
   int get studySessions => _studySessions;
   int get correctAnswers => _correctAnswers;
@@ -439,6 +442,7 @@ class NorieProgression extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _totalXp = prefs.getInt(_xpKey) ?? _totalXp;
+    _credits = prefs.getInt(_creditsKey) ?? _credits;
     _completedLessons = prefs.getInt(_lessonsKey) ?? 0;
     _studySessions = prefs.getInt(_sessionsKey) ?? 0;
     _correctAnswers = prefs.getInt(_correctKey) ?? 0;
@@ -504,6 +508,22 @@ class NorieProgression extends ChangeNotifier {
       before: before,
       after: after,
     );
+  }
+
+  void addCredits(int amount) {
+    final safeAmount = amount < 0 ? 0 : amount;
+    if (safeAmount == 0) return;
+    _credits += safeAmount;
+    _changed();
+  }
+
+  bool spendCredits(int amount) {
+    final safeAmount = amount < 0 ? 0 : amount;
+    if (safeAmount == 0) return true;
+    if (_credits < safeAmount) return false;
+    _credits -= safeAmount;
+    _changed();
+    return true;
   }
 
   void markOnboardingComplete() {
@@ -735,6 +755,7 @@ class NorieProgression extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await Future.wait([
       prefs.setInt(_xpKey, _totalXp),
+      prefs.setInt(_creditsKey, _credits),
       prefs.setInt(_lessonsKey, _completedLessons),
       prefs.setInt(_sessionsKey, _studySessions),
       prefs.setInt(_correctKey, _correctAnswers),
@@ -774,6 +795,7 @@ class NorieProgression extends ChangeNotifier {
 
   Future<void> resetForNewAccount() async {
     _totalXp = 0;
+    _credits = 0;
     _completedLessons = 0;
     _studySessions = 0;
     _correctAnswers = 0;
@@ -797,6 +819,7 @@ class NorieProgression extends ChangeNotifier {
   Map<String, dynamic> exportCloudState() => {
         'schema_version': 1,
         'total_xp': _totalXp,
+        'credits': _credits,
         'completed_lessons': _completedLessons,
         'study_sessions': _studySessions,
         'correct_answers': _correctAnswers,
@@ -821,6 +844,7 @@ class NorieProgression extends ChangeNotifier {
     DateTime? remoteModifiedAt,
   }) async {
     _totalXp = _readInt(state['total_xp'], fallback: _totalXp);
+    _credits = _readInt(state['credits'], fallback: _credits);
     _completedLessons =
         _readInt(state['completed_lessons'], fallback: _completedLessons);
     _studySessions =
