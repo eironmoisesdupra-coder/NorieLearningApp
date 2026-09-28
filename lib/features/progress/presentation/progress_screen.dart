@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../../core/widgets/norie_ambient_backdrop.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 import 'weak_topics_screen.dart';
 
@@ -37,9 +38,17 @@ class ProgressScreen extends StatelessWidget {
                 ),
               ),
             ),
-      body: SafeArea(
-        top: false,
-        child: AnimatedBuilder(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: NorieAmbientBackdrop(
+              primary: NorieColors.violet,
+              secondary: NorieColors.cyan,
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: AnimatedBuilder(
           animation: NorieProgression.instance,
           builder: (context, _) {
             final snapshot = NorieProgression.instance.snapshot;
@@ -79,7 +88,15 @@ class ProgressScreen extends StatelessWidget {
                       ),
                     if (embedded) const SizedBox(height: 22),
                     _CurrentRankCard(snapshot: snapshot),
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 14),
+                    _ProgressPulse(
+                      streak: NorieProgression.instance.currentStreak,
+                      accuracy: NorieProgression.instance.questionsAnswered == 0
+                          ? null
+                          : (NorieProgression.instance.quizAccuracy * 100).round(),
+                      mastered: NorieProgression.instance.masteredTopicCount,
+                    ),
+                    const SizedBox(height: 28),
                     const Text(
                       'Rank journey',
                       style: TextStyle(
@@ -164,7 +181,125 @@ class ProgressScreen extends StatelessWidget {
               ),
             );
           },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressPulse extends StatelessWidget {
+  const _ProgressPulse({
+    required this.streak,
+    required this.accuracy,
+    required this.mastered,
+  });
+
+  final int streak;
+  final int? accuracy;
+  final int mastered;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 520;
+        final cards = [
+          _PulseTile(
+            icon: Icons.local_fire_department_rounded,
+            value: '$streak',
+            label: 'day streak',
+            color: NorieColors.orange,
+          ),
+          _PulseTile(
+            icon: Icons.analytics_rounded,
+            value: accuracy == null ? '—' : '$accuracy%',
+            label: 'accuracy',
+            color: NorieColors.green,
+          ),
+          _PulseTile(
+            icon: Icons.psychology_alt_rounded,
+            value: '$mastered',
+            label: 'mastered',
+            color: NorieColors.cyan,
+          ),
+        ];
+
+        if (compact) {
+          return Row(
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                Expanded(child: cards[i]),
+                if (i != cards.length - 1) const SizedBox(width: 8),
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            for (var i = 0; i < cards.length; i++) ...[
+              Expanded(child: cards[i]),
+              if (i != cards.length - 1) const SizedBox(width: 10),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PulseTile extends StatelessWidget {
+  const _PulseTile({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: .12),
+            NorieColors.surface.withValues(alpha: .90),
+          ],
         ),
+        border: Border.all(color: color.withValues(alpha: .24)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 7),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: const TextStyle(
+              color: NorieColors.textSecondary,
+              fontSize: 8.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -180,7 +315,7 @@ class _CurrentRankCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(30),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -196,7 +331,7 @@ class _CurrentRankCard extends StatelessWidget {
         boxShadow: const [
           BoxShadow(
             color: Color(0x335B5CE2),
-            blurRadius: 28,
+            blurRadius: 34,
             offset: Offset(0, 12),
           ),
         ],
