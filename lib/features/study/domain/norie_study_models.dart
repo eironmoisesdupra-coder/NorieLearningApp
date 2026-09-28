@@ -1,0 +1,159 @@
+enum NorieStudyGenerationMode {
+  multipleChoice('multiple_choice', 'Multiple Choice'),
+  trueFalse('true_false', 'True / False'),
+  identification('identification', 'Identification'),
+  flashcards('flashcards', 'Flashcards'),
+  mixed('mixed', 'Mixed');
+
+  const NorieStudyGenerationMode(this.wireValue, this.label);
+  final String wireValue;
+  final String label;
+
+  static NorieStudyGenerationMode fromWire(String value) {
+    return values.firstWhere(
+      (item) => item.wireValue == value,
+      orElse: () => mixed,
+    );
+  }
+}
+
+enum NorieStudyQuestionKind {
+  singleSelect('single_select'),
+  trueFalse('true_false'),
+  identification('identification'),
+  flashcard('flashcard');
+
+  const NorieStudyQuestionKind(this.wireValue);
+  final String wireValue;
+
+  static NorieStudyQuestionKind fromWire(String value) {
+    return values.firstWhere(
+      (item) => item.wireValue == value,
+      orElse: () => singleSelect,
+    );
+  }
+}
+
+class NorieStudyQuestion {
+  const NorieStudyQuestion({
+    required this.id,
+    required this.position,
+    required this.kind,
+    required this.prompt,
+    required this.options,
+    required this.correctValues,
+    required this.explanation,
+    required this.sourceExcerpt,
+    required this.difficulty,
+    this.topicTag,
+  });
+
+  final String id;
+  final int position;
+  final NorieStudyQuestionKind kind;
+  final String prompt;
+  final List<String> options;
+  final List<String> correctValues;
+  final String explanation;
+  final String sourceExcerpt;
+  final String difficulty;
+  final String? topicTag;
+
+  factory NorieStudyQuestion.fromMap(Map<String, dynamic> map) {
+    return NorieStudyQuestion(
+      id: map['id'].toString(),
+      position: (map['position'] as num?)?.toInt() ?? 0,
+      kind: NorieStudyQuestionKind.fromWire(
+        map['kind']?.toString() ?? 'single_select',
+      ),
+      prompt: map['prompt']?.toString() ?? '',
+      options: List<String>.from(map['options'] as List? ?? const []),
+      correctValues:
+          List<String>.from(map['correct_values'] as List? ?? const []),
+      explanation: map['explanation']?.toString() ?? '',
+      sourceExcerpt: map['source_excerpt']?.toString() ?? '',
+      topicTag: map['topic_tag']?.toString(),
+      difficulty: map['difficulty']?.toString() ?? 'foundation',
+    );
+  }
+}
+
+class NorieStudySet {
+  const NorieStudySet({
+    required this.id,
+    required this.title,
+    required this.sourceType,
+    required this.sourceName,
+    required this.mode,
+    required this.requestedCount,
+    required this.status,
+    required this.createdAt,
+    required this.questions,
+    this.topicTag,
+    this.aiModel,
+  });
+
+  final String id;
+  final String title;
+  final String sourceType;
+  final String? sourceName;
+  final NorieStudyGenerationMode mode;
+  final int requestedCount;
+  final String status;
+  final String? topicTag;
+  final String? aiModel;
+  final DateTime createdAt;
+  final List<NorieStudyQuestion> questions;
+
+  int get itemCount => questions.length;
+
+  factory NorieStudySet.fromMap(
+    Map<String, dynamic> map, {
+    List<NorieStudyQuestion> questions = const [],
+  }) {
+    return NorieStudySet(
+      id: map['id'].toString(),
+      title: map['title']?.toString() ?? 'Study Set',
+      sourceType: map['source_type']?.toString() ?? 'notes',
+      sourceName: map['source_name']?.toString(),
+      mode: NorieStudyGenerationMode.fromWire(
+        map['generation_mode']?.toString() ?? 'mixed',
+      ),
+      requestedCount: (map['requested_count'] as num?)?.toInt() ?? 0,
+      status: map['status']?.toString() ?? 'draft',
+      topicTag: map['topic_tag']?.toString(),
+      aiModel: map['ai_model']?.toString(),
+      createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      questions: questions,
+    );
+  }
+}
+
+class NorieStudyAttemptResult {
+  const NorieStudyAttemptResult({
+    required this.correct,
+    required this.total,
+    required this.xpAwarded,
+    required this.firstRewardedCompletion,
+  });
+
+  final int correct;
+  final int total;
+  final int xpAwarded;
+  final bool firstRewardedCompletion;
+
+  double get accuracy => total == 0 ? 0 : correct / total;
+}
+
+class NorieStudyAnswer {
+  const NorieStudyAnswer({
+    required this.question,
+    required this.response,
+    required this.correct,
+  });
+
+  final NorieStudyQuestion question;
+  final String response;
+  final bool correct;
+}
