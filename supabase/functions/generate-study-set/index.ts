@@ -231,10 +231,10 @@ Deno.serve(async (req: Request) => {
         const parsed = JSON.parse(errorText);
         const apiMessage = parsed?.error?.message;
         const apiCode = parsed?.error?.code;
-        if (typeof apiMessage === "string" && apiMessage.trim().isNotEmpty) {
+        if (typeof apiMessage === "string" && apiMessage.trim().length > 0) {
           safeMessage = apiMessage.trim().slice(0, 500);
         }
-        if (typeof apiCode === "string" && apiCode.trim().isNotEmpty) {
+        if (typeof apiCode === "string" && apiCode.trim().length > 0) {
           safeMessage = safeMessage + " [" + apiCode.trim() + "]";
         }
       } catch (_) {
