@@ -50,6 +50,89 @@ function sourceMime(filename: string): string {
   return "image/jpeg";
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function callAiProvider(userContent: any[]): Promise<{
+  provider: string;
+  model: string;
+  data: any;
+  inputUnits: number | null;
+  outputUnits: number | null;
+}> {
+  const provider = (Deno.env.get("NORIE_AI_PROVIDER") || "openai").trim().toLowerCase();
+  if (provider !== "openai") {
+    throw new Error("provider_not_configured:" + provider);
+  }
+
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("ai_not_configured");
+
+  const model = Deno.env.get("OPENAI_MODEL") || "gpt-5.6-luna";
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      input: [
+        {
+          role: "system",
+          content: [{
+            type: "input_text",
+            text: [
+              "You are Norie, a study assistant.",
+              "Answer ONLY from the supplied source material.",
+              "Do not silently correct or supplement the source with outside knowledge.",
+              "If the source does not support the answer, say exactly: The uploaded source does not provide enough information to answer that.",
+              "Keep explanations clear and concise for a learner.",
+            ].join("\n"),
+          }],
+        },
+        { role: "user", content: userContent },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("AI provider error", provider, response.status, errorText.slice(0, 1000));
+    let code = "ai_request_failed";
+    let message = "The AI provider rejected this question.";
+    try {
+      const parsed = JSON.parse(errorText);
+      if (typeof parsed?.error?.code === "string" && parsed.error.code.trim()) {
+        code = parsed.error.code.trim().slice(0, 120);
+      }
+      if (typeof parsed?.error?.message === "string" && parsed.error.message.trim()) {
+        message = parsed.error.message.trim().slice(0, 500);
+      }
+    } catch (_) {
+      // Keep generic provider error.
+    }
+    throw new Error("provider_error:" + code + ":" + message);
+  }
+
+  const data = await response.json();
+  const inputRaw = Number(data?.usage?.input_tokens ?? 0);
+  const outputRaw = Number(data?.usage?.output_tokens ?? 0);
+
+  return {
+    provider,
+    model,
+    data,
+    inputUnits: Number.isFinite(inputRaw) && inputRaw > 0 ? inputRaw : null,
+    outputUnits: Number.isFinite(outputRaw) && outputRaw > 0 ? outputRaw : null,
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -69,8 +152,14 @@ Deno.serve(async (req: Request) => {
   const user = authData?.user;
   if (authError || !user) return reply({ error: "unauthorized" }, 401);
 
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!apiKey) return reply({ error: "ai_not_configured" }, 503);
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceRoleKey) return reply({ error: "server_configuration_error" }, 503);
+
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    serviceRoleKey,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
 
   let body: any;
   try {
@@ -94,7 +183,7 @@ Deno.serve(async (req: Request) => {
 
   if (setError || !setRow) return reply({ error: "study_set_not_found" }, 404);
 
-  const model = Deno.env.get("OPENAI_MODEL") || "gpt-5.6-luna";
+  const requestStartedAt = Date.now();
   const userContent: any[] = [{
     type: "input_text",
     text: "QUESTION:\n" + question,
@@ -142,38 +231,123 @@ Deno.serve(async (req: Request) => {
     return reply({ error: "source_unavailable" }, 422);
   }
 
-  const openAiRes = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer " + apiKey,
-      "Content-Type": "application/json",
+  const sourceHash = await sha256Hex(sourceText || sourcePath);
+
+  const { data: creditResult, error: creditError } = await admin.rpc(
+    "consume_ai_credit_for_user",
+    {
+      p_user_id: user.id,
+      p_kind: "qa",
+      p_cost: 1,
     },
-    body: JSON.stringify({
+  );
+
+  if (creditError) return reply({ error: "quota_check_failed" }, 503);
+
+  if (!creditResult?.allowed) {
+    await admin.from("ai_generation_requests").insert({
+      user_id: user.id,
+      request_kind: "study_qa",
+      source_hash: sourceHash,
+      status: "rejected",
+      cache_hit: false,
+      study_set_id: studySetId,
+      latency_ms: Date.now() - requestStartedAt,
+      error_code: "daily_qa_limit_reached",
+      error_message: "Daily source Q&A limit reached.",
+    });
+
+    return reply({
+      error: "daily_qa_limit_reached",
+      message: "Your daily Ask Norie limit has been reached.",
+      quota: creditResult,
+    }, 429);
+  }
+
+  try {
+    const providerResult = await callAiProvider(userContent);
+    const answer = extractOutputText(providerResult.data).trim();
+
+    if (!answer) {
+      throw new Error("empty_answer");
+    }
+
+    await admin.from("ai_generation_requests").insert({
+      user_id: user.id,
+      request_kind: "study_qa",
+      source_hash: sourceHash,
+      provider: providerResult.provider,
+      model: providerResult.model,
+      status: "success",
+      cache_hit: false,
+      study_set_id: studySetId,
+      latency_ms: Date.now() - requestStartedAt,
+      input_units: providerResult.inputUnits,
+      output_units: providerResult.outputUnits,
+    });
+
+    return reply({
+      answer,
+      model: providerResult.model,
+      provider: providerResult.provider,
+      ai_credits_used: 1,
+    });
+  } catch (error) {
+    const rawMessage = error instanceof Error ? error.message : "Unknown error";
+    let errorCode = "study_qa_failed";
+    let safeMessage = "Norie could not answer from this source right now.";
+    let provider: string | null = null;
+    let model: string | null = null;
+
+    if (rawMessage === "ai_not_configured") {
+      errorCode = "ai_not_configured";
+      safeMessage = "The Norie AI provider is not configured yet.";
+    } else if (rawMessage === "empty_answer") {
+      errorCode = "empty_answer";
+      safeMessage = "The AI provider returned an empty answer.";
+    } else if (rawMessage.startsWith("provider_not_configured:")) {
+      errorCode = "provider_not_configured";
+      provider = rawMessage.split(":")[1] || null;
+      safeMessage = "The selected Norie AI provider is not configured yet.";
+    } else if (rawMessage.startsWith("provider_error:")) {
+      const parts = rawMessage.split(":");
+      errorCode = parts[1] || "ai_request_failed";
+      safeMessage = parts.slice(2).join(":").slice(0, 500) ||
+        "The AI provider rejected this question.";
+      provider = (Deno.env.get("NORIE_AI_PROVIDER") || "openai").trim().toLowerCase();
+      model = provider === "openai"
+        ? (Deno.env.get("OPENAI_MODEL") || "gpt-5.6-luna")
+        : null;
+    }
+
+    await admin.rpc("refund_ai_credit_for_user", {
+      p_user_id: user.id,
+      p_kind: "qa",
+      p_cost: 1,
+    });
+
+    await admin.from("ai_generation_requests").insert({
+      user_id: user.id,
+      request_kind: "study_qa",
+      source_hash: sourceHash,
+      provider,
       model,
-      input: [
-        {
-          role: "system",
-          content: [{
-            type: "input_text",
-            text: [
-              "You are Norie, a study assistant.",
-              "Answer ONLY from the supplied source material.",
-              "Do not silently correct or supplement the source with outside knowledge.",
-              "If the source does not support the answer, say exactly: The uploaded source does not provide enough information to answer that.",
-              "Keep explanations clear and concise for a learner.",
-            ].join("\n"),
-          }],
-        },
-        { role: "user", content: userContent },
-      ],
-    }),
-  });
+      status: "failed",
+      cache_hit: false,
+      study_set_id: studySetId,
+      latency_ms: Date.now() - requestStartedAt,
+      error_code: errorCode,
+      error_message: safeMessage,
+    });
 
-  if (!openAiRes.ok) return reply({ error: "ai_request_failed" }, 502);
+    const status = errorCode === "ai_not_configured" ||
+        errorCode === "provider_not_configured"
+      ? 503
+      : 502;
 
-  const data = await openAiRes.json();
-  const answer = extractOutputText(data).trim();
-  if (!answer) return reply({ error: "empty_answer" }, 502);
-
-  return reply({ answer, model });
+    return reply({
+      error: errorCode,
+      message: safeMessage,
+    }, status);
+  }
 });
