@@ -354,7 +354,24 @@ Deno.serve(async (req: Request) => {
     .select("id")
     .single();
 
-  if (setError || !setRow) return reply({ error: "study_set_create_failed" }, 500);
+  if (setError || !setRow) {
+    await admin.rpc("refund_ai_credit_for_user", {
+      p_user_id: user.id,
+      p_kind: "generation",
+      p_cost: 1,
+    });
+    await admin.from("ai_generation_requests").insert({
+      user_id: user.id,
+      request_kind: "study_generation",
+      source_hash: sourceHash,
+      status: "failed",
+      cache_hit: false,
+      latency_ms: Date.now() - requestStartedAt,
+      error_code: "study_set_create_failed",
+      error_message: "Study set record could not be created.",
+    });
+    return reply({ error: "study_set_create_failed" }, 500);
+  }
 
   const studySetId = setRow.id;
 
@@ -395,7 +412,26 @@ Deno.serve(async (req: Request) => {
   } else {
     const { data: blob, error: downloadError } = await supabase.storage.from(bucket).download(sourcePath);
     if (downloadError || !blob) {
-      await supabase.from("study_sets").update({ status: "failed", error_message: "Source file could not be loaded." }).eq("id", studySetId);
+      await admin.rpc("refund_ai_credit_for_user", {
+        p_user_id: user.id,
+        p_kind: "generation",
+        p_cost: 1,
+      });
+      await supabase.from("study_sets").update({
+        status: "failed",
+        error_message: "Source file could not be loaded.",
+      }).eq("id", studySetId);
+      await admin.from("ai_generation_requests").insert({
+        user_id: user.id,
+        request_kind: "study_generation",
+        source_hash: sourceHash,
+        status: "failed",
+        cache_hit: false,
+        study_set_id: studySetId,
+        latency_ms: Date.now() - requestStartedAt,
+        error_code: "source_download_failed",
+        error_message: "Source file could not be loaded.",
+      });
       return reply({ error: "source_download_failed" }, 422);
     }
 
@@ -460,21 +496,64 @@ Deno.serve(async (req: Request) => {
     }
 
     if (questions.length === 0) {
+      await admin.rpc("refund_ai_credit_for_user", {
+        p_user_id: user.id,
+        p_kind: "generation",
+        p_cost: 1,
+      });
       await supabase.from("study_sets").update({
         status: "failed",
         error_message: "The source did not support usable questions.",
         ai_model: model,
       }).eq("id", studySetId);
-      return reply({ error: "no_supported_questions", message: "The source did not support enough grounded questions." }, 422);
+      await admin.from("ai_generation_requests").insert({
+        user_id: user.id,
+        request_kind: "study_generation",
+        source_hash: sourceHash,
+        provider,
+        model,
+        status: "failed",
+        cache_hit: false,
+        study_set_id: studySetId,
+        latency_ms: Date.now() - requestStartedAt,
+        input_units: inputUnits,
+        output_units: outputUnits,
+        error_code: "no_supported_questions",
+        error_message: "The source did not support enough grounded questions.",
+      });
+      return reply({
+        error: "no_supported_questions",
+        message: "The source did not support enough grounded questions.",
+      }, 422);
     }
 
     const { error: questionError } = await supabase.from("study_questions").insert(questions);
     if (questionError) {
+      await admin.rpc("refund_ai_credit_for_user", {
+        p_user_id: user.id,
+        p_kind: "generation",
+        p_cost: 1,
+      });
       await supabase.from("study_sets").update({
         status: "failed",
         error_message: "Generated questions could not be saved.",
         ai_model: model,
       }).eq("id", studySetId);
+      await admin.from("ai_generation_requests").insert({
+        user_id: user.id,
+        request_kind: "study_generation",
+        source_hash: sourceHash,
+        provider,
+        model,
+        status: "failed",
+        cache_hit: false,
+        study_set_id: studySetId,
+        latency_ms: Date.now() - requestStartedAt,
+        input_units: inputUnits,
+        output_units: outputUnits,
+        error_code: "question_save_failed",
+        error_message: "Generated questions could not be saved.",
+      });
       return reply({ error: "question_save_failed" }, 500);
     }
 
