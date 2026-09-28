@@ -557,6 +557,36 @@ class NorieProgression extends ChangeNotifier {
     _recordStudyDay(DateTime.now());
     _changed();
   }
+  void recordGeneratedStudyAttempt({
+    required int correct,
+    required int total,
+    required int xpAwarded,
+    required String topic,
+  }) {
+    final safeTotal = total < 0 ? 0 : total;
+    final safeCorrect = correct.clamp(0, safeTotal).toInt();
+    final safeXp = xpAwarded < 0 ? 0 : xpAwarded;
+    final normalizedTopic =
+        topic.trim().isEmpty ? 'Generated Study Set' : topic.trim();
+
+    _studySessions++;
+    _correctAnswers += safeCorrect;
+    _questionsAnswered += safeTotal;
+    _totalXp += safeXp;
+    _recordStudyDay(DateTime.now());
+
+    if (safeTotal > 0) {
+      _recordTopicBatch(
+        category: 'AI Study',
+        topic: normalizedTopic,
+        correctAnswers: safeCorrect,
+        totalAttempts: safeTotal,
+      );
+    }
+
+    _changed();
+  }
+
 
   void recordTopicAnswer({
     required String category,
