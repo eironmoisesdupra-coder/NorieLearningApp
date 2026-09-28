@@ -1,0 +1,55 @@
+name: Flutter CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Generate Android and web platform scaffolding
+        run: flutter create --platforms=android,web --project-name norie_learning .
+
+      - name: Apply Norie platform branding
+        run: |
+          cp branding/web/index.html web/index.html
+          cp branding/web/manifest.json web/manifest.json
+          cp branding/web/norie-logo.svg web/norie-logo.svg
+          mkdir -p android/app/src/main/res/drawable
+          cp branding/android/norie_launcher_icon.xml android/app/src/main/res/drawable/norie_launcher_icon.xml
+          cp branding/android/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+
+      - name: Remove generated default test
+        run: rm -f test/widget_test.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build web release
+        run: flutter build web --release

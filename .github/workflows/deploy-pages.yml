@@ -1,0 +1,54 @@
+name: Deploy Web Preview
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: norie-web-preview
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate web platform scaffolding
+        run: flutter create --platforms=web --project-name norie_learning .
+
+      - name: Apply Norie web branding
+        run: |
+          cp branding/web/index.html web/index.html
+          cp branding/web/manifest.json web/manifest.json
+          cp branding/web/norie-logo.svg web/norie-logo.svg
+
+      - name: Remove generated default test
+        run: rm -f test/widget_test.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web preview
+        run: flutter build web --release --base-href "/NorieLearningApp/"
+
+      - name: Publish to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          publish_branch: gh-pages
+          force_orphan: true
