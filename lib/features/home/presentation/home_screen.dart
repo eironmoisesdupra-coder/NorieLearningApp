@@ -130,9 +130,9 @@ class _Header extends StatelessWidget {
                 ],
               ),
             ),
-            _StatusPill(
-              icon: Icons.star_rounded,
-              value: '${progression.totalXp} XP',
+            _HomeBalancePill(
+              xp: progression.totalXp,
+              credits: NorieProgression.instance.credits,
             ),
           ],
         );
@@ -141,16 +141,19 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.icon, required this.value});
+class _HomeBalancePill extends StatelessWidget {
+  const _HomeBalancePill({
+    required this.xp,
+    required this.credits,
+  });
 
-  final IconData icon;
-  final String value;
+  final int xp;
+  final int credits;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
       decoration: BoxDecoration(
         color: NorieColors.surface,
         borderRadius: BorderRadius.circular(20),
@@ -159,11 +162,37 @@ class _StatusPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 17, color: NorieColors.orange),
-          const SizedBox(width: 5),
+          const Icon(
+            Icons.star_rounded,
+            size: 16,
+            color: NorieColors.orange,
+          ),
+          const SizedBox(width: 4),
           Text(
-            value,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            '$xp XP',
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 16,
+            margin: const EdgeInsets.symmetric(horizontal: 7),
+            color: NorieColors.border,
+          ),
+          const Icon(
+            Icons.hexagon_rounded,
+            size: 15,
+            color: NorieColors.magenta,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$credits',
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ],
       ),
@@ -340,6 +369,12 @@ class _HomeHero extends StatelessWidget {
                                 value: '${snapshot.totalXp}',
                                 label: 'XP',
                                 color: NorieColors.cyan,
+                              ),
+                              _HeroStat(
+                                icon: Icons.hexagon_rounded,
+                                value: '${progression.credits}',
+                                label: 'credits',
+                                color: NorieColors.magenta,
                               ),
                             ],
                           ),
