@@ -79,10 +79,6 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
 
   void _rateFlashcard(bool knewIt) {
     if (_checked) return;
-    final answer = _question.correctValues.isEmpty
-        ? ''
-        : _question.correctValues.first;
-
     setState(() {
       _checked = true;
       _correct = knewIt;
