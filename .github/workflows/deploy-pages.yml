@@ -30,6 +30,12 @@ jobs:
       - name: Generate web platform scaffolding
         run: flutter create --platforms=web --project-name norie_learning .
 
+      - name: Apply Norie web branding
+        run: |
+          cp branding/web/index.html web/index.html
+          cp branding/web/manifest.json web/manifest.json
+          cp branding/web/norie-logo.svg web/norie-logo.svg
+
       - name: Remove generated default test
         run: rm -f test/widget_test.dart
 
