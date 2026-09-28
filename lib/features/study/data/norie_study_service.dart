@@ -174,17 +174,22 @@ class NorieStudyService {
 
     try {
       final response = await client.functions.invoke(
-        'generate-study-set',
+        'norie-ai-gateway',
         body: {
-          'title': title.trim().isEmpty ? 'Generated Study Set' : title.trim(),
-          'source_type': sourceType,
-          'source_text': sourceText,
-          'source_path': sourcePath,
-          'source_name': sourceName,
-          'mime_type': mimeType,
-          'mode': mode.wireValue,
-          'question_count': questionCount,
-          'topic_tag': topicTag.trim(),
+          'action': 'generate_study_set',
+          'payload': {
+            'title': title.trim().isEmpty
+                ? 'Generated Study Set'
+                : title.trim(),
+            'source_type': sourceType,
+            'source_text': sourceText,
+            'source_path': sourcePath,
+            'source_name': sourceName,
+            'mime_type': mimeType,
+            'mode': mode.wireValue,
+            'question_count': questionCount,
+            'topic_tag': topicTag.trim(),
+          },
         },
       );
 
@@ -240,10 +245,13 @@ class NorieStudyService {
 
     try {
       final response = await client.functions.invoke(
-        'study-qa',
+        'norie-ai-gateway',
         body: {
-          'study_set_id': studySetId,
-          'question': question.trim(),
+          'action': 'study_qa',
+          'payload': {
+            'study_set_id': studySetId,
+            'question': question.trim(),
+          },
         },
       );
       final data = response.data;
