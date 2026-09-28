@@ -153,9 +153,9 @@ class _SubscriptionHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NorieGlassCard(
+    return const NorieGlassCard(
       accent: NorieColors.violet,
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -190,7 +190,7 @@ class _SubscriptionHero extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: const [
+            children: [
               _BenefitChip(
                 icon: Icons.auto_awesome_rounded,
                 label: 'More AI',
