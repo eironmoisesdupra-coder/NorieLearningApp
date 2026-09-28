@@ -220,12 +220,37 @@ Deno.serve(async (req: Request) => {
 
     if (!openAiRes.ok) {
       const errorText = await openAiRes.text();
+      console.error(
+        "OpenAI API error",
+        openAiRes.status,
+        errorText.slice(0, 1000),
+      );
+
+      let safeMessage = "OpenAI rejected the generation request.";
+      try {
+        const parsed = JSON.parse(errorText);
+        const apiMessage = parsed?.error?.message;
+        const apiCode = parsed?.error?.code;
+        if (typeof apiMessage === "string" && apiMessage.trim().isNotEmpty) {
+          safeMessage = apiMessage.trim().slice(0, 500);
+        }
+        if (typeof apiCode === "string" && apiCode.trim().isNotEmpty) {
+          safeMessage = safeMessage + " [" + apiCode.trim() + "]";
+        }
+      } catch (_) {
+        // Keep the generic safe message.
+      }
+
       await supabase.from("study_sets").update({
         status: "failed",
-        error_message: "AI generation request failed.",
+        error_message: safeMessage,
         ai_model: model,
       }).eq("id", studySetId);
-      return reply({ error: "ai_request_failed", detail: errorText.slice(0, 300) }, 502);
+
+      return reply({
+        error: "ai_request_failed",
+        message: safeMessage,
+      }, 502);
     }
 
     const data = await openAiRes.json();
