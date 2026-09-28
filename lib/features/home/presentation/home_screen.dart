@@ -176,8 +176,8 @@ class _HomeBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
+    return const DecoratedBox(
+      decoration: BoxDecoration(
         color: NorieColors.background,
         gradient: RadialGradient(
           center: Alignment(.65, -.82),
@@ -190,7 +190,7 @@ class _HomeBackdrop extends StatelessWidget {
         ),
       ),
       child: Stack(
-        children: const [
+        children: [
           Positioned(
             right: -70,
             top: 170,
