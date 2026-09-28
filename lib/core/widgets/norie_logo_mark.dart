@@ -28,8 +28,8 @@ class NorieLogoMark extends StatelessWidget {
                 ]
               : null,
         ),
-        child: CustomPaint(
-          painter: const _NorieLogoPainter(),
+        child: const CustomPaint(
+          painter: _NorieLogoPainter(),
         ),
       ),
     );
