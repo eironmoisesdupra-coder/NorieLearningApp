@@ -157,3 +157,46 @@ class NorieStudyAnswer {
   final String response;
   final bool correct;
 }
+
+
+class NorieAiQuota {
+  const NorieAiQuota({
+    required this.plan,
+    required this.usageDate,
+    required this.generationUsed,
+    required this.generationLimit,
+    required this.generationRemaining,
+    required this.qaUsed,
+    required this.qaLimit,
+    required this.qaRemaining,
+  });
+
+  final String plan;
+  final DateTime? usageDate;
+  final int generationUsed;
+  final int generationLimit;
+  final int generationRemaining;
+  final int qaUsed;
+  final int qaLimit;
+  final int qaRemaining;
+
+  bool get canGenerate => generationRemaining > 0;
+  bool get canAskNorie => qaRemaining > 0;
+
+  factory NorieAiQuota.fromMap(Map<String, dynamic> map) {
+    int readInt(String key) => (map[key] as num?)?.toInt() ??
+        int.tryParse(map[key]?.toString() ?? '') ??
+        0;
+
+    return NorieAiQuota(
+      plan: map['plan']?.toString() ?? 'free',
+      usageDate: DateTime.tryParse(map['usage_date']?.toString() ?? ''),
+      generationUsed: readInt('generation_used'),
+      generationLimit: readInt('generation_limit'),
+      generationRemaining: readInt('generation_remaining'),
+      qaUsed: readInt('qa_used'),
+      qaLimit: readInt('qa_limit'),
+      qaRemaining: readInt('qa_remaining'),
+    );
+  }
+}
