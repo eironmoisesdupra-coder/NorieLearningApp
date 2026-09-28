@@ -6,6 +6,8 @@ import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
 import '../../account/presentation/account_screen.dart';
 import '../../challenge/presentation/challenge_screen.dart';
+import '../../commerce/presentation/norie_shop_placeholder_screen.dart';
+import '../../commerce/presentation/subscription_placeholder_screen.dart';
 import '../../common/presentation/coming_soon_screen.dart';
 import '../../learning/presentation/atomic_structure_lesson_screen.dart';
 import '../../learning/presentation/chemistry_screen.dart';
@@ -168,6 +170,26 @@ class NorieDrawer extends StatelessWidget {
                     context,
                     4,
                     const ProfileScreen(),
+                  ),
+                ),
+                _MenuItem(
+                  icon: Icons.workspace_premium_rounded,
+                  label: 'Membership',
+                  color: NorieColors.violet,
+                  trailing: const _SampleBadge(),
+                  onTap: () => _open(
+                    context,
+                    const SubscriptionPlaceholderScreen(),
+                  ),
+                ),
+                _MenuItem(
+                  icon: Icons.storefront_rounded,
+                  label: 'Norie Shop',
+                  color: NorieColors.orange,
+                  trailing: const _SampleBadge(),
+                  onTap: () => _open(
+                    context,
+                    const NorieShopPlaceholderScreen(),
                   ),
                 ),
                 _MenuItem(
