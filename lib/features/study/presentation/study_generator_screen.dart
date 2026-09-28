@@ -9,7 +9,12 @@ import '../domain/norie_study_models.dart';
 import 'study_set_screen.dart';
 
 class StudyGeneratorScreen extends StatefulWidget {
-  const StudyGeneratorScreen({super.key});
+  const StudyGeneratorScreen({
+    super.key,
+    this.initialQuestionCount = 10,
+  });
+
+  final int initialQuestionCount;
 
   @override
   State<StudyGeneratorScreen> createState() => _StudyGeneratorScreenState();
@@ -21,7 +26,7 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
   final _notesController = TextEditingController();
 
   NorieStudyGenerationMode _mode = NorieStudyGenerationMode.mixed;
-  int _questionCount = 10;
+  late int _questionCount;
   bool _usingFile = false;
   bool _working = false;
 
@@ -29,6 +34,15 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
   Uint8List? _pickedBytes;
   String _mimeType = '';
   String _sourceType = 'notes';
+
+  @override
+  void initState() {
+    super.initState();
+    _questionCount = const [5, 10, 20, 40]
+            .contains(widget.initialQuestionCount)
+        ? widget.initialQuestionCount
+        : 10;
+  }
 
   @override
   void dispose() {
