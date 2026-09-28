@@ -482,7 +482,11 @@ class NorieProgression extends ChangeNotifier {
     _lastModifiedAt = DateTime.tryParse(rawModified ?? '')?.toUtc() ??
         DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     _onboardingComplete = prefs.getBool(_onboardingKey) ?? false;
+    final migratedLegacyTopic = _migrateLegacyTopicCompletion();
     notifyListeners();
+    if (migratedLegacyTopic) {
+      await _save();
+    }
   }
 
   NorieXpAward addXp(int amount) {
@@ -829,9 +833,19 @@ class NorieProgression extends ChangeNotifier {
     );
     _lastModifiedAt = (remoteModifiedAt ?? stateModified ?? DateTime.now())
         .toUtc();
+    _migrateLegacyTopicCompletion();
 
     _changed(touchModified: false);
     await _save();
+  }
+
+  bool _migrateLegacyTopicCompletion() {
+    if (_completedTopicIds.isNotEmpty || _completedLessons < 1) {
+      return false;
+    }
+
+    _completedTopicIds.add('science.chemistry.atomic-structure');
+    return true;
   }
 
   static int _readInt(Object? value, {required int fallback}) {
