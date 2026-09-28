@@ -185,11 +185,12 @@ class NorieAccountService extends ChangeNotifier {
     if (client == null) return false;
 
     try {
-      final result = await client.rpc(
-        'is_demo_email_approved',
-        params: {'candidate_email': email.trim().toLowerCase()},
+      final response = await client.functions.invoke(
+        'demo-signup-check',
+        body: {'email': email.trim().toLowerCase()},
       );
-      return result == true;
+      final data = response.data;
+      return data is Map && data['approved'] == true;
     } catch (_) {
       return false;
     }
