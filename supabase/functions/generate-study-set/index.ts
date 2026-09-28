@@ -57,6 +57,90 @@ function sourceMime(sourceType: string, filename: string, supplied: string): str
   return sourceType === "image" ? "image/jpeg" : "application/octet-stream";
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+type AiProviderResult = {
+  provider: string;
+  model: string;
+  data: any;
+  inputUnits: number | null;
+  outputUnits: number | null;
+};
+
+async function callAiProvider({
+  systemPrompt,
+  userContent,
+}: {
+  systemPrompt: string;
+  userContent: any[];
+}): Promise<AiProviderResult> {
+  const provider = (Deno.env.get("NORIE_AI_PROVIDER") || "openai").trim().toLowerCase();
+
+  if (provider !== "openai") {
+    throw new Error("provider_not_configured:" + provider);
+  }
+
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("ai_not_configured");
+
+  const model = Deno.env.get("OPENAI_MODEL") || "gpt-5.6-luna";
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      input: [
+        { role: "system", content: [{ type: "input_text", text: systemPrompt }] },
+        { role: "user", content: userContent },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("AI provider error", provider, response.status, errorText.slice(0, 1000));
+
+    let safeMessage = "The AI provider rejected the generation request.";
+    let safeCode = "ai_request_failed";
+    try {
+      const parsed = JSON.parse(errorText);
+      const apiMessage = parsed?.error?.message;
+      const apiCode = parsed?.error?.code;
+      if (typeof apiMessage === "string" && apiMessage.trim().length > 0) {
+        safeMessage = apiMessage.trim().slice(0, 500);
+      }
+      if (typeof apiCode === "string" && apiCode.trim().length > 0) {
+        safeCode = apiCode.trim().slice(0, 120);
+      }
+    } catch (_) {
+      // Keep generic provider error.
+    }
+
+    throw new Error("provider_error:" + safeCode + ":" + safeMessage);
+  }
+
+  const data = await response.json();
+  const inputRaw = Number(data?.usage?.input_tokens ?? 0);
+  const outputRaw = Number(data?.usage?.output_tokens ?? 0);
+
+  return {
+    provider,
+    model,
+    data,
+    inputUnits: Number.isFinite(inputRaw) && inputRaw > 0 ? inputRaw : null,
+    outputUnits: Number.isFinite(outputRaw) && outputRaw > 0 ? outputRaw : null,
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -76,13 +160,16 @@ Deno.serve(async (req: Request) => {
   const user = authData?.user;
   if (authError || !user) return reply({ error: "unauthorized" }, 401);
 
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!apiKey) {
-    return reply({
-      error: "ai_not_configured",
-      message: "The AI provider is not configured yet.",
-    }, 503);
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceRoleKey) {
+    return reply({ error: "server_configuration_error" }, 503);
   }
+
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    serviceRoleKey,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
 
   let body: any;
   try {
@@ -121,6 +208,135 @@ Deno.serve(async (req: Request) => {
     return reply({ error: "invalid_source_path" }, 403);
   }
 
+  const sourceIdentity = sourceType === "notes" ? sourceText : sourcePath;
+  const sourceHash = await sha256Hex(sourceIdentity);
+  const cacheKey = await sha256Hex(JSON.stringify({
+    schema: 1,
+    source_type: sourceType,
+    source_hash: sourceHash,
+    mode,
+    requested_count: requestedCount,
+    topic_tag: topicTag,
+  }));
+
+  const requestStartedAt = Date.now();
+
+  const { data: cached } = await admin
+    .from("ai_generation_cache")
+    .select("id,provider,model,payload,hit_count")
+    .eq("owner_user_id", user.id)
+    .eq("cache_key", cacheKey)
+    .maybeSingle();
+
+  if (cached?.payload && Array.isArray(cached.payload.questions)) {
+    const cachedPayload = cached.payload;
+    const { data: cachedSet, error: cachedSetError } = await supabase
+      .from("study_sets")
+      .insert({
+        user_id: user.id,
+        title: String(cachedPayload.title ?? title).trim().slice(0, 120) || title,
+        source_type: sourceType === "text" ? "notes" : sourceType,
+        source_name: sourceName || (sourceType === "notes" ? "Pasted notes" : null),
+        source_text: sourceType === "notes" ? sourceText : null,
+        source_path: sourcePath || null,
+        generation_mode: mode,
+        requested_count: requestedCount,
+        status: "ready",
+        topic_tag: String(cachedPayload.topic_tag ?? topicTag).trim().slice(0, 100) || null,
+        ai_model: cached.model,
+      })
+      .select("id")
+      .single();
+
+    if (cachedSetError || !cachedSet) {
+      return reply({ error: "study_set_create_failed" }, 500);
+    }
+
+    const cachedQuestions = cachedPayload.questions
+      .slice(0, requestedCount)
+      .map((q: any, index: number) => ({
+        study_set_id: cachedSet.id,
+        position: index,
+        kind: q.kind,
+        prompt: q.prompt,
+        options: q.options ?? [],
+        correct_values: q.correct_values ?? [],
+        explanation: q.explanation ?? "",
+        source_excerpt: q.source_excerpt ?? "",
+        topic_tag: q.topic_tag ?? null,
+        difficulty: q.difficulty ?? "foundation",
+      }));
+
+    const { error: cachedQuestionError } = await supabase
+      .from("study_questions")
+      .insert(cachedQuestions);
+
+    if (cachedQuestionError) {
+      await supabase.from("study_sets").delete().eq("id", cachedSet.id);
+      return reply({ error: "question_save_failed" }, 500);
+    }
+
+    await admin
+      .from("ai_generation_cache")
+      .update({
+        hit_count: Number(cached.hit_count ?? 0) + 1,
+        last_hit_at: new Date().toISOString(),
+      })
+      .eq("id", cached.id);
+
+    await admin.from("ai_generation_requests").insert({
+      user_id: user.id,
+      request_kind: "study_generation",
+      source_hash: sourceHash,
+      provider: cached.provider,
+      model: cached.model,
+      status: "cache_hit",
+      cache_hit: true,
+      study_set_id: cachedSet.id,
+      latency_ms: Date.now() - requestStartedAt,
+    });
+
+    return reply({
+      study_set_id: cachedSet.id,
+      generated_count: cachedQuestions.length,
+      requested_count: requestedCount,
+      cache_hit: true,
+      ai_credits_used: 0,
+    });
+  }
+
+  const { data: creditResult, error: creditError } = await admin.rpc(
+    "consume_ai_credit_for_user",
+    {
+      p_user_id: user.id,
+      p_kind: "generation",
+      p_cost: 1,
+    },
+  );
+
+  if (creditError) {
+    return reply({ error: "quota_check_failed" }, 503);
+  }
+
+  if (!creditResult?.allowed) {
+    await admin.from("ai_generation_requests").insert({
+      user_id: user.id,
+      request_kind: "study_generation",
+      source_hash: sourceHash,
+      status: "rejected",
+      cache_hit: false,
+      error_code: "daily_ai_limit_reached",
+      error_message: "Daily AI generation limit reached.",
+      latency_ms: Date.now() - requestStartedAt,
+    });
+
+    return reply({
+      error: "daily_ai_limit_reached",
+      message: "Your daily AI generation limit has been reached.",
+      quota: creditResult,
+    }, 429);
+  }
+
   const { data: setRow, error: setError } = await supabase
     .from("study_sets")
     .insert({
@@ -141,7 +357,6 @@ Deno.serve(async (req: Request) => {
   if (setError || !setRow) return reply({ error: "study_set_create_failed" }, 500);
 
   const studySetId = setRow.id;
-  const model = Deno.env.get("OPENAI_MODEL") || "gpt-5.6-luna";
 
   const formatInstructions: Record<string,string> = {
     multiple_choice: "Create only single_select questions with exactly four options.",
@@ -206,54 +421,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const openAiRes = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        input: [
-          { role: "system", content: [{ type: "input_text", text: systemPrompt }] },
-          { role: "user", content: userContent },
-        ],
-      }),
+    const providerResult = await callAiProvider({
+      systemPrompt,
+      userContent,
     });
-
-    if (!openAiRes.ok) {
-      const errorText = await openAiRes.text();
-      console.error(
-        "OpenAI API error",
-        openAiRes.status,
-        errorText.slice(0, 1000),
-      );
-
-      let safeMessage = "OpenAI rejected the generation request.";
-      try {
-        const parsed = JSON.parse(errorText);
-        const apiMessage = parsed?.error?.message;
-        const apiCode = parsed?.error?.code;
-        if (typeof apiMessage === "string" && apiMessage.trim().length > 0) {
-          safeMessage = apiMessage.trim().slice(0, 500);
-        }
-        if (typeof apiCode === "string" && apiCode.trim().length > 0) {
-          safeMessage = safeMessage + " [" + apiCode.trim() + "]";
-        }
-      } catch (_) {
-        // Keep the generic safe message.
-      }
-
-      await supabase.from("study_sets").update({
-        status: "failed",
-        error_message: safeMessage,
-        ai_model: model,
-      }).eq("id", studySetId);
-
-      return reply({
-        error: "ai_request_failed",
-        message: safeMessage,
-      }, 502);
-    }
-
-    const data = await openAiRes.json();
+    const { provider, model, data, inputUnits, outputUnits } = providerResult;
     const generated = JSON.parse(extractJsonObject(extractOutputText(data).trim()));
     const inputQuestions = Array.isArray(generated?.questions) ? generated.questions : [];
 
@@ -306,25 +478,139 @@ Deno.serve(async (req: Request) => {
       return reply({ error: "question_save_failed" }, 500);
     }
 
+    const finalTitle = String(generated?.title ?? title).trim().slice(0, 120) || title;
+    const finalTopicTag =
+      String(generated?.topic_tag ?? topicTag).trim().slice(0, 100) || null;
+
     await supabase.from("study_sets").update({
-      title: String(generated?.title ?? title).trim().slice(0, 120) || title,
-      topic_tag: String(generated?.topic_tag ?? topicTag).trim().slice(0, 100) || null,
+      title: finalTitle,
+      topic_tag: finalTopicTag,
       status: "ready",
       ai_model: model,
       error_message: null,
     }).eq("id", studySetId);
 
-    return reply({ study_set_id: studySetId, generated_count: questions.length, requested_count: requestedCount });
+    const cachePayload = {
+      title: finalTitle,
+      topic_tag: finalTopicTag,
+      questions: questions.map((q) => ({
+        kind: q.kind,
+        prompt: q.prompt,
+        options: q.options,
+        correct_values: q.correct_values,
+        explanation: q.explanation,
+        source_excerpt: q.source_excerpt,
+        topic_tag: q.topic_tag,
+        difficulty: q.difficulty,
+      })),
+    };
+
+    await admin.from("ai_generation_cache").upsert({
+      owner_user_id: user.id,
+      cache_key: cacheKey,
+      task_type: "study_generation",
+      provider,
+      model,
+      payload: cachePayload,
+      last_hit_at: null,
+    }, { onConflict: "owner_user_id,cache_key" });
+
+    const { data: requestRow } = await admin
+      .from("ai_generation_requests")
+      .insert({
+        user_id: user.id,
+        request_kind: "study_generation",
+        source_hash: sourceHash,
+        provider,
+        model,
+        status: "success",
+        cache_hit: false,
+        study_set_id: studySetId,
+        latency_ms: Date.now() - requestStartedAt,
+        input_units: inputUnits,
+        output_units: outputUnits,
+      })
+      .select("id")
+      .single();
+
+    if (requestRow?.id) {
+      await admin.from("ai_evaluation_records").insert({
+        user_id: user.id,
+        generation_request_id: requestRow.id,
+        study_set_id: studySetId,
+        validation_status: questions.length >= requestedCount ? "passed" : "partial",
+        generated_items: questions.length,
+        rejected_items: Math.max(inputQuestions.slice(0, requestedCount).length - questions.length, 0),
+        grounded_items: questions.length,
+      });
+    }
+
+    return reply({
+      study_set_id: studySetId,
+      generated_count: questions.length,
+      requested_count: requestedCount,
+      cache_hit: false,
+      ai_credits_used: 1,
+    });
   } catch (error) {
+    const rawMessage = error instanceof Error ? error.message : "Unknown error";
+    let errorCode = "generation_failed";
+    let safeMessage = "Generation could not be completed.";
+    let provider: string | null = null;
+    let model: string | null = null;
+
+    if (rawMessage === "ai_not_configured") {
+      errorCode = "ai_not_configured";
+      safeMessage = "The Norie AI provider is not configured yet.";
+    } else if (rawMessage.startsWith("provider_not_configured:")) {
+      errorCode = "provider_not_configured";
+      provider = rawMessage.split(":")[1] || null;
+      safeMessage = "The selected Norie AI provider is not configured yet.";
+    } else if (rawMessage.startsWith("provider_error:")) {
+      const parts = rawMessage.split(":");
+      errorCode = parts[1] || "ai_request_failed";
+      safeMessage = parts.slice(2).join(":").slice(0, 500) ||
+        "The AI provider rejected the generation request.";
+      provider = (Deno.env.get("NORIE_AI_PROVIDER") || "openai").trim().toLowerCase();
+      model = provider === "openai"
+        ? (Deno.env.get("OPENAI_MODEL") || "gpt-5.6-luna")
+        : null;
+    }
+
+    await admin.rpc("refund_ai_credit_for_user", {
+      p_user_id: user.id,
+      p_kind: "generation",
+      p_cost: 1,
+    });
+
     await supabase.from("study_sets").update({
       status: "failed",
-      error_message: "Generation could not be completed.",
+      error_message: safeMessage,
       ai_model: model,
     }).eq("id", studySetId);
 
+    await admin.from("ai_generation_requests").insert({
+      user_id: user.id,
+      request_kind: "study_generation",
+      source_hash: sourceHash,
+      provider,
+      model,
+      status: "failed",
+      cache_hit: false,
+      study_set_id: studySetId,
+      latency_ms: Date.now() - requestStartedAt,
+      error_code: errorCode,
+      error_message: safeMessage,
+    });
+
+    const status = errorCode === "ai_not_configured" ||
+        errorCode === "provider_not_configured"
+      ? 503
+      : 502;
+
     return reply({
-      error: "generation_failed",
-      message: error instanceof Error ? error.message : "Unknown error",
-    }, 500);
+      error: errorCode,
+      message: safeMessage,
+    }, status);
   }
 });
