@@ -159,7 +159,7 @@ class _SubscriptionHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'LEARN MORE · CREATE MORE',
             style: TextStyle(
               color: NorieColors.cyan,
@@ -168,8 +168,8 @@ class _SubscriptionHero extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 9),
-          const Text(
+          SizedBox(height: 9),
+          Text(
             'Memberships that scale with your learning.',
             style: TextStyle(
               fontSize: 28,
@@ -178,15 +178,15 @@ class _SubscriptionHero extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 10),
-          const Text(
+          SizedBox(height: 10),
+          Text(
             'Norie will keep core learning useful for free while paid plans unlock more AI capacity and advanced tools.',
             style: TextStyle(
               color: NorieColors.textSecondary,
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
