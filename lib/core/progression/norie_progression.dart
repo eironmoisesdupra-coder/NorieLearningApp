@@ -286,6 +286,7 @@ class NorieProgression extends ChangeNotifier {
   static const _speedBestScoreKey = 'norie.speedBestScore';
   static const _weeklyRewardedWeeksKey = 'norie.weeklyRewardedWeeks';
   static const _topicMasteryKey = 'norie.topicMastery';
+  static const _completedTopicIdsKey = 'norie.completedTopicIds';
   static const _lastModifiedKey = 'norie.lastModifiedAt';
 
   int _totalXp = 0;
@@ -300,6 +301,7 @@ class NorieProgression extends ChangeNotifier {
   Set<String> _dailyChallengeDates = <String>{};
   Set<String> _speedRewardDates = <String>{};
   Set<String> _weeklyRewardedWeeks = <String>{};
+  Set<String> _completedTopicIds = <String>{};
   Map<String, NorieTopicMastery> _topicMastery = <String, NorieTopicMastery>{};
   DateTime _lastModifiedAt = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   bool _onboardingComplete = false;
@@ -312,6 +314,8 @@ class NorieProgression extends ChangeNotifier {
   int get challengeSessions => _challengeSessions;
   int get speedBestScore => _speedBestScore;
   Set<String> get exploredSubjects => Set.unmodifiable(_exploredSubjects);
+  Set<String> get completedTopicIds => Set.unmodifiable(_completedTopicIds);
+  bool isTopicCompleted(String topicId) => _completedTopicIds.contains(topicId);
   bool get onboardingComplete => _onboardingComplete;
   DateTime get lastModifiedAt => _lastModifiedAt;
 
@@ -453,6 +457,9 @@ class NorieProgression extends ChangeNotifier {
     _weeklyRewardedWeeks =
         (prefs.getStringList(_weeklyRewardedWeeksKey) ?? const <String>[])
             .toSet();
+    _completedTopicIds =
+        (prefs.getStringList(_completedTopicIdsKey) ?? const <String>[])
+            .toSet();
 
     final rawMastery = prefs.getString(_topicMasteryKey);
     if (rawMastery != null && rawMastery.isNotEmpty) {
@@ -513,6 +520,7 @@ class NorieProgression extends ChangeNotifier {
     required int challengeScore,
     String category = 'Science',
     String topic = 'Atomic Structure',
+    String? topicId,
     int quizAttempts = 5,
     int challengeAttempts = 3,
   }) {
@@ -528,6 +536,9 @@ class NorieProgression extends ChangeNotifier {
     _correctAnswers += totalCorrect;
     _questionsAnswered += totalAttempts;
     _recordStudyDay(DateTime.now());
+    if (topicId != null && topicId.trim().isNotEmpty) {
+      _completedTopicIds.add(topicId.trim());
+    }
     _recordTopicBatch(
       category: category,
       topic: topic,
@@ -710,6 +721,10 @@ class NorieProgression extends ChangeNotifier {
         _weeklyRewardedWeeksKey,
         _weeklyRewardedWeeks.toList()..sort(),
       ),
+      prefs.setStringList(
+        _completedTopicIdsKey,
+        _completedTopicIds.toList()..sort(),
+      ),
       prefs.setString(
         _topicMasteryKey,
         jsonEncode(
@@ -736,6 +751,7 @@ class NorieProgression extends ChangeNotifier {
     _dailyChallengeDates = <String>{};
     _speedRewardDates = <String>{};
     _weeklyRewardedWeeks = <String>{};
+    _completedTopicIds = <String>{};
     _topicMastery = <String, NorieTopicMastery>{};
     _onboardingComplete = true;
     _lastModifiedAt = DateTime.now().toUtc();
@@ -758,6 +774,7 @@ class NorieProgression extends ChangeNotifier {
         'daily_challenge_dates': _dailyChallengeDates.toList()..sort(),
         'speed_reward_dates': _speedRewardDates.toList()..sort(),
         'weekly_rewarded_weeks': _weeklyRewardedWeeks.toList()..sort(),
+        'completed_topic_ids': _completedTopicIds.toList()..sort(),
         'topic_mastery': _topicMastery.map(
           (key, value) => MapEntry(key, value.toJson()),
         ),
@@ -788,6 +805,7 @@ class NorieProgression extends ChangeNotifier {
     _dailyChallengeDates = _readStringSet(state['daily_challenge_dates']);
     _speedRewardDates = _readStringSet(state['speed_reward_dates']);
     _weeklyRewardedWeeks = _readStringSet(state['weekly_rewarded_weeks']);
+    _completedTopicIds = _readStringSet(state['completed_topic_ids']);
 
     final rawMastery = state['topic_mastery'];
     if (rawMastery is Map) {
