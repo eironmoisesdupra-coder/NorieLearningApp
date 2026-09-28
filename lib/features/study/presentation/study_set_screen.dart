@@ -132,7 +132,7 @@ class _StudySetScreenState extends State<StudySetScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Expanded(
+                    const Expanded(
                       child: _InfoCard(
                         icon: Icons.fact_check_outlined,
                         label: 'Grounding',
