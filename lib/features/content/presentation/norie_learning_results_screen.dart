@@ -52,6 +52,7 @@ class _NorieLearningResultsScreenState
       challengeScore: widget.challengeScore,
       category: widget.topic.category,
       topic: widget.topic.title,
+      topicId: widget.topic.id,
       quizAttempts: widget.topic.quiz.questions.length,
       challengeAttempts: widget.topic.challenge.rounds.length,
     );
