@@ -6,6 +6,8 @@ import '../../../core/theme/norie_theme.dart';
 import '../../common/presentation/coming_soon_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 import '../../progress/presentation/progress_screen.dart';
+import '../../study/presentation/study_generator_screen.dart';
+import '../../study/presentation/study_hub_screen.dart';
 import 'science_screen.dart';
 
 class LearnScreen extends StatefulWidget {
@@ -135,7 +137,23 @@ class _LearnScreenState extends State<LearnScreen> {
                     }
                     setState(() => _questionCount = value);
                   },
-                  onPreviewTap: _previewOnly,
+                  onPreviewTap: (action) {
+                    if (action == 'hub') {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const StudyHubScreen(),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => StudyGeneratorScreen(
+                          initialQuestionCount: _questionCount,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -360,7 +378,7 @@ class _AiQaPreview extends StatelessWidget {
                     _PreviewPill(),
                     SizedBox(height: 10),
                     Text(
-                      'AI-Based Q&A Generator',
+                      'AI Study Material Generator',
                       style: TextStyle(
                         fontSize: 23,
                         fontWeight: FontWeight.w900,
@@ -368,7 +386,7 @@ class _AiQaPreview extends StatelessWidget {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'Turn your study materials into organized practice questions.',
+                      'Turn your own notes, documents, and images into grounded practice and source-based Q&A.',
                       style: TextStyle(
                         color: NorieColors.textSecondary,
                         height: 1.4,
@@ -396,9 +414,7 @@ class _AiQaPreview extends StatelessWidget {
             title: 'Paste Notes',
             subtitle: 'Paste notes, textbook content, or copied text.',
             color: NorieColors.violet,
-            onTap: () => onPreviewTap(
-              'Paste Notes is a sample placeholder. AI is not connected yet.',
-            ),
+            onTap: () => onPreviewTap('create'),
           ),
           const SizedBox(height: 9),
           _SourceOption(
@@ -406,11 +422,9 @@ class _AiQaPreview extends StatelessWidget {
             icon: Icons.upload_file_rounded,
             title: 'Upload Source',
             subtitle:
-                'YouTube links, PowerPoint, DOCX, PDF, and other files.',
+                'PDF, PowerPoint, Word, TXT, Markdown, and supported files.',
             color: NorieColors.cyan,
-            onTap: () => onPreviewTap(
-              'Upload Source is a sample placeholder. Files are not processed yet.',
-            ),
+            onTap: () => onPreviewTap('create'),
           ),
           const SizedBox(height: 9),
           _SourceOption(
@@ -419,9 +433,7 @@ class _AiQaPreview extends StatelessWidget {
             title: 'Upload Images',
             subtitle: 'Photos of notes, textbook pages, diagrams, and more.',
             color: NorieColors.magenta,
-            onTap: () => onPreviewTap(
-              'Upload Images is a sample placeholder. Image analysis is not connected yet.',
-            ),
+            onTap: () => onPreviewTap('create'),
           ),
           const SizedBox(height: 18),
           const Row(
@@ -477,11 +489,9 @@ class _AiQaPreview extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: () => onPreviewTap(
-                'Preview only — no AI is connected yet. Selected: $selectedCount questions.',
-              ),
+              onPressed: () => onPreviewTap('create'),
               icon: const Icon(Icons.auto_awesome_rounded),
-              label: const Text('Generate Sample Q&A'),
+              label: const Text('Create Study Set'),
               style: FilledButton.styleFrom(
                 backgroundColor: NorieColors.violet,
                 foregroundColor: Colors.white,
@@ -490,17 +500,26 @@ class _AiQaPreview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 9),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => onPreviewTap('hub'),
+              icon: const Icon(Icons.library_books_rounded),
+              label: const Text('Open Saved Study Sets'),
+            ),
+          ),
+          const SizedBox(height: 9),
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.info_outline_rounded,
+                Icons.fact_check_outlined,
                 size: 14,
                 color: NorieColors.textSecondary,
               ),
               SizedBox(width: 5),
               Text(
-                'Preview only · no AI connected yet',
+                'Grounded in your source · synced to your Norie account',
                 style: TextStyle(
                   fontSize: 10,
                   color: NorieColors.textSecondary,
@@ -529,7 +548,7 @@ class _PreviewPill extends StatelessWidget {
         ),
       ),
       child: const Text(
-        'AI-BASED · SAMPLE',
+        'AI STUDY LAB · LIVE',
         style: TextStyle(
           fontSize: 9,
           letterSpacing: 1,
