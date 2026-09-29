@@ -16,4 +16,4 @@ if [ "$SIZE" -lt 1000000 ]; then
   exit 1
 fi
 
-echo "Anatomy skeleton ready: $SIZE bytes"
+python3 scripts/inspect_glb_bounds.py "$TARGET"\n\necho "Anatomy skeleton ready: $SIZE bytes"
