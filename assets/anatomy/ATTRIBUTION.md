@@ -20,3 +20,4 @@ License:
 NorieLearning does not claim ownership of this anatomy mesh. Any redistributed adaptations of this mesh remain subject to the applicable CC BY-SA terms.
 
 The model is used for educational visualization and should not be treated as a diagnostic or clinical reference.
+\n\n## Pinned source\n\nThe development skeleton asset is fetched from `yamz8/human-body-simulator` commit `e4d76fbb424d15e1364963528a082a78fa359161` so hotspot calibration does not silently drift with upstream changes.\n
