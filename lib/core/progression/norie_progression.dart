@@ -360,7 +360,6 @@ class NorieProgression extends ChangeNotifier {
       List.unmodifiable(_creditTransactions);
 
   bool ownsShopItem(String id) => _ownedShopItems.contains(id);
-  bool isTopicCompleted(String id) => _completedTopicIds.contains(id);
   int get completedLessons => _completedLessons;
   int get studySessions => _studySessions;
   int get correctAnswers => _correctAnswers;
