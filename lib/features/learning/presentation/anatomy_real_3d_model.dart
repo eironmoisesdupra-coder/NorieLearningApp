@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_3d_controller/flutter_3d_controller.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import '../../../core/theme/norie_theme.dart';
 
@@ -7,60 +7,45 @@ abstract final class Anatomy3DAssets {
   static const model = 'assets/anatomy/overview-skeleton.glb';
 }
 
-class AnatomyReal3DModel extends StatefulWidget {
+class AnatomyReal3DModel extends StatelessWidget {
   const AnatomyReal3DModel({
-    required this.controller,
-    this.enableTouch = true,
+    required this.cameraOrbit,
+    required this.cameraTarget,
+    required this.autoRotate,
+    required this.enableTouch,
     super.key,
   });
 
-  final Flutter3DController controller;
+  final String cameraOrbit;
+  final String cameraTarget;
+  final bool autoRotate;
   final bool enableTouch;
-
-  @override
-  State<AnatomyReal3DModel> createState() => _AnatomyReal3DModelState();
-}
-
-class _AnatomyReal3DModelState extends State<AnatomyReal3DModel> {
-  double _progress = 0;
-  bool _loaded = false;
-  bool _failed = false;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         Positioned.fill(
-          child: Flutter3DViewer(
-            activeGestureInterceptor: true,
-            progressBarColor: NorieColors.cyan,
-            enableTouch: widget.enableTouch,
-            controller: widget.controller,
+          child: ModelViewer(
+            backgroundColor: Colors.transparent,
             src: Anatomy3DAssets.model,
-            onProgress: (value) {
-              if (mounted) {
-                setState(
-                  () => _progress = value.clamp(0.0, 1.0).toDouble(),
-                );
-              }
-            },
-            onLoad: (_) {
-              if (mounted) {
-                setState(() {
-                  _loaded = true;
-                  _failed = false;
-                  _progress = 1;
-                });
-              }
-            },
-            onError: (_) {
-              if (mounted) {
-                setState(() {
-                  _loaded = false;
-                  _failed = true;
-                });
-              }
-            },
+            alt: 'Interactive 3D human skeletal system',
+            cameraControls: enableTouch,
+            disablePan: true,
+            disableZoom: false,
+            autoRotate: autoRotate,
+            autoRotateDelay: 0,
+            rotationPerSecond: '12deg',
+            cameraOrbit: cameraOrbit,
+            cameraTarget: cameraTarget,
+            minCameraOrbit: 'auto auto 1.5m',
+            maxCameraOrbit: 'auto auto 8m',
+            minFieldOfView: '15deg',
+            maxFieldOfView: '55deg',
+            exposure: 1.05,
+            shadowIntensity: .72,
+            shadowSoftness: .85,
+            debugLogging: false,
           ),
         ),
         Positioned(
@@ -71,11 +56,13 @@ class _AnatomyReal3DModelState extends State<AnatomyReal3DModel> {
             decoration: BoxDecoration(
               color: const Color(0xD90A1630),
               borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: NorieColors.cyan.withValues(alpha: .42)),
+              border: Border.all(
+                color: NorieColors.cyan.withValues(alpha: .42),
+              ),
             ),
-            child: Text(
-              _loaded ? 'REAL 3D · SKELETAL' : 'LOADING 3D',
-              style: const TextStyle(
+            child: const Text(
+              'REAL 3D · SKELETAL',
+              style: TextStyle(
                 color: NorieColors.cyan,
                 fontSize: 8,
                 letterSpacing: .8,
@@ -84,39 +71,24 @@ class _AnatomyReal3DModelState extends State<AnatomyReal3DModel> {
             ),
           ),
         ),
-        if (!_loaded && !_failed)
-          Positioned(
-            left: 18,
-            right: 18,
-            bottom: 18,
-            child: LinearProgressIndicator(
-              value: _progress <= 0 ? null : _progress,
-              minHeight: 5,
-              borderRadius: BorderRadius.circular(99),
-              color: NorieColors.cyan,
-              backgroundColor: NorieColors.surfaceElevated,
-            ),
-          ),
-        if (_failed)
-          const Positioned(
-            left: 18,
-            right: 18,
-            bottom: 18,
-            child: Text(
-              'The high-detail 3D anatomy model could not load.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: NorieColors.textSecondary, fontSize: 10),
-            ),
-          ),
         const Positioned(
           right: 12,
           bottom: 12,
-          child: Text(
-            'Open3Dmodel · CC BY-SA 4.0',
-            style: TextStyle(
-              color: NorieColors.textSecondary,
-              fontSize: 7.5,
-              fontWeight: FontWeight.w700,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Color(0xB3071227),
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              child: Text(
+                'Open3Dmodel · CC BY-SA 4.0',
+                style: TextStyle(
+                  color: NorieColors.textSecondary,
+                  fontSize: 7.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
         ),
