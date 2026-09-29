@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 
 import '../../../core/theme/norie_theme.dart';
 import '../domain/anatomy_models.dart';
@@ -31,7 +30,6 @@ class AnatomyViewerScreen extends StatefulWidget {
 class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
     with SingleTickerProviderStateMixin {
   final TransformationController _transform = TransformationController();
-  final Flutter3DController _real3DController = Flutter3DController();
   late final AnimationController _autoRotateController = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 18),
@@ -62,6 +60,15 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   bool get _useRealSkeleton =>
       AnatomyRenderPolicy.useRealSkeleton(_selectedSystems);
 
+  String get _realCameraOrbit =>
+      '${_realTheta.toStringAsFixed(1)}deg '
+      '${_realPhi.toStringAsFixed(1)}deg '
+      '${_realRadius.toStringAsFixed(2)}m';
+
+  String get _realCameraTarget =>
+      '${_realTargetX.toStringAsFixed(2)}m '
+      '${_realTargetY.toStringAsFixed(2)}m 0m';
+
   @override
   void initState() {
     super.initState();
@@ -87,34 +94,18 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
 
   void _setAutoRotate(bool value) {
     setState(() => _autoRotate = value);
-    if (!_useRealSkeleton) return;
-    if (value) {
-      _real3DController.startRotation(rotationSpeed: 12);
-    } else {
-      _real3DController.pauseRotation();
-    }
-  }
-
-  void _applyRealCamera() {
-    _real3DController.setCameraOrbit(_realTheta, _realPhi, _realRadius);
-    _real3DController.setCameraTarget(_realTargetX, _realTargetY, 0);
   }
 
   void _resetView() {
     if (_useRealSkeleton) {
-      _realTheta = 0;
-      _realPhi = 75;
-      _realRadius = 4.5;
-      _realTargetX = 0;
-      _realTargetY = 0;
-      _real3DController
-        ..stopRotation()
-        ..resetCameraOrbit()
-        ..resetCameraTarget();
-      if (_autoRotate) {
-        _real3DController.startRotation(rotationSpeed: 12);
-      }
-      setState(() => _selectedStructure = null);
+      setState(() {
+        _realTheta = 0;
+        _realPhi = 75;
+        _realRadius = 4.5;
+        _realTargetX = 0;
+        _realTargetY = 0;
+        _selectedStructure = null;
+      });
       return;
     }
 
@@ -128,24 +119,25 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
 
   void _presetView(String view) {
     if (_useRealSkeleton) {
-      switch (view) {
-        case 'front':
-          _realTheta = 0;
-          _realPhi = 75;
-        case 'back':
-          _realTheta = 180;
-          _realPhi = 75;
-        case 'left':
-          _realTheta = -90;
-          _realPhi = 75;
-        case 'right':
-          _realTheta = 90;
-          _realPhi = 75;
-        case 'top':
-          _realTheta = 0;
-          _realPhi = 18;
-      }
-      _applyRealCamera();
+      setState(() {
+        switch (view) {
+          case 'front':
+            _realTheta = 0;
+            _realPhi = 75;
+          case 'back':
+            _realTheta = 180;
+            _realPhi = 75;
+          case 'left':
+            _realTheta = -90;
+            _realPhi = 75;
+          case 'right':
+            _realTheta = 90;
+            _realPhi = 75;
+          case 'top':
+            _realTheta = 0;
+            _realPhi = 18;
+        }
+      });
       return;
     }
 
@@ -172,8 +164,9 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
 
   void _adjustZoom(double factor) {
     if (_useRealSkeleton) {
-      _realRadius = (_realRadius / factor).clamp(2.0, 8.0);
-      _applyRealCamera();
+      setState(() {
+        _realRadius = (_realRadius / factor).clamp(2.0, 8.0);
+      });
       return;
     }
 
@@ -185,11 +178,12 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _panRealSkeleton(DragUpdateDetails details) {
-    _realTargetX =
-        (_realTargetX - details.delta.dx * .004).clamp(-1.4, 1.4);
-    _realTargetY =
-        (_realTargetY + details.delta.dy * .004).clamp(-1.8, 1.8);
-    _applyRealCamera();
+    setState(() {
+      _realTargetX =
+          (_realTargetX - details.delta.dx * .004).clamp(-1.4, 1.4);
+      _realTargetY =
+          (_realTargetY + details.delta.dy * .004).clamp(-1.8, 1.8);
+    });
   }
 
   void _toggleSystem(AnatomySystemId id) {
@@ -379,7 +373,9 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
           children: [
             Positioned.fill(
               child: AnatomyReal3DModel(
-                controller: _real3DController,
+                cameraOrbit: _realCameraOrbit,
+                cameraTarget: _realCameraTarget,
+                autoRotate: _autoRotate,
                 enableTouch: _gestureMode == _ViewerGestureMode.rotate,
               ),
             ),
