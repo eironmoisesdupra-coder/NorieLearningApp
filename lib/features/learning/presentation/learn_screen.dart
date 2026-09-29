@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../common/presentation/coming_soon_screen.dart';
 import '../../content/presentation/norie_grade_select_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 import '../../progress/presentation/progress_screen.dart';
@@ -209,8 +210,7 @@ class _LearnScreenState extends State<LearnScreen> {
           : _LearnBottomNavigation(onTabSelected: widget.onTabSelected),
     );
   }
-
-
+}
 
 class _LearnHeader extends StatelessWidget {
   const _LearnHeader({required this.onMenuPressed});
