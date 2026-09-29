@@ -803,7 +803,7 @@ class _HotspotModeSelector extends StatelessWidget {
       onSelectionChanged: (selection) {
         if (selection.isNotEmpty) onChanged(selection.first);
       },
-      style: ButtonStyle(
+      style: const ButtonStyle(
         visualDensity: VisualDensity.compact,
         textStyle: const WidgetStatePropertyAll(
           TextStyle(fontSize: 8, fontWeight: FontWeight.w800),
