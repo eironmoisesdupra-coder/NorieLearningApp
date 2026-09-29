@@ -8,12 +8,11 @@ import '../norie_app_context.dart';
 import 'norie_voice_policy.dart';
 
 class NorieVoiceController extends ChangeNotifier {
-  NorieVoiceController({AudioPlayer? player})
-      : _player = player ?? AudioPlayer();
+  NorieVoiceController({AudioPlayer? player}) : _player = player;
 
   static const preferenceKey = 'norie.mascot.voiceEnabled';
 
-  final AudioPlayer _player;
+  AudioPlayer? _player;
   bool _enabled = false;
   bool _disposed = false;
 
@@ -48,16 +47,19 @@ class NorieVoiceController extends ChangeNotifier {
     if (normalized.trim().isEmpty) return;
 
     try {
-      await _player.stop();
-      await _player.play(AssetSource(normalized));
+      final player = _player ??= AudioPlayer();
+      await player.stop();
+      await player.play(AssetSource(normalized));
     } catch (_) {
       // Voice is optional. Text and animation remain the authoritative UX.
     }
   }
 
   Future<void> stop() async {
+    final player = _player;
+    if (player == null) return;
     try {
-      await _player.stop();
+      await player.stop();
     } catch (_) {
       // Optional audio failure must not affect the app.
     }
@@ -71,7 +73,11 @@ class NorieVoiceController extends ChangeNotifier {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
-    unawaited(_player.dispose());
+    final player = _player;
+    _player = null;
+    if (player != null) {
+      unawaited(player.dispose());
+    }
     super.dispose();
   }
 }
