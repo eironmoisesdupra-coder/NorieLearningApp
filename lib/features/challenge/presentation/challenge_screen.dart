@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_ambient_backdrop.dart';
@@ -22,7 +24,9 @@ class ChallengeScreen extends StatelessWidget {
         onTabSelected: onTabSelected,
       ),
       drawerEdgeDragWidth: 48,
-      body: Stack(
+      body: NorieTutorialEntry(
+        definition: NorieTutorialCatalog.challenge,
+        child: Stack(
         children: [
           const Positioned.fill(
             child: NorieAmbientBackdrop(
@@ -45,17 +49,20 @@ class ChallengeScreen extends StatelessWidget {
                     Builder(
                       builder: (drawerContext) => Row(
                         children: [
-                          IconButton(
-                            onPressed: () =>
-                                Scaffold.of(drawerContext).openDrawer(),
-                            tooltip: 'Open menu',
-                            style: IconButton.styleFrom(
-                              backgroundColor: NorieColors.surface,
-                              side: const BorderSide(
-                                color: NorieColors.border,
+                          NorieTutorialTarget(
+                            id: 'challenge.menu',
+                            child: IconButton(
+                              onPressed: () =>
+                                  Scaffold.of(drawerContext).openDrawer(),
+                              tooltip: 'Open menu',
+                              style: IconButton.styleFrom(
+                                backgroundColor: NorieColors.surface,
+                                side: const BorderSide(
+                                  color: NorieColors.border,
+                                ),
                               ),
+                              icon: const Icon(Icons.menu_rounded),
                             ),
-                            icon: const Icon(Icons.menu_rounded),
                           ),
                           const SizedBox(width: 10),
                           const Expanded(
@@ -79,6 +86,9 @@ class ChallengeScreen extends StatelessWidget {
                               ],
                             ),
                           ),
+                          const NorieTutorialReplayButton(
+                            definition: NorieTutorialCatalog.challenge,
+                          ),
                           _StatPill(
                             icon: Icons.local_fire_department_rounded,
                             value: '${progression.currentStreak}',
@@ -88,12 +98,17 @@ class ChallengeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _ChallengeHero(progression: progression),
+                    NorieTutorialTarget(
+                      id: 'challenge.hero',
+                      child: _ChallengeHero(progression: progression),
+                    ),
                     const SizedBox(height: 20),
                     _WeeklyGoalCard(progression: progression),
                     const SizedBox(height: 14),
-                    _ModeCard(
-                      icon: Icons.track_changes_rounded,
+                    NorieTutorialTarget(
+                      id: 'challenge.modes',
+                      child: _ModeCard(
+                        icon: Icons.track_changes_rounded,
                       title: 'Daily Challenge',
                       subtitle: progression.dailyChallengeCompletedToday
                           ? 'Completed today · replay for practice'
@@ -108,9 +123,10 @@ class ChallengeScreen extends StatelessWidget {
                       trailingIcon: progression.dailyChallengeCompletedToday
                           ? Icons.replay_rounded
                           : Icons.play_arrow_rounded,
-                      onTap: () => _start(
-                        context,
-                        NorieChallengeMode.daily,
+                        onTap: () => _start(
+                          context,
+                          NorieChallengeMode.daily,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -189,6 +205,7 @@ class ChallengeScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

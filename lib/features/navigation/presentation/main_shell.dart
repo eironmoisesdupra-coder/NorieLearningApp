@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/mascot/norie_app_context.dart';
+import '../../../core/mascot/norie_mascot_scope.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../challenge/presentation/challenge_screen.dart';
 import '../../home/presentation/home_screen.dart';
@@ -21,6 +23,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   late int _index;
+  bool _reportedInitialContext = false;
 
   @override
   void initState() {
@@ -28,10 +31,53 @@ class _MainShellState extends State<MainShell> {
     _index = widget.initialIndex.clamp(0, 4).toInt();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_reportedInitialContext) return;
+    _reportedInitialContext = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _reportContext(_index);
+    });
+  }
+
   void _selectTab(int index) {
     final safeIndex = index.clamp(0, 4).toInt();
     if (_index == safeIndex) return;
     setState(() => _index = safeIndex);
+    _reportContext(safeIndex);
+  }
+
+  void _reportContext(int index) {
+    final scope = NorieMascotScope.maybeOf(context);
+    if (scope == null) return;
+    scope.setContext(_contextForTab(index));
+  }
+
+  NorieContextSnapshot _contextForTab(int index) {
+    return switch (index) {
+      0 => const NorieContextSnapshot(
+          area: NorieAppArea.home,
+          title: 'Home',
+        ),
+      1 => const NorieContextSnapshot(
+          area: NorieAppArea.learn,
+          title: 'Learn',
+        ),
+      2 => const NorieContextSnapshot(
+          area: NorieAppArea.challenge,
+          title: 'Challenge',
+        ),
+      3 => const NorieContextSnapshot(
+          area: NorieAppArea.progress,
+          title: 'Progress',
+        ),
+      4 => const NorieContextSnapshot(
+          area: NorieAppArea.profile,
+          title: 'Profile',
+        ),
+      _ => const NorieContextSnapshot(area: NorieAppArea.unknown),
+    };
   }
 
   @override

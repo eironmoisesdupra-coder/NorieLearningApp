@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/mascot/norie_ai_generation_sequence.dart';
+import '../../../core/mascot/norie_mascot_scope.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../data/norie_study_service.dart';
 import '../domain/norie_study_models.dart';
@@ -29,6 +32,8 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
   late int _questionCount;
   bool _usingFile = false;
   bool _working = false;
+  int _generationCaptionStep = 0;
+  Timer? _generationCaptionTimer;
 
   PlatformFile? _pickedFile;
   Uint8List? _pickedBytes;
@@ -46,6 +51,7 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
 
   @override
   void dispose() {
+    _generationCaptionTimer?.cancel();
     _titleController.dispose();
     _topicController.dispose();
     _notesController.dispose();
@@ -116,6 +122,21 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
       return;
     }
 
+    final mascotController = NorieMascotScope.maybeOf(context)?.controller;
+    final mascotSequence = mascotController == null
+        ? null
+        : NorieAiGenerationSequence(mascotController);
+
+    mascotSequence?.start();
+    _generationCaptionTimer?.cancel();
+    _generationCaptionStep = 0;
+    _generationCaptionTimer = Timer.periodic(
+      const Duration(milliseconds: 1400),
+      (_) {
+        if (!mounted || !_working) return;
+        setState(() => _generationCaptionStep++);
+      },
+    );
     setState(() => _working = true);
 
     try {
@@ -144,6 +165,9 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
       );
 
       if (!mounted) return;
+      _generationCaptionTimer?.cancel();
+      _generationCaptionTimer = null;
+      mascotSequence?.success();
       setState(() => _working = false);
 
       await Navigator.of(context).pushReplacement(
@@ -153,6 +177,9 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
       );
     } catch (error) {
       if (!mounted) return;
+      _generationCaptionTimer?.cancel();
+      _generationCaptionTimer = null;
+      mascotSequence?.failure();
       setState(() => _working = false);
       _show(
         error.toString().replaceFirst('Bad state: ', ''),
@@ -377,6 +404,14 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
                     ],
                   ),
                 ),
+                if (_working) ...[
+                  const SizedBox(height: 20),
+                  _NorieGenerationPanel(
+                    caption: NorieAiGenerationSequence.captionForStep(
+                      _generationCaptionStep,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
                 FilledButton.icon(
                   onPressed: _working ? null : _generate,
@@ -491,6 +526,63 @@ class _FileSourceCard extends StatelessWidget {
             label: Text(fileName == null ? 'Choose File' : 'Change File'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _NorieGenerationPanel extends StatelessWidget {
+  const _NorieGenerationPanel({required this.caption});
+
+  final String caption;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      label: 'Norie is preparing your study set. $caption',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: NorieColors.violet.withValues(alpha: .10),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: NorieColors.violet.withValues(alpha: .38),
+          ),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: NorieColors.cyan,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Norie is working on it',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    caption,
+                    style: const TextStyle(
+                      color: NorieColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -42,6 +42,22 @@ jobs:
       - name: Remove generated default test
         run: rm -f test/widget_test.dart
 
+      - name: Fetch anatomy 3D assets
+        run: bash scripts/fetch_anatomy_assets.sh
+
+      - name: Configure Android for 3D viewer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          gradle = Path("android/app/build.gradle.kts")
+          text = gradle.read_text()
+          old = "minSdk = flutter.minSdkVersion"
+          if old not in text:
+              raise SystemExit("Could not find Flutter minSdk declaration")
+          gradle.write_text(text.replace(old, "minSdk = 24"))
+          PY
+
       - name: Install dependencies
         run: flutter pub get
 

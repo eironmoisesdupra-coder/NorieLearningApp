@@ -1,9 +1,19 @@
+import 'package:flutter/widgets.dart';
+
 abstract final class NorieAssets {
   // Mascot
   static const mascotBase = 'assets/mascot/Norie_001_base.png';
   static const mascotCelebrating =
       'assets/mascot/Norie_002_Congratulations.png';
   static const mascotStudying = 'assets/mascot/Norie_003_studying.png';
+
+  static Future<void> precacheMascotAssets(BuildContext context) async {
+    await Future.wait([
+      precacheImage(const AssetImage(mascotBase), context),
+      precacheImage(const AssetImage(mascotCelebrating), context),
+      precacheImage(const AssetImage(mascotStudying), context),
+    ]);
+  }
 
   // Achievements
   static const achievementStreak = 'assets/achievements/Flame_badge.png';
