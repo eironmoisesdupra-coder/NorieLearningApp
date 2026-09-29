@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/assets/norie_assets.dart';
+import '../../../core/mascot/norie_mascot_scope.dart';
 import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
 import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/progression/norie_progression.dart';
@@ -271,18 +272,16 @@ class _LearnHeader extends StatelessWidget {
         ),
         NorieTutorialTarget(
           id: 'learn.search',
-          child: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: NorieColors.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: NorieColors.border),
+          child: IconButton(
+            onPressed: () => NorieMascotScope.maybeOf(context)?.showAssistant(),
+            tooltip: 'Ask Norie',
+            style: IconButton.styleFrom(
+              backgroundColor: NorieColors.surface,
+              foregroundColor: NorieColors.cyan,
+              side: const BorderSide(color: NorieColors.border),
+              minimumSize: const Size(44, 44),
             ),
-            child: const Icon(
-              Icons.search_rounded,
-              color: NorieColors.cyan,
-            ),
+            icon: const Icon(Icons.search_rounded),
           ),
         ),
       ],
