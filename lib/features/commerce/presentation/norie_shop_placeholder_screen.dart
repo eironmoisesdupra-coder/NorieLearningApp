@@ -112,7 +112,7 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.storefront_rounded, color: NorieColors.orange),
+          const Icon(Icons.storefront_rounded, color: NorieColors.orange),
         ],
       );
 }
