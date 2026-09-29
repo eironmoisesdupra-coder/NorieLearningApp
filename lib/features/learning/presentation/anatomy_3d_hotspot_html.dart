@@ -18,9 +18,21 @@ abstract final class Anatomy3DHotspotHtml {
       final id = _escape.convert(hotspot.id);
       final structureId = _escape.convert(hotspot.structureId);
       final label = _escape.convert(hotspot.label);
+      final structure =
+          AnatomyHotspotCatalog.resolveStructure(hotspot.structureId);
+      final description =
+          _escape.convert(structure?.description ?? 'Skeletal structure');
+      final functionText =
+          _escape.convert(structure?.function ?? 'See the anatomy lesson.');
       final displayLabel = mode == AnatomyHotspotMode.explore
           ? '<span class="hotspot-label">$label</span>'
           : '';
+      final ariaLabel =
+          mode == AnatomyHotspotMode.quiz ? 'Anatomy marker $number' : label;
+      final detailCard = mode == AnatomyHotspotMode.quiz
+          ? ''
+          : '<span class="hotspot-card"><strong>$label</strong>'
+              '<small>$description<br><b>Function:</b> $functionText</small></span>';
       buffer.writeln(
         '<button class="anatomy-hotspot" '
         'slot="hotspot-$id" '
