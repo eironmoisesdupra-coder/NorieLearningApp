@@ -12,6 +12,11 @@ void main() {
     await tester.pumpWidget(const NorieApp());
 
     expect(find.byType(NorieMascotHost), findsOneWidget);
+
+    // SplashScreen intentionally schedules its navigation after 1.9 seconds.
+    // Advance past that existing app timer so this host test leaves no timers.
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('pushed routes resolve the same mascot controller',
@@ -73,7 +78,7 @@ void main() {
     expect(before.contextSnapshot.area, NorieAppArea.home);
 
     await tester.tap(find.text('Learn').last);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final after = NorieMascotScope.of(
       tester.element(find.byType(MainShell)),
