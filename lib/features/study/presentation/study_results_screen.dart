@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/mascot/norie_mascot_scope.dart';
+import '../../../core/mascot/norie_quiz_reaction_policy.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../domain/norie_study_models.dart';
 import 'study_qa_screen.dart';
 import 'study_quiz_screen.dart';
 
-class StudyResultsScreen extends StatelessWidget {
+class StudyResultsScreen extends StatefulWidget {
   const StudyResultsScreen({
     required this.studySet,
     required this.answers,
@@ -13,14 +15,33 @@ class StudyResultsScreen extends StatelessWidget {
     super.key,
   });
 
-  final NorieStudySet studySet;
-  final List<NorieStudyAnswer> answers;
-  final NorieStudyAttemptResult result;
+  final NorieStudySet widget.studySet;
+  final List<NorieStudyAnswer> widget.answers;
+  final NorieStudyAttemptResult widget.result;
+
+  @override
+  State<StudyResultsScreen> createState() => _StudyResultsScreenState();
+}
+
+class _StudyResultsScreenState extends State<StudyResultsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      NorieMascotScope.maybeOf(context)?.controller.celebrate(
+            level: NorieQuizReactionPolicy.celebrationFor(
+              correct: widget.widget.result.correct,
+              total: widget.widget.result.total,
+            ),
+          );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final missed = answers.where((answer) => !answer.correct).toList();
-    final percent = (result.accuracy * 100).round();
+    final missed = widget.answers.where((answer) => !answer.correct).toList();
+    final percent = (widget.result.accuracy * 100).round();
 
     return Scaffold(
       appBar: AppBar(
@@ -68,7 +89,7 @@ class StudyResultsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  studySet.title,
+                  widget.studySet.title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: NorieColors.textSecondary,
@@ -80,7 +101,7 @@ class StudyResultsScreen extends StatelessWidget {
                     Expanded(
                       child: _ScoreCard(
                         label: 'Score',
-                        value: '${result.correct} / ${result.total}',
+                        value: '${widget.result.correct} / ${widget.result.total}',
                         color: NorieColors.cyan,
                       ),
                     ),
@@ -96,13 +117,13 @@ class StudyResultsScreen extends StatelessWidget {
                     Expanded(
                       child: _ScoreCard(
                         label: 'XP',
-                        value: '+${result.xpAwarded}',
+                        value: '+${widget.result.xpAwarded}',
                         color: NorieColors.orange,
                       ),
                     ),
                   ],
                 ),
-                if (!result.firstRewardedCompletion) ...[
+                if (!widget.result.firstRewardedCompletion) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(13),
@@ -143,25 +164,25 @@ class StudyResultsScreen extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () {
                       final retrySet = NorieStudySet(
-                        id: studySet.id,
-                        title: '${studySet.title} · Mistake Review',
-                        sourceType: studySet.sourceType,
-                        sourceName: studySet.sourceName,
-                        mode: studySet.mode,
+                        id: widget.studySet.id,
+                        title: '${widget.studySet.title} · Mistake Review',
+                        sourceType: widget.studySet.sourceType,
+                        sourceName: widget.studySet.sourceName,
+                        mode: widget.studySet.mode,
                         requestedCount: missed.length,
-                        status: studySet.status,
-                        createdAt: studySet.createdAt,
+                        status: widget.studySet.status,
+                        createdAt: widget.studySet.createdAt,
                         questions: [
                           for (final answer in missed) answer.question,
                         ],
-                        topicTag: studySet.topicTag,
-                        aiModel: studySet.aiModel,
+                        topicTag: widget.studySet.topicTag,
+                        aiModel: widget.studySet.aiModel,
                       );
 
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute<void>(
                           builder: (_) => StudyQuizScreen(
-                            studySet: retrySet,
+                            widget.studySet: retrySet,
                           ),
                         ),
                       );
@@ -203,7 +224,7 @@ class StudyResultsScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => StudyQaScreen(studySet: studySet),
+                        builder: (_) => StudyQaScreen(widget.studySet: widget.studySet),
                       ),
                     );
                   },
