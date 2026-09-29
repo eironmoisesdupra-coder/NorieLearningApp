@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/assets/norie_assets.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../common/presentation/coming_soon_screen.dart';
@@ -46,7 +48,9 @@ class _LearnScreenState extends State<LearnScreen> {
         onTabSelected: widget.onTabSelected,
       ),
       drawerEdgeDragWidth: 48,
-      body: SafeArea(
+      body: NorieTutorialEntry(
+        definition: NorieTutorialCatalog.learn,
+        child: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
@@ -60,8 +64,10 @@ class _LearnScreenState extends State<LearnScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                _LearnHero(
-                  onAiTap: () {
+                NorieTutorialTarget(
+                  id: 'learn.ai',
+                  child: _LearnHero(
+                    onAiTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => StudyGeneratorScreen(
@@ -69,7 +75,8 @@ class _LearnScreenState extends State<LearnScreen> {
                         ),
                       ),
                     );
-                  },
+                    },
+                  ),
                 ),
                 const SizedBox(height: 28),
                 const Text(
@@ -89,8 +96,10 @@ class _LearnScreenState extends State<LearnScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                _SubjectTile(
-                  title: 'Mathematics',
+                NorieTutorialTarget(
+                  id: 'learn.subjects',
+                  child: _SubjectTile(
+                    title: 'Mathematics',
                   subtitle: 'Algebra · Geometry · Calculus · Statistics',
                   icon: Icons.calculate_rounded,
                   color: NorieColors.primary,
@@ -108,7 +117,8 @@ class _LearnScreenState extends State<LearnScreen> {
                         ),
                       ),
                     );
-                  },
+                    },
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _SubjectTile(
@@ -205,6 +215,7 @@ class _LearnScreenState extends State<LearnScreen> {
           ),
         ),
       ),
+      ),
       bottomNavigationBar: widget.embedded
           ? null
           : _LearnBottomNavigation(onTabSelected: widget.onTabSelected),
@@ -221,14 +232,17 @@ class _LearnHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        IconButton(
-          onPressed: onMenuPressed,
-          tooltip: 'Open menu',
-          style: IconButton.styleFrom(
-            backgroundColor: NorieColors.surface,
-            side: const BorderSide(color: NorieColors.border),
+        NorieTutorialTarget(
+          id: 'learn.menu',
+          child: IconButton(
+            onPressed: onMenuPressed,
+            tooltip: 'Open menu',
+            style: IconButton.styleFrom(
+              backgroundColor: NorieColors.surface,
+              side: const BorderSide(color: NorieColors.border),
+            ),
+            icon: const Icon(Icons.menu_rounded),
           ),
-          icon: const Icon(Icons.menu_rounded),
         ),
         const SizedBox(width: 10),
         const Expanded(
@@ -252,17 +266,23 @@ class _LearnHeader extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: NorieColors.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: NorieColors.border),
-          ),
-          child: const Icon(
-            Icons.search_rounded,
-            color: NorieColors.cyan,
+        const NorieTutorialReplayButton(
+          definition: NorieTutorialCatalog.learn,
+        ),
+        NorieTutorialTarget(
+          id: 'learn.search',
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: NorieColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: NorieColors.border),
+            ),
+            child: const Icon(
+              Icons.search_rounded,
+              color: NorieColors.cyan,
+            ),
           ),
         ),
       ],
