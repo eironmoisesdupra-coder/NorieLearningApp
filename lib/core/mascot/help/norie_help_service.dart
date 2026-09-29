@@ -150,6 +150,10 @@ class NorieHelpService {
         'Choose your answer, check it, review the explanation, then continue. Norie reacts without blocking your controls.',
       NorieAppArea.results =>
         'Results summarizes your score, XP, rewards, and review options.',
+      NorieAppArea.tutorial =>
+        'Tutorial mode guides you through a feature step by step and can be replayed later.',
+      NorieAppArea.help =>
+        'Help mode answers questions about Norie Learning and routes study questions to AI Study.',
       NorieAppArea.unknown =>
         'I can help you find lessons, AI Study, Anatomy Lab, challenges, progress, or profile features.',
     };
