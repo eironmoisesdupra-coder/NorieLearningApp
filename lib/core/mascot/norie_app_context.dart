@@ -9,6 +9,8 @@ enum NorieAppArea {
   study,
   quiz,
   results,
+  tutorial,
+  help,
   unknown,
 }
 
