@@ -1,65 +1,156 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
+import '../domain/anatomy_models.dart';
+import 'anatomy_animated_backdrop.dart';
+import 'anatomy_quiz_screen.dart';
+import 'anatomy_viewer_screen.dart';
 
-class AnatomyLabPlaceholderScreen extends StatelessWidget {
+class AnatomyLabPlaceholderScreen extends StatefulWidget {
   const AnatomyLabPlaceholderScreen({super.key});
 
   @override
+  State<AnatomyLabPlaceholderScreen> createState() =>
+      _AnatomyLabPlaceholderScreenState();
+}
+
+class _AnatomyLabPlaceholderScreenState
+    extends State<AnatomyLabPlaceholderScreen> {
+  final Set<AnatomySystemId> _selected = {
+    AnatomySystemId.skeletal,
+  };
+
+  void _toggle(AnatomySystemId id) {
+    setState(() {
+      if (_selected.contains(id)) {
+        if (_selected.length > 1) _selected.remove(id);
+      } else {
+        _selected.add(id);
+      }
+    });
+  }
+
+  void _preset(Set<AnatomySystemId> systems) {
+    setState(() {
+      _selected
+        ..clear()
+        ..addAll(systems);
+    });
+  }
+
+  void _openViewer() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AnatomyViewerScreen(
+          initialSystems: Set<AnatomySystemId>.from(_selected),
+        ),
+      ),
+    );
+  }
+
+  void _openQuiz() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AnatomyQuizScreen(
+          selectedSystems: Set<AnatomySystemId>.from(_selected),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final structures = AnatomyCatalog.structuresFor(_selected);
+
     return Scaffold(
       body: Stack(
         children: [
-          const Positioned.fill(child: _AnatomyBackdrop()),
+          const Positioned.fill(child: AnatomyAnimatedBackdrop()),
           SafeArea(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
+                constraints: const BoxConstraints(maxWidth: 820),
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 40),
                   children: [
+                    _Header(onBack: () => Navigator.of(context).maybePop()),
+                    const SizedBox(height: 16),
+                    _Hero(
+                      selectedCount: _selected.length,
+                      structureCount: structures.length,
+                      onExplore: _openViewer,
+                      onQuiz: _openQuiz,
+                    ),
+                    const SizedBox(height: 22),
+                    const Text(
+                      'Quick Layer Presets',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _PresetStrip(onPreset: _preset),
+                    const SizedBox(height: 24),
                     Row(
                       children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          tooltip: 'Back',
-                          style: IconButton.styleFrom(
-                            backgroundColor:
-                                NorieColors.surface.withValues(alpha: .88),
-                            side: BorderSide(
-                              color:
-                                  NorieColors.cyan.withValues(alpha: .22),
-                            ),
-                          ),
-                          icon: const Icon(Icons.arrow_back_rounded),
-                        ),
-                        const SizedBox(width: 10),
                         const Expanded(
                           child: Text(
-                            '3D Anatomy Lab',
+                            'Body Systems',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 22,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                         ),
-                        const _StatusBadge(),
+                        Text(
+                          '${_selected.length} selected',
+                          style: const TextStyle(
+                            color: NorieColors.cyan,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 22),
-                    const _Hero(),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 6),
                     const Text(
-                      'What is being built',
+                      'Select multiple systems to study them together in one layered model.',
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                        color: NorieColors.textSecondary,
+                        fontSize: 11,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const _FeatureGrid(),
+                    const SizedBox(height: 13),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns = constraints.maxWidth >= 650 ? 2 : 1;
+                        const gap = 10.0;
+                        final width = (constraints.maxWidth -
+                                ((columns - 1) * gap)) /
+                            columns;
+                        return Wrap(
+                          spacing: gap,
+                          runSpacing: gap,
+                          children: [
+                            for (final system in AnatomyCatalog.systems)
+                              SizedBox(
+                                width: width,
+                                child: _SystemCard(
+                                  system: system,
+                                  selected: _selected.contains(system.id),
+                                  onTap: () => _toggle(system.id),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                     const SizedBox(height: 22),
-                    const _LearningFlow(),
+                    _FeatureSummary(
+                      onExplore: _openViewer,
+                      onQuiz: _openQuiz,
+                    ),
                   ],
                 ),
               ),
@@ -71,107 +162,184 @@ class AnatomyLabPlaceholderScreen extends StatelessWidget {
   }
 }
 
-class _AnatomyBackdrop extends StatelessWidget {
-  const _AnatomyBackdrop();
+class _Header extends StatelessWidget {
+  const _Header({required this.onBack});
+
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        color: NorieColors.background,
-        gradient: RadialGradient(
-          center: Alignment(.7, -.65),
-          radius: 1.15,
-          colors: [
-            Color(0x3347E9FF),
-            Color(0x22167BFF),
-            Color(0x00101B36),
-          ],
+    return Row(
+      children: [
+        IconButton(
+          onPressed: onBack,
+          tooltip: 'Back',
+          style: IconButton.styleFrom(
+            backgroundColor: NorieColors.surface.withValues(alpha: .82),
+            side: const BorderSide(color: NorieColors.border),
+          ),
+          icon: const Icon(Icons.arrow_back_rounded),
         ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: NorieColors.cyan.withValues(alpha: .10),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: NorieColors.cyan.withValues(alpha: .38),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Norie Anatomy Lab',
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Text(
+                'Explore · Layer · Identify · Master',
+                style: TextStyle(
+                  color: NorieColors.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      child: const Text(
-        'PREVIEW',
-        style: TextStyle(
-          fontSize: 9,
-          letterSpacing: 1.1,
-          fontWeight: FontWeight.w900,
-          color: NorieColors.cyan,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+          decoration: BoxDecoration(
+            color: NorieColors.green.withValues(alpha: .12),
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(
+              color: NorieColors.green.withValues(alpha: .38),
+            ),
+          ),
+          child: const Text(
+            'LIVE',
+            style: TextStyle(
+              color: NorieColors.green,
+              fontSize: 8,
+              letterSpacing: .9,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
 
 class _Hero extends StatelessWidget {
-  const _Hero();
+  const _Hero({
+    required this.selectedCount,
+    required this.structureCount,
+    required this.onExplore,
+    required this.onQuiz,
+  });
+
+  final int selectedCount;
+  final int structureCount;
+  final VoidCallback onExplore;
+  final VoidCallback onQuiz;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(29),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF0C2548),
-            Color(0xFF132454),
-            Color(0xFF311A58),
+            Color(0xFF0C284A),
+            Color(0xFF18245B),
+            Color(0xFF391A59),
           ],
         ),
         border: Border.all(
-          color: NorieColors.cyan.withValues(alpha: .45),
+          color: NorieColors.cyan.withValues(alpha: .42),
         ),
         boxShadow: [
           BoxShadow(
-            color: NorieColors.cyan.withValues(alpha: .12),
-            blurRadius: 34,
-            offset: const Offset(0, 16),
+            color: NorieColors.cyan.withValues(alpha: .10),
+            blurRadius: 30,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 520;
+          final compact = constraints.maxWidth < 560;
+          final copy = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'ANATOMY LAB 2.0',
+                style: TextStyle(
+                  color: NorieColors.cyan,
+                  fontSize: 9,
+                  letterSpacing: 1.6,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Study the body as a\nlayered interactive system.',
+                style: TextStyle(
+                  fontSize: 27,
+                  height: 1.02,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -.7,
+                ),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                '$selectedCount system layer(s) · $structureCount numbered structures ready to explore',
+                style: const TextStyle(
+                  color: Color(0xFFC8D7EC),
+                  fontSize: 11,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: onExplore,
+                    icon: const Icon(Icons.view_in_ar_rounded),
+                    label: const Text('Open 3D Viewer'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: NorieColors.cyan,
+                      foregroundColor: NorieColors.background,
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: onQuiz,
+                    icon: const Icon(Icons.quiz_rounded),
+                    label: const Text('Quiz Selected'),
+                  ),
+                ],
+              ),
+            ],
+          );
 
-          final visual = const _AnatomyOrb();
-          final copy = const _HeroCopy();
+          final visual = const _BodyOrb();
 
           if (compact) {
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(child: visual),
-                const SizedBox(height: 22),
+                visual,
+                const SizedBox(height: 18),
                 copy,
               ],
             );
           }
 
-          return const Row(
+          return Row(
             children: [
-              Expanded(flex: 5, child: _HeroCopy()),
-              SizedBox(width: 24),
-              Expanded(flex: 4, child: _AnatomyOrb()),
+              Expanded(flex: 6, child: copy),
+              const SizedBox(width: 16),
+              const Expanded(flex: 4, child: _BodyOrb()),
             ],
           );
         },
@@ -180,90 +348,48 @@ class _Hero extends StatelessWidget {
   }
 }
 
-class _HeroCopy extends StatelessWidget {
-  const _HeroCopy();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'EXPLORE THE BODY',
-          style: TextStyle(
-            fontSize: 10,
-            letterSpacing: 1.8,
-            color: Color(0xFF8CF5FF),
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        SizedBox(height: 10),
-        Text(
-          'Learn anatomy by\nexploring it.',
-          style: TextStyle(
-            fontSize: 31,
-            height: .98,
-            letterSpacing: -1,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        SizedBox(height: 12),
-        Text(
-          'Norie Anatomy Lab will combine lessons, interactive 3D exploration, identification practice, challenges, XP, and mastery tracking.',
-          style: TextStyle(
-            color: Color(0xFFC3D0E8),
-            height: 1.5,
-            fontSize: 12,
-          ),
-        ),
-        SizedBox(height: 16),
-        Row(
-          children: [
-            _MiniPill(
-              icon: Icons.view_in_ar_rounded,
-              label: 'Interactive 3D',
-            ),
-            SizedBox(width: 8),
-            _MiniPill(
-              icon: Icons.psychology_alt_rounded,
-              label: 'Mastery',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _MiniPill extends StatelessWidget {
-  const _MiniPill({
-    required this.icon,
-    required this.label,
-  });
-
-  final IconData icon;
-  final String label;
+class _BodyOrb extends StatelessWidget {
+  const _BodyOrb();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      height: 190,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .06),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: Colors.white.withValues(alpha: .10)),
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            NorieColors.cyan.withValues(alpha: .22),
+            NorieColors.violet.withValues(alpha: .12),
+            Colors.transparent,
+          ],
+        ),
+        border: Border.all(
+          color: NorieColors.cyan.withValues(alpha: .23),
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Icon(icon, size: 14, color: NorieColors.cyan),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-            ),
+          const Icon(
+            Icons.accessibility_new_rounded,
+            size: 125,
+            color: Color(0xFFE9FCFF),
+          ),
+          Positioned(
+            top: 32,
+            right: 42,
+            child: _GlowDot(color: NorieColors.magenta),
+          ),
+          Positioned(
+            bottom: 45,
+            left: 35,
+            child: _GlowDot(color: NorieColors.cyan),
+          ),
+          Positioned(
+            bottom: 24,
+            right: 53,
+            child: _GlowDot(color: NorieColors.green),
           ),
         ],
       ),
@@ -271,73 +397,8 @@ class _MiniPill extends StatelessWidget {
   }
 }
 
-class _AnatomyOrb extends StatelessWidget {
-  const _AnatomyOrb();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 210,
-        height: 210,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const RadialGradient(
-            colors: [
-              Color(0x3348F5FF),
-              Color(0x222B6BFF),
-              Color(0x111A1B4D),
-              Color(0x00101B36),
-            ],
-          ),
-          border: Border.all(
-            color: NorieColors.cyan.withValues(alpha: .22),
-          ),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 142,
-              height: 142,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: NorieColors.background.withValues(alpha: .35),
-                border: Border.all(
-                  color: NorieColors.violet.withValues(alpha: .28),
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.accessibility_new_rounded,
-              size: 116,
-              color: Color(0xFFE7FBFF),
-            ),
-            const Positioned(
-              top: 31,
-              right: 29,
-              child: _OrbNode(color: NorieColors.magenta),
-            ),
-            const Positioned(
-              left: 28,
-              bottom: 49,
-              child: _OrbNode(color: NorieColors.cyan),
-            ),
-            const Positioned(
-              right: 47,
-              bottom: 25,
-              child: _OrbNode(color: NorieColors.violet),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OrbNode extends StatelessWidget {
-  const _OrbNode({required this.color});
-
+class _GlowDot extends StatelessWidget {
+  const _GlowDot({required this.color});
   final Color color;
 
   @override
@@ -359,231 +420,270 @@ class _OrbNode extends StatelessWidget {
   }
 }
 
-class _FeatureGrid extends StatelessWidget {
-  const _FeatureGrid();
+class _PresetStrip extends StatelessWidget {
+  const _PresetStrip({required this.onPreset});
+
+  final ValueChanged<Set<AnatomySystemId>> onPreset;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 560 ? 2 : 1;
-        const gap = 10.0;
-        final width =
-            (constraints.maxWidth - ((columns - 1) * gap)) / columns;
+    final presets = <(String, IconData, Set<AnatomySystemId>)>[
+      (
+        'Movement',
+        Icons.directions_run_rounded,
+        {
+          AnatomySystemId.skeletal,
+          AnatomySystemId.articular,
+          AnatomySystemId.muscular,
+        },
+      ),
+      (
+        'Circulation',
+        Icons.favorite_rounded,
+        {
+          AnatomySystemId.cardiovascular,
+          AnatomySystemId.arterial,
+          AnatomySystemId.venous,
+        },
+      ),
+      (
+        'Neuro',
+        Icons.psychology_rounded,
+        {
+          AnatomySystemId.nervous,
+          AnatomySystemId.sensory,
+        },
+      ),
+      (
+        'Internal',
+        Icons.biotech_rounded,
+        {
+          AnatomySystemId.respiratory,
+          AnatomySystemId.digestive,
+          AnatomySystemId.urinary,
+          AnatomySystemId.endocrine,
+        },
+      ),
+    ];
 
-        const features = [
-          (
-            Icons.accessibility_new_rounded,
-            'Human Anatomy',
-            'Body systems, organs, bones, muscles, and structures.',
-            NorieColors.cyan,
-          ),
-          (
-            Icons.pets_rounded,
-            'Animal Anatomy',
-            'Compare structures and systems across selected animals.',
-            NorieColors.green,
-          ),
-          (
-            Icons.view_in_ar_rounded,
-            '3D Explore',
-            'Rotate, isolate, zoom, and inspect labeled structures.',
-            NorieColors.violet,
-          ),
-          (
-            Icons.quiz_rounded,
-            'Identify Mode',
-            'Tap structures, answer challenges, and build mastery.',
-            NorieColors.magenta,
-          ),
-        ];
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final feature in features)
-              SizedBox(
-                width: width,
-                child: _FeatureCard(
-                  icon: feature.$1,
-                  title: feature.$2,
-                  subtitle: feature.$3,
-                  color: feature.$4,
-                ),
-              ),
-          ],
-        );
-      },
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: presets.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final preset = presets[index];
+          return ActionChip(
+            avatar: Icon(preset.$2, size: 17, color: NorieColors.cyan),
+            label: Text(preset.$1),
+            onPressed: () => onPreset(preset.$3),
+          );
+        },
+      ),
     );
   }
 }
 
-class _FeatureCard extends StatelessWidget {
-  const _FeatureCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
+class _SystemCard extends StatelessWidget {
+  const _SystemCard({
+    required this.system,
+    required this.selected,
+    required this.onTap,
   });
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
+  final AnatomySystem system;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: NorieColors.surface.withValues(alpha: .88),
-        borderRadius: BorderRadius.circular(21),
-        border: Border.all(color: color.withValues(alpha: .24)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: .12),
-              borderRadius: BorderRadius.circular(14),
+    return Material(
+      color: selected
+          ? system.color.withValues(alpha: .12)
+          : NorieColors.surface.withValues(alpha: .80),
+      borderRadius: BorderRadius.circular(19),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(19),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(19),
+            border: Border.all(
+              color: selected
+                  ? system.color
+                  : system.color.withValues(alpha: .24),
+              width: selected ? 1.6 : 1,
             ),
-            child: Icon(icon, color: color),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Row(
+            children: [
+              Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: system.color.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(system.icon, color: system.color),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                        ),
+                    Text(
+                      system.label,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const Icon(
-                      Icons.lock_clock_rounded,
-                      size: 16,
-                      color: NorieColors.textSecondary,
+                    const SizedBox(height: 3),
+                    Text(
+                      system.subtitle,
+                      style: const TextStyle(
+                        color: NorieColors.textSecondary,
+                        fontSize: 9.5,
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${system.structures.length} foundation structures',
+                      style: TextStyle(
+                        color: system.color,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: NorieColors.textSecondary,
-                    fontSize: 11,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 160),
+                child: selected
+                    ? Icon(
+                        Icons.check_circle_rounded,
+                        key: const ValueKey('on'),
+                        color: system.color,
+                      )
+                    : const Icon(
+                        Icons.add_circle_outline_rounded,
+                        key: ValueKey('off'),
+                        color: NorieColors.textSecondary,
+                      ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _LearningFlow extends StatelessWidget {
-  const _LearningFlow();
+class _FeatureSummary extends StatelessWidget {
+  const _FeatureSummary({
+    required this.onExplore,
+    required this.onQuiz,
+  });
+
+  final VoidCallback onExplore;
+  final VoidCallback onQuiz;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
-        color: NorieColors.surface,
-        borderRadius: BorderRadius.circular(22),
+        color: NorieColors.surface.withValues(alpha: .78),
+        borderRadius: BorderRadius.circular(21),
         border: Border.all(color: NorieColors.border),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Planned learning loop',
+          const Text(
+            'Lab Tools',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 14),
-          _FlowStep(number: '01', label: 'Learn the concept'),
-          _FlowConnector(),
-          _FlowStep(number: '02', label: 'Explore the 3D model'),
-          _FlowConnector(),
-          _FlowStep(number: '03', label: 'Identify structures'),
-          _FlowConnector(),
-          _FlowStep(number: '04', label: 'Challenge · XP · Mastery'),
+          const SizedBox(height: 11),
+          const Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _ToolPill(icon: Icons.threed_rotation_rounded, label: 'Rotate'),
+              _ToolPill(icon: Icons.zoom_in_rounded, label: 'Zoom'),
+              _ToolPill(icon: Icons.pan_tool_alt_rounded, label: 'Pan'),
+              _ToolPill(icon: Icons.pin_drop_rounded, label: 'Number markers'),
+              _ToolPill(icon: Icons.layers_rounded, label: 'Multi-layer'),
+              _ToolPill(icon: Icons.tune_rounded, label: 'Viewer settings'),
+              _ToolPill(icon: Icons.quiz_rounded, label: 'Identification quiz'),
+              _ToolPill(icon: Icons.auto_awesome_rounded, label: 'Animated UI'),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: onExplore,
+                  icon: const Icon(Icons.view_in_ar_rounded),
+                  label: const Text('Explore'),
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onQuiz,
+                  icon: const Icon(Icons.quiz_rounded),
+                  label: const Text('Quiz'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _FlowStep extends StatelessWidget {
-  const _FlowStep({
-    required this.number,
+class _ToolPill extends StatelessWidget {
+  const _ToolPill({
+    required this.icon,
     required this.label,
   });
 
-  final String number;
+  final IconData icon;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 35,
-          height: 35,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(11),
-            gradient: const LinearGradient(
-              colors: [NorieColors.primary, NorieColors.violet],
-            ),
-          ),
-          child: Text(
-            number,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: NorieColors.cyan.withValues(alpha: .06),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(
+          color: NorieColors.cyan.withValues(alpha: .20),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: NorieColors.cyan),
+          const SizedBox(width: 5),
+          Text(
+            label,
             style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
+              fontSize: 8.5,
+              fontWeight: FontWeight.w800,
             ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ],
-    );
-  }
-}
-
-class _FlowConnector extends StatelessWidget {
-  const _FlowConnector();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(left: 17),
-      child: SizedBox(
-        height: 14,
-        child: VerticalDivider(
-          width: 1,
-          thickness: 1,
-          color: NorieColors.border,
-        ),
+        ],
       ),
     );
   }
