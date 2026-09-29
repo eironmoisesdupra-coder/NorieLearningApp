@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/core/assets/norie_assets.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_controller.dart';
+import 'package:norie_learning/core/mascot/norie_mascot_expression_painter.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_motion.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_state.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_view.dart';
@@ -97,6 +98,39 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
+
+    controller.dispose();
+  });
+
+
+  testWidgets('expression overlay progress advances with mascot motion',
+      (tester) async {
+    final controller = NorieMascotController()..challengeMode();
+
+    await tester.pumpWidget(
+      _Host(
+        child: NorieMascotView(
+          controller: controller,
+          reduceMotion: false,
+        ),
+      ),
+    );
+
+    final before = tester
+        .widget<CustomPaint>(
+          find.byKey(const ValueKey('norie-expression-challenge')),
+        )
+        .painter as NorieMascotExpressionPainter;
+
+    await tester.pump(const Duration(milliseconds: 250));
+
+    final after = tester
+        .widget<CustomPaint>(
+          find.byKey(const ValueKey('norie-expression-challenge')),
+        )
+        .painter as NorieMascotExpressionPainter;
+
+    expect(after.progress, greaterThan(before.progress));
 
     controller.dispose();
   });
