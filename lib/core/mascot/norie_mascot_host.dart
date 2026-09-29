@@ -8,6 +8,9 @@ import 'norie_mascot_controller.dart';
 import 'norie_mascot_scope.dart';
 import 'norie_mascot_state.dart';
 import 'norie_mascot_view.dart';
+import 'tutorial/norie_tutorial_coordinator.dart';
+import 'tutorial/norie_tutorial_overlay.dart';
+import 'tutorial/norie_tutorial_store.dart';
 
 class NorieMascotHost extends StatefulWidget {
   const NorieMascotHost({
@@ -25,6 +28,11 @@ class _NorieMascotHostState extends State<NorieMascotHost>
     with WidgetsBindingObserver {
   late final NorieMascotController _controller = NorieMascotController()
     ..addListener(_handleMascotChanged);
+  late final NorieTutorialCoordinator _tutorialCoordinator =
+      NorieTutorialCoordinator(
+        controller: _controller,
+        store: NorieTutorialStore(),
+      )..addListener(_handleTutorialChanged);
 
   NorieContextSnapshot _contextSnapshot =
       const NorieContextSnapshot.home();
@@ -57,6 +65,10 @@ class _NorieMascotHostState extends State<NorieMascotHost>
     if (mounted) setState(() {});
   }
 
+  void _handleTutorialChanged() {
+    if (mounted) setState(() {});
+  }
+
   void _setContext(NorieContextSnapshot snapshot) {
     if (_contextSnapshot == snapshot || !mounted) return;
     setState(() => _contextSnapshot = snapshot);
@@ -82,6 +94,9 @@ class _NorieMascotHostState extends State<NorieMascotHost>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _tutorialCoordinator
+      ..removeListener(_handleTutorialChanged)
+      ..dispose();
     _controller
       ..removeListener(_handleMascotChanged)
       ..dispose();
@@ -94,6 +109,7 @@ class _NorieMascotHostState extends State<NorieMascotHost>
       controller: _controller,
       contextSnapshot: _contextSnapshot,
       assistantVisible: _assistantVisible,
+      tutorialCoordinator: _tutorialCoordinator,
       setContext: _setContext,
       showAssistant: _showAssistant,
       hideAssistant: _hideAssistant,
@@ -104,7 +120,7 @@ class _NorieMascotHostState extends State<NorieMascotHost>
           if (_showMascot)
             Positioned(
               right: 12,
-              bottom: 18,
+              bottom: _tutorialCoordinator.isActive ? 172 : 18,
               child: SafeArea(
                 minimum: const EdgeInsets.all(4),
                 child: IgnorePointer(
@@ -119,6 +135,9 @@ class _NorieMascotHostState extends State<NorieMascotHost>
                 ),
               ),
             ),
+          NorieTutorialOverlay(
+            coordinator: _tutorialCoordinator,
+          ),
         ],
       ),
     );
