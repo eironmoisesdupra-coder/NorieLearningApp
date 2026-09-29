@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../assets/norie_assets.dart';
+import 'help/norie_help_models.dart';
+import 'help/norie_help_sheet.dart';
 import 'norie_app_context.dart';
 import 'norie_mascot_controller.dart';
 import 'norie_mascot_scope.dart';
@@ -10,15 +12,18 @@ import 'norie_mascot_state.dart';
 import 'norie_mascot_view.dart';
 import 'tutorial/norie_tutorial_coordinator.dart';
 import 'tutorial/norie_tutorial_overlay.dart';
+import 'tutorial/norie_tutorial_models.dart';
 import 'tutorial/norie_tutorial_store.dart';
 
 class NorieMascotHost extends StatefulWidget {
   const NorieMascotHost({
     required this.child,
+    this.onNavigate,
     super.key,
   });
 
   final Widget child;
+  final ValueChanged<NorieHelpDestination>? onNavigate;
 
   @override
   State<NorieMascotHost> createState() => _NorieMascotHostState();
@@ -85,6 +90,32 @@ class _NorieMascotHostState extends State<NorieMascotHost>
     _controller.stopSpeaking();
   }
 
+  Future<void> _handleHelpAction(NorieHelpDestination destination) async {
+    if (destination == NorieHelpDestination.replayTutorial) {
+      final definition = _tutorialForArea(_contextSnapshot.area);
+      _hideAssistant();
+      if (definition != null) {
+        await _tutorialCoordinator.replay(definition);
+      }
+      return;
+    }
+
+    _hideAssistant();
+    widget.onNavigate?.call(destination);
+  }
+
+  NorieTutorialDefinition? _tutorialForArea(NorieAppArea area) {
+    return switch (area) {
+      NorieAppArea.home => NorieTutorialCatalog.home,
+      NorieAppArea.learn => NorieTutorialCatalog.learn,
+      NorieAppArea.challenge => NorieTutorialCatalog.challenge,
+      NorieAppArea.anatomy => NorieTutorialCatalog.anatomy,
+      NorieAppArea.study => NorieTutorialCatalog.aiStudy,
+      NorieAppArea.quiz => NorieTutorialCatalog.quiz,
+      _ => null,
+    };
+  }
+
   bool get _showMascot {
     return _assistantVisible ||
         (_controller.state != NorieMascotState.idle &&
@@ -138,6 +169,15 @@ class _NorieMascotHostState extends State<NorieMascotHost>
           NorieTutorialOverlay(
             coordinator: _tutorialCoordinator,
           ),
+          if (_assistantVisible)
+            Positioned.fill(
+              child: NorieHelpSheet(
+                contextSnapshot: _contextSnapshot,
+                controller: _controller,
+                onClose: _hideAssistant,
+                onAction: _handleHelpAction,
+              ),
+            ),
         ],
       ),
     );
