@@ -92,6 +92,7 @@ class _NorieMascotHostState extends State<NorieMascotHost>
     if (!_assistantVisible || !mounted) return;
     setState(() => _assistantVisible = false);
     _controller.stopSpeaking();
+    unawaited(_voiceController.stop());
   }
 
   Future<void> _handleHelpAction(NorieHelpDestination destination) async {
