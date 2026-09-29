@@ -190,6 +190,7 @@ class NorieMascotController extends ChangeNotifier {
 
   void stopSpeaking() {
     if (_state != NorieMascotState.speaking && _speech == null) return;
+    _queuedEvent = null;
     idle();
   }
 
