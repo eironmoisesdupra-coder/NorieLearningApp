@@ -93,7 +93,7 @@ class NorieStudyService {
       final questionRows = await client
           .from('study_questions')
           .select(
-            'id,position,kind,prompt,options,correct_values,explanation,source_excerpt,topic_tag,difficulty',
+            'id,position,kind,prompt,options,correct_values,explanation,source_excerpt,topic_tag,difficulty,ordered_items',
           )
           .eq('study_set_id', id)
           .order('position');

@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/commerce/domain/norie_shop_models.dart';
+
 class NorieLevelSnapshot {
   const NorieLevelSnapshot({
     required this.totalXp,
@@ -313,6 +315,12 @@ class NorieProgression extends ChangeNotifier {
   static const _rewardedPerfectLessonTopicsKey =
       'norie.rewardedPerfectLessonTopics';
   static const _lastModifiedKey = 'norie.lastModifiedAt';
+  static const _ownedShopItemsKey = 'norie.ownedShopItems';
+  static const _equippedFrameKey = 'norie.equippedFrame';
+  static const _equippedBadgeKey = 'norie.equippedBadge';
+  static const _equippedThemeKey = 'norie.equippedTheme';
+  static const _streakShieldsKey = 'norie.streakShields';
+  static const _creditTransactionsKey = 'norie.creditTransactions';
 
   int _totalXp = 0;
   int _credits = 0;
@@ -322,6 +330,13 @@ class NorieProgression extends ChangeNotifier {
   int _questionsAnswered = 0;
   int _challengeSessions = 0;
   int _speedBestScore = 0;
+  int _streakShields = 0;
+  Set<String> _ownedShopItems = <String>{};
+  String? _equippedFrameId;
+  String? _equippedBadgeId;
+  String? _equippedThemeId;
+  List<NorieCreditTransaction> _creditTransactions =
+      <NorieCreditTransaction>[];
   Set<String> _exploredSubjects = <String>{};
   Set<String> _studyDates = <String>{};
   Set<String> _dailyChallengeDates = <String>{};
@@ -336,6 +351,15 @@ class NorieProgression extends ChangeNotifier {
 
   int get totalXp => _totalXp;
   int get credits => _credits;
+  int get streakShields => _streakShields;
+  Set<String> get ownedShopItems => Set.unmodifiable(_ownedShopItems);
+  String? get equippedFrameId => _equippedFrameId;
+  String? get equippedBadgeId => _equippedBadgeId;
+  String? get equippedThemeId => _equippedThemeId;
+  List<NorieCreditTransaction> get creditTransactions =>
+      List.unmodifiable(_creditTransactions);
+
+  bool ownsShopItem(String id) => _ownedShopItems.contains(id);
   int get completedLessons => _completedLessons;
   int get studySessions => _studySessions;
   int get correctAnswers => _correctAnswers;
@@ -475,6 +499,26 @@ class NorieProgression extends ChangeNotifier {
     _questionsAnswered = prefs.getInt(_questionsKey) ?? 0;
     _challengeSessions = prefs.getInt(_challengeSessionsKey) ?? 0;
     _speedBestScore = prefs.getInt(_speedBestScoreKey) ?? 0;
+    _streakShields = prefs.getInt(_streakShieldsKey) ?? 0;
+    _ownedShopItems =
+        (prefs.getStringList(_ownedShopItemsKey) ?? const <String>[]).toSet();
+    _equippedFrameId = prefs.getString(_equippedFrameKey);
+    _equippedBadgeId = prefs.getString(_equippedBadgeKey);
+    _equippedThemeId = prefs.getString(_equippedThemeKey);
+    final rawTransactions = prefs.getString(_creditTransactionsKey);
+    if (rawTransactions != null && rawTransactions.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawTransactions) as List<dynamic>;
+        _creditTransactions = decoded
+            .whereType<Map>()
+            .map((item) => NorieCreditTransaction.fromJson(
+                  Map<String, dynamic>.from(item),
+                ))
+            .toList();
+      } on FormatException {
+        _creditTransactions = <NorieCreditTransaction>[];
+      }
+    }
     _exploredSubjects = (prefs.getStringList(_subjectsKey) ?? const <String>[])
         .toSet();
     _studyDates =
@@ -547,6 +591,7 @@ class NorieProgression extends ChangeNotifier {
     final safeAmount = amount < 0 ? 0 : amount;
     if (safeAmount == 0) return;
     _credits += safeAmount;
+    _recordCreditTransaction(safeAmount, 'Credits earned');
     _changed();
   }
 
@@ -557,6 +602,63 @@ class NorieProgression extends ChangeNotifier {
     _credits -= safeAmount;
     _changed();
     return true;
+  }
+
+  bool purchaseShopItem(NorieShopItem item) {
+    if (!item.consumable && _ownedShopItems.contains(item.id)) return false;
+    if (_credits < item.price) return false;
+
+    _credits -= item.price;
+    _recordCreditTransaction(-item.price, 'Purchased ${item.title}');
+
+    if (item.id == NorieShopCatalog.streakShield.id) {
+      _streakShields++;
+    } else {
+      _ownedShopItems.add(item.id);
+    }
+
+    _changed();
+    return true;
+  }
+
+  bool equipShopItem(NorieShopItem item) {
+    if (!_ownedShopItems.contains(item.id)) return false;
+
+    switch (item.type) {
+      case NorieShopItemType.profileFrame:
+        _equippedFrameId = item.id;
+      case NorieShopItemType.badge:
+        _equippedBadgeId = item.id;
+      case NorieShopItemType.theme:
+        _equippedThemeId = item.id;
+      case NorieShopItemType.consumable:
+        return false;
+    }
+    _changed();
+    return true;
+  }
+
+  bool useStreakShield() {
+    if (_streakShields < 1) return false;
+    _streakShields--;
+    _changed();
+    return true;
+  }
+
+  void _recordCreditTransaction(int amount, String reason) {
+    _creditTransactions.insert(
+      0,
+      NorieCreditTransaction(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        amount: amount,
+        reason: reason,
+        createdAt: DateTime.now().toUtc(),
+      ),
+    );
+    if (_creditTransactions.length > 100) {
+      _creditTransactions =
+          _creditTransactions.take(100).toList(growable: true);
+    }
   }
 
   void markOnboardingComplete() {
@@ -826,6 +928,24 @@ class NorieProgression extends ChangeNotifier {
       prefs.setInt(_questionsKey, _questionsAnswered),
       prefs.setInt(_challengeSessionsKey, _challengeSessions),
       prefs.setInt(_speedBestScoreKey, _speedBestScore),
+      prefs.setInt(_streakShieldsKey, _streakShields),
+      prefs.setStringList(_ownedShopItemsKey, _ownedShopItems.toList()..sort()),
+      if (_equippedFrameId == null)
+        prefs.remove(_equippedFrameKey)
+      else
+        prefs.setString(_equippedFrameKey, _equippedFrameId!),
+      if (_equippedBadgeId == null)
+        prefs.remove(_equippedBadgeKey)
+      else
+        prefs.setString(_equippedBadgeKey, _equippedBadgeId!),
+      if (_equippedThemeId == null)
+        prefs.remove(_equippedThemeKey)
+      else
+        prefs.setString(_equippedThemeKey, _equippedThemeId!),
+      prefs.setString(
+        _creditTransactionsKey,
+        jsonEncode(_creditTransactions.map((item) => item.toJson()).toList()),
+      ),
       prefs.setStringList(_subjectsKey, _exploredSubjects.toList()..sort()),
       prefs.setStringList(_studyDatesKey, _studyDates.toList()..sort()),
       prefs.setStringList(
@@ -874,6 +994,12 @@ class NorieProgression extends ChangeNotifier {
     _questionsAnswered = 0;
     _challengeSessions = 0;
     _speedBestScore = 0;
+    _streakShields = 0;
+    _ownedShopItems = <String>{};
+    _equippedFrameId = null;
+    _equippedBadgeId = null;
+    _equippedThemeId = null;
+    _creditTransactions = <NorieCreditTransaction>[];
     _exploredSubjects = <String>{};
     _studyDates = <String>{};
     _dailyChallengeDates = <String>{};
@@ -894,6 +1020,13 @@ class NorieProgression extends ChangeNotifier {
         'schema_version': 1,
         'total_xp': _totalXp,
         'credits': _credits,
+        'streak_shields': _streakShields,
+        'owned_shop_items': _ownedShopItems.toList()..sort(),
+        'equipped_frame_id': _equippedFrameId,
+        'equipped_badge_id': _equippedBadgeId,
+        'equipped_theme_id': _equippedThemeId,
+        'credit_transactions':
+            _creditTransactions.map((item) => item.toJson()).toList(),
         'completed_lessons': _completedLessons,
         'study_sessions': _studySessions,
         'correct_answers': _correctAnswers,
@@ -922,6 +1055,21 @@ class NorieProgression extends ChangeNotifier {
   }) async {
     _totalXp = _readInt(state['total_xp'], fallback: _totalXp);
     _credits = _readInt(state['credits'], fallback: _credits);
+    _streakShields =
+        _readInt(state['streak_shields'], fallback: _streakShields);
+    _ownedShopItems = _readStringSet(state['owned_shop_items']);
+    _equippedFrameId = state['equipped_frame_id']?.toString();
+    _equippedBadgeId = state['equipped_badge_id']?.toString();
+    _equippedThemeId = state['equipped_theme_id']?.toString();
+    final rawTransactions = state['credit_transactions'];
+    if (rawTransactions is List) {
+      _creditTransactions = rawTransactions
+          .whereType<Map>()
+          .map((item) => NorieCreditTransaction.fromJson(
+                Map<String, dynamic>.from(item),
+              ))
+          .toList();
+    }
     _completedLessons =
         _readInt(state['completed_lessons'], fallback: _completedLessons);
     _studySessions =

@@ -2,8 +2,12 @@ enum NorieStudyGenerationMode {
   multipleChoice('multiple_choice', 'Multiple Choice'),
   trueFalse('true_false', 'True / False'),
   identification('identification', 'Identification'),
+  matching('matching', 'Matching'),
+  dragAndDrop('drag_drop', 'Drag & Drop'),
+  ordering('ordering', 'Ordering'),
+  fillInBlank('fill_blank', 'Fill in the Blank'),
   flashcards('flashcards', 'Flashcards'),
-  mixed('mixed', 'Mixed');
+  mixed('mixed', 'Random Mix');
 
   const NorieStudyGenerationMode(this.wireValue, this.label);
   final String wireValue;
@@ -21,6 +25,10 @@ enum NorieStudyQuestionKind {
   singleSelect('single_select'),
   trueFalse('true_false'),
   identification('identification'),
+  matching('matching'),
+  dragAndDrop('drag_drop'),
+  ordering('ordering'),
+  fillInBlank('fill_blank'),
   flashcard('flashcard');
 
   const NorieStudyQuestionKind(this.wireValue);
@@ -46,6 +54,7 @@ class NorieStudyQuestion {
     required this.sourceExcerpt,
     required this.difficulty,
     this.topicTag,
+    this.orderedItems = const <String>[],
   });
 
   final String id;
@@ -58,6 +67,7 @@ class NorieStudyQuestion {
   final String sourceExcerpt;
   final String difficulty;
   final String? topicTag;
+  final List<String> orderedItems;
 
   factory NorieStudyQuestion.fromMap(Map<String, dynamic> map) {
     return NorieStudyQuestion(
@@ -74,6 +84,8 @@ class NorieStudyQuestion {
       sourceExcerpt: map['source_excerpt']?.toString() ?? '',
       topicTag: map['topic_tag']?.toString(),
       difficulty: map['difficulty']?.toString() ?? 'foundation',
+      orderedItems:
+          List<String>.from(map['ordered_items'] as List? ?? const []),
     );
   }
 }

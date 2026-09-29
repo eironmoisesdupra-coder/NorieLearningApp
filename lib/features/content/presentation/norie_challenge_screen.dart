@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
+import '../application/norie_activity_engine.dart';
 import '../domain/norie_content_models.dart';
 import 'norie_content_theme.dart';
 import 'norie_learning_results_screen.dart';
@@ -20,14 +21,22 @@ class NorieChallengeScreen extends StatefulWidget {
 }
 
 class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
+  late final List<NorieRandomizedQuestion> _rounds;
+
   int _round = 0;
   int _challengeScore = 0;
   int? _selectedIndex;
   bool _locked = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _rounds = NorieItemRandomizer.randomize(widget.topic.challenge.rounds);
+  }
+
   void _choose(int index) {
     if (_locked) return;
-    final current = widget.topic.challenge.rounds[_round];
+    final current = _rounds[_round];
 
     setState(() {
       _selectedIndex = index;
@@ -41,7 +50,7 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
   void _next() {
     if (!_locked) return;
 
-    if (_round == widget.topic.challenge.rounds.length - 1) {
+    if (_round == _rounds.length - 1) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => NorieLearningResultsScreen(
@@ -63,7 +72,7 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final rounds = widget.topic.challenge.rounds;
+    final rounds = _rounds;
     final current = rounds[_round];
     final accent = norieContentAccent(widget.topic.accent);
 
@@ -127,7 +136,7 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
                 ),
                 const SizedBox(height: 9),
                 Text(
-                  current.prompt,
+                  current.source.prompt,
                   style: const TextStyle(
                     fontSize: 25,
                     fontWeight: FontWeight.w900,
@@ -154,7 +163,7 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
                   Text(
                     _selectedIndex == current.correctIndex
                         ? 'Correct! +${widget.topic.challenge.xpPerCorrect} challenge XP'
-                        : current.explanation,
+                        : current.source.explanation,
                     style: TextStyle(
                       color: _selectedIndex == current.correctIndex
                           ? NorieColors.green
