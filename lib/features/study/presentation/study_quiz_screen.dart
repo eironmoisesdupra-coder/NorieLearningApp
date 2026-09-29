@@ -55,6 +55,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
       sourceExcerpt: source.sourceExcerpt,
       difficulty: source.difficulty,
       topicTag: source.topicTag,
+      orderedItems: List<String>.from(source.orderedItems),
     );
   }
 
@@ -81,9 +82,14 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
     switch (_question.kind) {
       case NorieStudyQuestionKind.singleSelect:
       case NorieStudyQuestionKind.trueFalse:
+      case NorieStudyQuestionKind.matching:
+      case NorieStudyQuestionKind.dragAndDrop:
         response = _selected ?? '';
       case NorieStudyQuestionKind.identification:
+      case NorieStudyQuestionKind.fillInBlank:
         response = _textController.text.trim();
+      case NorieStudyQuestionKind.ordering:
+        response = _selected ?? '';
       case NorieStudyQuestionKind.flashcard:
         return;
     }
@@ -221,7 +227,9 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                 const SizedBox(height: 22),
                 if (_question.kind ==
                         NorieStudyQuestionKind.singleSelect ||
-                    _question.kind == NorieStudyQuestionKind.trueFalse)
+                    _question.kind == NorieStudyQuestionKind.trueFalse ||
+                    _question.kind == NorieStudyQuestionKind.matching ||
+                    _question.kind == NorieStudyQuestionKind.dragAndDrop)
                   for (final option in _question.options)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 10),
@@ -238,7 +246,8 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                       ),
                     )
                 else if (_question.kind ==
-                    NorieStudyQuestionKind.identification)
+                        NorieStudyQuestionKind.identification ||
+                    _question.kind == NorieStudyQuestionKind.fillInBlank)
                   TextField(
                     controller: _textController,
                     enabled: !_checked,
@@ -248,6 +257,13 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                       labelText: 'Your answer',
                       prefixIcon: Icon(Icons.edit_rounded),
                     ),
+                  )
+                else if (_question.kind == NorieStudyQuestionKind.ordering)
+                  _OrderingRecall(
+                    items: _question.orderedItems,
+                    selected: _selected,
+                    checked: _checked,
+                    onSelected: (value) => setState(() => _selected = value),
                   )
                 else
                   _Flashcard(
@@ -350,6 +366,10 @@ class _KindPill extends StatelessWidget {
       NorieStudyQuestionKind.singleSelect => 'MULTIPLE CHOICE',
       NorieStudyQuestionKind.trueFalse => 'TRUE / FALSE',
       NorieStudyQuestionKind.identification => 'IDENTIFICATION',
+      NorieStudyQuestionKind.matching => 'MATCHING',
+      NorieStudyQuestionKind.dragAndDrop => 'DRAG & DROP',
+      NorieStudyQuestionKind.ordering => 'ORDERING',
+      NorieStudyQuestionKind.fillInBlank => 'FILL IN THE BLANK',
       NorieStudyQuestionKind.flashcard => 'FLASHCARD',
     };
 
@@ -444,6 +464,46 @@ class _Choice extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _OrderingRecall extends StatelessWidget {
+  const _OrderingRecall({
+    required this.items,
+    required this.selected,
+    required this.checked,
+    required this.onSelected,
+  });
+
+  final List<String> items;
+  final String? selected;
+  final bool checked;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const Text(
+        'This generated ordering item has no sequence data.',
+        style: TextStyle(color: NorieColors.textSecondary),
+      );
+    }
+
+    final expected = items.join(' → ');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Recall the correct sequence, then reveal it.',
+          style: TextStyle(color: NorieColors.textSecondary),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton(
+          onPressed: checked ? null : () => onSelected(expected),
+          child: Text(selected == null ? 'Reveal sequence' : expected),
+        ),
+      ],
     );
   }
 }
