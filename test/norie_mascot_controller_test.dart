@@ -53,6 +53,19 @@ void main() {
       expect(controller.state, NorieMascotState.idle);
     });
 
+    test('stop speaking clears reactions queued behind speech', () {
+      controller.speak('Here is some help.');
+      controller.correct();
+
+      controller.stopSpeaking();
+      expect(controller.state, NorieMascotState.idle);
+
+      controller.idea();
+      scheduler.elapse(const Duration(milliseconds: 900));
+
+      expect(controller.state, NorieMascotState.idle);
+    });
+
     test('hide clears queued events and speech', () {
       controller.speak('Try the Learn tab.');
       controller.celebrate();
