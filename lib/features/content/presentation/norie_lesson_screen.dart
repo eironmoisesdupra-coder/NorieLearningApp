@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../domain/norie_content_models.dart';
 import 'norie_content_theme.dart';
-import 'norie_quiz_screen.dart';
+import 'norie_lesson_visual.dart';
+import 'norie_practice_mode_screen.dart';
 
 class NorieLessonScreen extends StatelessWidget {
   const NorieLessonScreen({
@@ -57,6 +58,14 @@ class NorieLessonScreen extends StatelessWidget {
                     fontSize: 15,
                   ),
                 ),
+                if (topic.visualType != null) ...[
+                  const SizedBox(height: 20),
+                  NorieLessonVisual(
+                    type: topic.visualType!,
+                    title: topic.title,
+                    accent: accent,
+                  ),
+                ],
                 const SizedBox(height: 24),
                 for (var index = 0;
                     index < topic.lesson.sections.length;
@@ -113,13 +122,13 @@ class NorieLessonScreen extends StatelessWidget {
                       : () {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => NorieQuizScreen(topic: topic),
+                              builder: (_) => NoriePracticeModeScreen(topic: topic),
                             ),
                           );
                         },
-                  icon: const Icon(Icons.quiz_rounded),
+                  icon: const Icon(Icons.extension_rounded),
                   label: Text(
-                    'Start ${topic.quiz.questions.length}-question quiz',
+                    'Choose practice mode · ${topic.quiz.questions.length} items',
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: accent,

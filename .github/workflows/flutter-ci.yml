@@ -51,5 +51,20 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Verify Android launcher branding
+        run: |
+          grep -q 'android:label="NorieLearning"' android/app/src/main/AndroidManifest.xml
+          grep -q '@drawable/norie_launcher_icon' android/app/src/main/AndroidManifest.xml
+          test -f android/app/src/main/res/drawable/norie_launcher_icon.xml
+
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      - name: Upload branded Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NorieLearning-android-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
       - name: Build web release
         run: flutter build web --release

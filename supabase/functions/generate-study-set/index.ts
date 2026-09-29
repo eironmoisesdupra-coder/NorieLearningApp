@@ -188,7 +188,10 @@ Deno.serve(async (req: Request) => {
   const requestedCount = Number(body?.question_count ?? 10);
   const topicTag = String(body?.topic_tag ?? "").trim().slice(0, 100);
 
-  const allowedModes = new Set(["multiple_choice","true_false","identification","flashcards","mixed"]);
+  const allowedModes = new Set([
+    "multiple_choice","true_false","identification","matching","drag_drop",
+    "ordering","fill_blank","flashcards","mixed",
+  ]);
   const allowedCounts = new Set([5,10,20,40]);
   const allowedSources = new Set(["notes","pdf","docx","pptx","image","text"]);
 
@@ -261,6 +264,7 @@ Deno.serve(async (req: Request) => {
         prompt: q.prompt,
         options: q.options ?? [],
         correct_values: q.correct_values ?? [],
+        ordered_items: q.ordered_items ?? [],
         explanation: q.explanation ?? "",
         source_excerpt: q.source_excerpt ?? "",
         topic_tag: q.topic_tag ?? null,
@@ -379,8 +383,12 @@ Deno.serve(async (req: Request) => {
     multiple_choice: "Create only single_select questions with exactly four options.",
     true_false: "Create only true_false questions with exactly two options: True and False.",
     identification: "Create only identification questions requiring a short exact answer.",
+    matching: "Create matching items. The prompt asks for the matching concept, options has exactly four candidates, and correct_values has exactly one matching candidate.",
+    drag_drop: "Create drag_drop items. The prompt defines a target, options has exactly four draggable candidates, and correct_values has exactly one correct candidate.",
+    ordering: "Create ordering items. ordered_items contains 3 to 6 source-supported steps in their correct order; options must be empty and correct_values contains the ordered items.",
+    fill_blank: "Create fill_blank active-recall items. Prompt contains one clear blank marked □□□□, options is empty, and correct_values contains accepted short answers.",
     flashcards: "Create only flashcards: prompt is the front, correct_values contains the concise back.",
-    mixed: "Use a useful mixture of single_select, true_false, identification, and flashcard items.",
+    mixed: "Use a useful mixture of single_select, true_false, identification, matching, drag_drop, ordering, fill_blank, and flashcard items.",
   };
 
   const systemPrompt = [
@@ -393,7 +401,9 @@ Deno.serve(async (req: Request) => {
     "Avoid duplicate questions.",
     "For single_select, use exactly four choices and exactly one correct value.",
     "For true_false, options must be [\"True\", \"False\"].",
-    "For identification and flashcard, options must be an empty array.",
+    "For identification, fill_blank, flashcard, and ordering, options must be an empty array.",
+    "For matching and drag_drop, use exactly four options and exactly one correct value.",
+    "For ordering, ordered_items must contain 3 to 6 items in the correct source-supported sequence.",
     formatInstructions[mode],
     "Return JSON only in this shape:",
     "{\"title\":\"string\",\"topic_tag\":\"string\",\"questions\":[{\"kind\":\"single_select|true_false|identification|flashcard\",\"prompt\":\"string\",\"options\":[\"string\"],\"correct_values\":[\"string\"],\"explanation\":\"string\",\"source_excerpt\":\"string\",\"topic_tag\":\"string\",\"difficulty\":\"foundation|intermediate|advanced\"}]}",
@@ -468,7 +478,7 @@ Deno.serve(async (req: Request) => {
     const questions: any[] = [];
     for (const q of inputQuestions.slice(0, requestedCount)) {
       const kind = String(q?.kind ?? "");
-      if (!["single_select","true_false","identification","flashcard"].includes(kind)) continue;
+      if (!["single_select","true_false","identification","matching","drag_drop","ordering","fill_blank","flashcard"].includes(kind)) continue;
 
       const prompt = String(q?.prompt ?? "").trim();
       const explanation = String(q?.explanation ?? "").trim();
@@ -479,7 +489,9 @@ Deno.serve(async (req: Request) => {
       if (!prompt || correctValues.length === 0 || !sourceExcerpt) continue;
       if (kind === "single_select" && options.length !== 4) continue;
       if (kind === "true_false" && options.length !== 2) continue;
-      if ((kind === "identification" || kind === "flashcard") && options.length !== 0) continue;
+      if ((kind === "matching" || kind === "drag_drop") && options.length !== 4) continue;
+      if ((kind === "identification" || kind === "fill_blank" || kind === "flashcard" || kind === "ordering") && options.length !== 0) continue;
+      if (kind === "ordering" && (orderedItems.length < 3 || orderedItems.length > 6)) continue;
 
       questions.push({
         study_set_id: studySetId,
@@ -488,6 +500,7 @@ Deno.serve(async (req: Request) => {
         prompt,
         options,
         correct_values: correctValues,
+        ordered_items: orderedItems,
         explanation,
         source_excerpt: sourceExcerpt,
         topic_tag: String(q?.topic_tag ?? topicTag ?? "").trim() || null,
@@ -577,6 +590,7 @@ Deno.serve(async (req: Request) => {
         prompt: q.prompt,
         options: q.options,
         correct_values: q.correct_values,
+        ordered_items: q.ordered_items ?? [],
         explanation: q.explanation,
         source_excerpt: q.source_excerpt,
         topic_tag: q.topic_tag,

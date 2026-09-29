@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="Norie Learning"
+        android:label="NorieLearning"
         android:name="${applicationName}"
         android:icon="@drawable/norie_launcher_icon">
         <activity

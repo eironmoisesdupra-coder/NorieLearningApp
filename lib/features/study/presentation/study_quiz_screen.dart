@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
@@ -20,6 +22,8 @@ class StudyQuizScreen extends StatefulWidget {
 class _StudyQuizScreenState extends State<StudyQuizScreen> {
   final _textController = TextEditingController();
   final List<NorieStudyAnswer> _answers = [];
+  final _random = Random.secure();
+  late final List<NorieStudyQuestion> _questions;
 
   int _index = 0;
   String? _selected;
@@ -28,7 +32,32 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
   bool _flashcardRevealed = false;
   bool _finishing = false;
 
-  NorieStudyQuestion get _question => widget.studySet.questions[_index];
+  NorieStudyQuestion get _question => _questions[_index];
+
+  @override
+  void initState() {
+    super.initState();
+    _questions = widget.studySet.questions.map(_randomizeQuestion).toList()
+      ..shuffle(_random);
+  }
+
+  NorieStudyQuestion _randomizeQuestion(NorieStudyQuestion source) {
+    if (source.options.length < 2) return source;
+    final options = List<String>.from(source.options)..shuffle(_random);
+    return NorieStudyQuestion(
+      id: source.id,
+      position: source.position,
+      kind: source.kind,
+      prompt: source.prompt,
+      options: options,
+      correctValues: List<String>.from(source.correctValues),
+      explanation: source.explanation,
+      sourceExcerpt: source.sourceExcerpt,
+      difficulty: source.difficulty,
+      topicTag: source.topicTag,
+      orderedItems: List<String>.from(source.orderedItems),
+    );
+  }
 
   @override
   void dispose() {
@@ -53,9 +82,14 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
     switch (_question.kind) {
       case NorieStudyQuestionKind.singleSelect:
       case NorieStudyQuestionKind.trueFalse:
+      case NorieStudyQuestionKind.matching:
+      case NorieStudyQuestionKind.dragAndDrop:
         response = _selected ?? '';
       case NorieStudyQuestionKind.identification:
+      case NorieStudyQuestionKind.fillInBlank:
         response = _textController.text.trim();
+      case NorieStudyQuestionKind.ordering:
+        response = _selected ?? '';
       case NorieStudyQuestionKind.flashcard:
         return;
     }
@@ -96,7 +130,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
   Future<void> _next() async {
     if (!_checked || _finishing) return;
 
-    if (_index < widget.studySet.questions.length - 1) {
+    if (_index < _questions.length - 1) {
       setState(() {
         _index++;
         _selected = null;
@@ -140,7 +174,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.studySet.questions.length;
+    final total = _questions.length;
     final progress = total == 0 ? 0.0 : (_index + 1) / total;
 
     return Scaffold(
@@ -177,7 +211,9 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 26),
+                const SizedBox(height: 12),
+                const _RandomizedSessionBanner(),
+                const SizedBox(height: 14),
                 _KindPill(kind: _question.kind),
                 const SizedBox(height: 10),
                 Text(
@@ -191,7 +227,9 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                 const SizedBox(height: 22),
                 if (_question.kind ==
                         NorieStudyQuestionKind.singleSelect ||
-                    _question.kind == NorieStudyQuestionKind.trueFalse)
+                    _question.kind == NorieStudyQuestionKind.trueFalse ||
+                    _question.kind == NorieStudyQuestionKind.matching ||
+                    _question.kind == NorieStudyQuestionKind.dragAndDrop)
                   for (final option in _question.options)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 10),
@@ -208,7 +246,8 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                       ),
                     )
                 else if (_question.kind ==
-                    NorieStudyQuestionKind.identification)
+                        NorieStudyQuestionKind.identification ||
+                    _question.kind == NorieStudyQuestionKind.fillInBlank)
                   TextField(
                     controller: _textController,
                     enabled: !_checked,
@@ -218,6 +257,13 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                       labelText: 'Your answer',
                       prefixIcon: Icon(Icons.edit_rounded),
                     ),
+                  )
+                else if (_question.kind == NorieStudyQuestionKind.ordering)
+                  _OrderingRecall(
+                    items: _question.orderedItems,
+                    selected: _selected,
+                    checked: _checked,
+                    onSelected: (value) => setState(() => _selected = value),
                   )
                 else
                   _Flashcard(
@@ -277,6 +323,38 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
   }
 }
 
+class _RandomizedSessionBanner extends StatelessWidget {
+  const _RandomizedSessionBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: NorieColors.violet.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: NorieColors.violet.withValues(alpha: .35)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.casino_rounded, size: 17, color: NorieColors.violet),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Randomized run · item order and answer positions change each attempt',
+              style: TextStyle(
+                color: NorieColors.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _KindPill extends StatelessWidget {
   const _KindPill({required this.kind});
 
@@ -288,6 +366,10 @@ class _KindPill extends StatelessWidget {
       NorieStudyQuestionKind.singleSelect => 'MULTIPLE CHOICE',
       NorieStudyQuestionKind.trueFalse => 'TRUE / FALSE',
       NorieStudyQuestionKind.identification => 'IDENTIFICATION',
+      NorieStudyQuestionKind.matching => 'MATCHING',
+      NorieStudyQuestionKind.dragAndDrop => 'DRAG & DROP',
+      NorieStudyQuestionKind.ordering => 'ORDERING',
+      NorieStudyQuestionKind.fillInBlank => 'FILL IN THE BLANK',
       NorieStudyQuestionKind.flashcard => 'FLASHCARD',
     };
 
@@ -382,6 +464,46 @@ class _Choice extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _OrderingRecall extends StatelessWidget {
+  const _OrderingRecall({
+    required this.items,
+    required this.selected,
+    required this.checked,
+    required this.onSelected,
+  });
+
+  final List<String> items;
+  final String? selected;
+  final bool checked;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const Text(
+        'This generated ordering item has no sequence data.',
+        style: TextStyle(color: NorieColors.textSecondary),
+      );
+    }
+
+    final expected = items.join(' → ');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Recall the correct sequence, then reveal it.',
+          style: TextStyle(color: NorieColors.textSecondary),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton(
+          onPressed: checked ? null : () => onSelected(expected),
+          child: Text(selected == null ? 'Reveal sequence' : expected),
+        ),
+      ],
     );
   }
 }

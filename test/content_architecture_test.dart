@@ -26,7 +26,7 @@ void main() {
       for (final topic in NorieContentCatalog.chemistryTopics) {
         expect(
           topic.quiz.questions,
-          hasLength(5),
+          hasLength(20),
           reason: topic.title,
         );
         expect(
@@ -37,7 +37,7 @@ void main() {
         expect(topic.lesson.completionXp, 50);
         expect(topic.quiz.xpPerCorrect, 20);
         expect(topic.challenge.xpPerCorrect, 25);
-        expect(topic.totalAssessmentAttempts, 8);
+        expect(topic.totalAssessmentAttempts, 23);
       }
     });
 
