@@ -58,7 +58,7 @@ void main() {
       AnatomySystemId.endocrine,
     });
 
-    expect(selected, hasLength(12));
+    expect(selected, hasLength(23));
     expect(
       selected.map((item) => item.system).toSet(),
       {
