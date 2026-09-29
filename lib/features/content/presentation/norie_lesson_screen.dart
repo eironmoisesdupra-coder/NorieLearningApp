@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../domain/norie_content_models.dart';
 import 'norie_content_theme.dart';
-import 'norie_quiz_screen.dart';
+import 'norie_practice_mode_screen.dart';
 
 class NorieLessonScreen extends StatelessWidget {
   const NorieLessonScreen({
@@ -113,13 +113,13 @@ class NorieLessonScreen extends StatelessWidget {
                       : () {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => NorieQuizScreen(topic: topic),
+                              builder: (_) => NoriePracticeModeScreen(topic: topic),
                             ),
                           );
                         },
-                  icon: const Icon(Icons.quiz_rounded),
+                  icon: const Icon(Icons.extension_rounded),
                   label: Text(
-                    'Start ${topic.quiz.questions.length}-question quiz',
+                    'Choose practice mode · ${topic.quiz.questions.length} items',
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: accent,
