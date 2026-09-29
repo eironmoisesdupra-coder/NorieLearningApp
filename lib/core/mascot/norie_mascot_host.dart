@@ -14,6 +14,7 @@ import 'tutorial/norie_tutorial_coordinator.dart';
 import 'tutorial/norie_tutorial_overlay.dart';
 import 'tutorial/norie_tutorial_models.dart';
 import 'tutorial/norie_tutorial_store.dart';
+import 'voice/norie_voice_controller.dart';
 
 class NorieMascotHost extends StatefulWidget {
   const NorieMascotHost({
@@ -33,10 +34,12 @@ class _NorieMascotHostState extends State<NorieMascotHost>
     with WidgetsBindingObserver {
   late final NorieMascotController _controller = NorieMascotController()
     ..addListener(_handleMascotChanged);
+  late final NorieVoiceController _voiceController = NorieVoiceController();
   late final NorieTutorialCoordinator _tutorialCoordinator =
       NorieTutorialCoordinator(
         controller: _controller,
         store: NorieTutorialStore(),
+        voiceController: _voiceController,
       )..addListener(_handleTutorialChanged);
 
   NorieContextSnapshot _contextSnapshot =
@@ -49,6 +52,7 @@ class _NorieMascotHostState extends State<NorieMascotHost>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_voiceController.loadEnabled());
   }
 
   @override
@@ -131,6 +135,7 @@ class _NorieMascotHostState extends State<NorieMascotHost>
     _controller
       ..removeListener(_handleMascotChanged)
       ..dispose();
+    _voiceController.dispose();
     super.dispose();
   }
 
@@ -174,6 +179,7 @@ class _NorieMascotHostState extends State<NorieMascotHost>
               child: NorieHelpSheet(
                 contextSnapshot: _contextSnapshot,
                 controller: _controller,
+                voiceController: _voiceController,
                 onClose: _hideAssistant,
                 onAction: _handleHelpAction,
               ),
