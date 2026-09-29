@@ -15,9 +15,9 @@ class StudyResultsScreen extends StatefulWidget {
     super.key,
   });
 
-  final NorieStudySet widget.studySet;
-  final List<NorieStudyAnswer> widget.answers;
-  final NorieStudyAttemptResult widget.result;
+  final NorieStudySet studySet;
+  final List<NorieStudyAnswer> answers;
+  final NorieStudyAttemptResult result;
 
   @override
   State<StudyResultsScreen> createState() => _StudyResultsScreenState();
@@ -31,8 +31,8 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
       if (!mounted) return;
       NorieMascotScope.maybeOf(context)?.controller.celebrate(
             level: NorieQuizReactionPolicy.celebrationFor(
-              correct: widget.widget.result.correct,
-              total: widget.widget.result.total,
+              correct: widget.result.correct,
+              total: widget.result.total,
             ),
           );
     });
@@ -182,7 +182,7 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute<void>(
                           builder: (_) => StudyQuizScreen(
-                            widget.studySet: retrySet,
+                            studySet: retrySet,
                           ),
                         ),
                       );
@@ -224,7 +224,7 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => StudyQaScreen(widget.studySet: widget.studySet),
+                        builder: (_) => StudyQaScreen(studySet: widget.studySet),
                       ),
                     );
                   },
