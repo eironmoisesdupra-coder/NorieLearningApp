@@ -4,7 +4,7 @@
 
 **Goal:** Build a reusable, smooth Norie mascot engine that preserves the current character identity and powers tutorials, quiz reactions, AI-generation loading, contextual help, and celebrations across NorieLearning.
 
-**Architecture:** Implement a renderer-agnostic semantic state machine (`NorieMascotController`) and a reusable overlay host (`NorieMascotHost`) near the main navigation shell. Screens emit semantic events such as `correct()`, `think()`, `celebrate()`, or `guide()`; the mascot renderer decides how those states animate. The first renderer uses Flutter-driven motion around Norie's current artwork and derived expression layers, with the API intentionally compatible with a future Rive renderer.
+**Architecture:** Implement a renderer-agnostic semantic state machine (`NorieMascotController`) and a reusable app-root overlay host (`NorieMascotHost`) through `MaterialApp.builder`, so pushed lesson/quiz/anatomy/study routes share the same mascot controller. Screens emit semantic events such as `correct()`, `think()`, `celebrate()`, or `guide()`; the mascot renderer decides how those states animate. The first renderer uses Flutter-driven motion around Norie's current artwork and derived expression layers, with the API intentionally compatible with a future Rive renderer.
 
 **Tech Stack:** Flutter/Dart, existing Norie asset pipeline, SharedPreferences for tutorial state, existing Study/AI services, Flutter AnimationController/Tween APIs, existing Norie theme and progression systems.
 
@@ -131,7 +131,7 @@ Create transparent derived layers from the current Norie artwork for at minimum:
 
 Do not redraw the mascot into a different character. If a part cannot be separated cleanly, keep that region in the original pose PNG and animate the whole pose rather than inventing anatomy.
 
-Update `NorieAssets` with named constants for every added layer.
+Update `NorieAssets` with named constants for every added layer. Add one root-level pre-cache helper used by `NorieMascotHost` to pre-cache the base, celebrating, studying, and derived high-frequency reaction assets before quiz reactions.
 
 - [ ] **Step 4: Implement renderer and motion specs**
 
@@ -165,6 +165,7 @@ git commit -m "feat: add smooth Norie mascot renderer"
 - Create: `lib/core/mascot/norie_mascot_host.dart`
 - Create: `lib/core/mascot/norie_app_context.dart`
 - Create: `lib/core/mascot/norie_mascot_scope.dart`
+- Modify: `lib/app/norie_app.dart`
 - Modify: `lib/features/navigation/presentation/main_shell.dart`
 - Test: `test/norie_mascot_host_test.dart`
 
@@ -178,7 +179,8 @@ git commit -m "feat: add smooth Norie mascot renderer"
 - [ ] **Step 1: Write failing host/context tests**
 
 Assertions:
-- `MainShell` contains exactly one mascot host;
+- `NorieApp` contains exactly one app-root mascot host wrapping navigator content;
+- a pushed route can resolve the same `NorieMascotScope` as the main shell;
 - changing tabs updates `NorieAppArea` without recreating the mascot controller;
 - hiding mascot does not remove the underlying `IndexedStack`;
 - when app lifecycle becomes paused, persistent animation is suspended;
@@ -189,9 +191,9 @@ Assertions:
 Run: `flutter test test/norie_mascot_host_test.dart`
 Expected: FAIL because host/scope do not exist.
 
-- [ ] **Step 3: Implement `NorieMascotHost` around the main shell body**
+- [ ] **Step 3: Implement `NorieMascotHost` at the app root**
 
-Use one controller per shell. The host owns overlay placement, safe-area positioning, assistant visibility, and lifecycle observation. Do not put a new controller in each tab.
+Wrap `MaterialApp` navigator content through `NorieApp.builder` so all pushed routes inherit the same `NorieMascotScope`. Use one controller per app session. The host owns overlay placement, safe-area positioning, assistant visibility, asset pre-caching, and lifecycle observation. `MainShell` only reports tab context; it must not own another mascot controller.
 
 - [ ] **Step 4: Run host tests and verify GREEN**
 
@@ -201,7 +203,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add lib/core/mascot lib/features/navigation/presentation/main_shell.dart test/norie_mascot_host_test.dart
+git add lib/core/mascot lib/app/norie_app.dart lib/features/navigation/presentation/main_shell.dart test/norie_mascot_host_test.dart
 git commit -m "feat: host Norie mascot across main navigation"
 ```
 
@@ -444,6 +446,7 @@ git commit -m "feat: add context-aware Norie help assistant"
 - Produces: `NorieVoicePolicy.canAutoPlay(NorieAppArea area, {required bool userEnabled})`
 - Produces: `NorieVoiceController.playAsset(String assetPath)`
 - Produces: `stop()`
+- Produces persisted preference methods `loadEnabled()`, `setEnabled(bool)` using SharedPreferences key `norie.mascot.voiceEnabled`, default `false`
 - Consumes existing audio stack; do not add a second audio package if `audioplayers` is already present.
 
 - [ ] **Step 1: Write failing voice-policy tests**
@@ -453,7 +456,8 @@ Assertions:
 - tutorial => auto-play true only when userEnabled;
 - help => auto-play true only when userEnabled;
 - closing tutorial/help calls stop;
-- missing voice asset does not block text/animation.
+- missing voice asset does not block text/animation;
+- voice preference defaults to disabled and persists after `setEnabled(true)`.
 
 - [ ] **Step 2: Run voice policy tests and verify RED**
 
