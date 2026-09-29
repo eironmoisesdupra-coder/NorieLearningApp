@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../../core/widgets/norie_credit_coin.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
 import '../../common/presentation/coming_soon_screen.dart';
 import '../../learning/presentation/atomic_structure_lesson_screen.dart';
@@ -181,11 +182,7 @@ class _HomeBalancePill extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 7),
             color: NorieColors.border,
           ),
-          const Icon(
-            Icons.hexagon_rounded,
-            size: 15,
-            color: NorieColors.magenta,
-          ),
+          const NorieCreditCoin(size: 18),
           const SizedBox(width: 4),
           Text(
             '$credits',
@@ -371,7 +368,7 @@ class _HomeHero extends StatelessWidget {
                                 color: NorieColors.cyan,
                               ),
                               _HeroStat(
-                                icon: Icons.hexagon_rounded,
+                                leading: const NorieCreditCoin(size: 17),
                                 value: '${progression.credits}',
                                 label: 'credits',
                                 color: NorieColors.magenta,
@@ -424,13 +421,15 @@ class _HomeHero extends StatelessWidget {
 
 class _HeroStat extends StatelessWidget {
   const _HeroStat({
-    required this.icon,
+    this.icon,
+    this.leading,
     required this.value,
     required this.label,
     required this.color,
   });
 
-  final IconData icon;
+  final IconData? icon;
+  final Widget? leading;
   final String value;
   final String label;
   final Color color;
@@ -449,7 +448,10 @@ class _HeroStat extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          if (leading != null)
+            leading!
+          else if (icon != null)
+            Icon(icon, size: 14, color: color),
           const SizedBox(width: 5),
           Text(
             value,
