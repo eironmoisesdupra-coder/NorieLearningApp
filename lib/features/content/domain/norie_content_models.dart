@@ -84,6 +84,8 @@ class NorieTopicContent {
     required this.challenge,
     this.available = true,
     this.prerequisiteTopicId,
+    this.gradeLevel,
+    this.visualType,
   });
 
   final String id;
@@ -98,6 +100,8 @@ class NorieTopicContent {
   final NorieChallengeContent challenge;
   final bool available;
   final String? prerequisiteTopicId;
+  final String? gradeLevel;
+  final String? visualType;
 
   int get totalAssessmentAttempts =>
       quiz.questions.length + challenge.rounds.length;
@@ -113,6 +117,8 @@ class NorieTopicContent {
         'accent': accent,
         'available': available,
         'prerequisite_topic_id': prerequisiteTopicId,
+        'grade_level': gradeLevel,
+        'visual_type': visualType,
         'lesson': lesson.toJson(),
         'quiz': quiz.toJson(),
         'challenge': challenge.toJson(),
@@ -129,6 +135,8 @@ class NorieTopicContent {
       accent: json['accent'] as String? ?? 'cyan',
       available: json['available'] as bool? ?? true,
       prerequisiteTopicId: json['prerequisite_topic_id'] as String?,
+      gradeLevel: json['grade_level'] as String?,
+      visualType: json['visual_type'] as String?,
       lesson: NorieLessonContent.fromJson(
         Map<String, dynamic>.from(json['lesson'] as Map),
       ),
