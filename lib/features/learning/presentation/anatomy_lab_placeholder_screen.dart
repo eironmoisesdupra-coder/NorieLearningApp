@@ -368,10 +368,10 @@ class _BodyOrb extends StatelessWidget {
           color: NorieColors.cyan.withValues(alpha: .23),
         ),
       ),
-      child: Stack(
+      child: const Stack(
         alignment: Alignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.accessibility_new_rounded,
             size: 125,
             color: Color(0xFFE9FCFF),
