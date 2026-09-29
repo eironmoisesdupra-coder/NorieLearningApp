@@ -86,9 +86,9 @@ void main() {
   testWidgets('hiding mascot never removes the underlying main shell',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         home: NorieMascotHost(
-          child: const MainShell(),
+          child: MainShell(),
         ),
       ),
     );
