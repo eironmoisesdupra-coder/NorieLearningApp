@@ -134,11 +134,11 @@ class _LearnScreenState extends State<LearnScreen> {
                 const SizedBox(height: 12),
                 _SubjectTile(
                   title: '3D Anatomy Lab',
-                  subtitle: 'Human · Animal · Interactive 3D · Identification',
+                  subtitle: 'Layered human anatomy · 3D viewer · Identification',
                   icon: Icons.accessibility_new_rounded,
                   color: NorieColors.cyan,
                   progress: 0,
-                  badge: 'PREVIEW',
+                  badge: 'LIVE',
                   onTap: () {
                     NorieProgression.instance
                         .recordSubjectExplored('3D Anatomy Lab');
