@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
-import '../../common/presentation/coming_soon_screen.dart';
+import '../../content/presentation/norie_grade_select_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 import '../../progress/presentation/progress_screen.dart';
 import '../../study/presentation/study_generator_screen.dart';
 import '../../study/presentation/study_hub_screen.dart';
 import 'anatomy_lab_placeholder_screen.dart';
-import 'science_screen.dart';
+
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({
@@ -98,11 +98,14 @@ class _LearnScreenState extends State<LearnScreen> {
                   onTap: () {
                     NorieProgression.instance
                         .recordSubjectExplored('Mathematics');
-                    _openUpcoming(
-                      context,
-                      'Mathematics',
-                    'The Mathematics learning path is the next major subject expansion.',
-                      Icons.calculate_rounded,
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const NorieGradeSelectScreen(
+                          subject: 'Mathematics',
+                          icon: Icons.calculate_rounded,
+                          accent: NorieColors.primary,
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -118,7 +121,11 @@ class _LearnScreenState extends State<LearnScreen> {
                     NorieProgression.instance.recordSubjectExplored('Science');
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const ScienceScreen(),
+                        builder: (_) => const NorieGradeSelectScreen(
+                          subject: 'Science',
+                          icon: Icons.science_rounded,
+                          accent: NorieColors.green,
+                        ),
                       ),
                     );
                   },
@@ -151,11 +158,14 @@ class _LearnScreenState extends State<LearnScreen> {
                   badge: 'EXPANDING',
                   onTap: () {
                     NorieProgression.instance.recordSubjectExplored('English');
-                    _openUpcoming(
-                      context,
-                      'English',
-                    'The English proficiency path will include grammar, vocabulary, reading, and communication practice.',
-                      Icons.menu_book_rounded,
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const NorieGradeSelectScreen(
+                          subject: 'English',
+                          icon: Icons.menu_book_rounded,
+                          accent: NorieColors.orange,
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -200,23 +210,7 @@ class _LearnScreenState extends State<LearnScreen> {
     );
   }
 
-  static void _openUpcoming(
-    BuildContext context,
-    String title,
-    String subtitle,
-    IconData icon,
-  ) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ComingSoonScreen(
-          title: title,
-          subtitle: subtitle,
-          icon: icon,
-        ),
-      ),
-    );
-  }
-}
+
 
 class _LearnHeader extends StatelessWidget {
   const _LearnHeader({required this.onMenuPressed});
