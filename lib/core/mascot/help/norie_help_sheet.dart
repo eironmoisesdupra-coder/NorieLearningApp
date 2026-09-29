@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/norie_theme.dart';
 import '../norie_app_context.dart';
 import '../norie_mascot_controller.dart';
+import '../voice/norie_voice_controller.dart';
 import 'norie_help_models.dart';
 import 'norie_help_service.dart';
 
@@ -10,6 +11,7 @@ class NorieHelpSheet extends StatefulWidget {
   const NorieHelpSheet({
     required this.contextSnapshot,
     required this.controller,
+    required this.voiceController,
     required this.onClose,
     required this.onAction,
     super.key,
@@ -17,6 +19,7 @@ class NorieHelpSheet extends StatefulWidget {
 
   final NorieContextSnapshot contextSnapshot;
   final NorieMascotController controller;
+  final NorieVoiceController voiceController;
   final VoidCallback onClose;
   final ValueChanged<NorieHelpDestination> onAction;
 
@@ -28,10 +31,12 @@ class _NorieHelpSheetState extends State<NorieHelpSheet> {
   final TextEditingController _textController = TextEditingController();
   NorieHelpResponse? _response;
   bool _working = false;
+  late bool _voiceEnabled;
 
   @override
   void initState() {
     super.initState();
+    _voiceEnabled = widget.voiceController.enabled;
     widget.controller.searching();
   }
 
@@ -78,7 +83,14 @@ class _NorieHelpSheetState extends State<NorieHelpSheet> {
 
   void _close() {
     widget.controller.stopSpeaking();
+    widget.voiceController.stop();
     widget.onClose();
+  }
+
+  Future<void> _setVoiceEnabled(bool enabled) async {
+    await widget.voiceController.setEnabled(enabled);
+    if (!mounted) return;
+    setState(() => _voiceEnabled = enabled);
   }
 
   @override
@@ -146,6 +158,23 @@ class _NorieHelpSheetState extends State<NorieHelpSheet> {
                                 ],
                               ),
                             ),
+                            Tooltip(
+                              message: _voiceEnabled
+                                  ? 'Turn tutorial/help voice off'
+                                  : 'Turn tutorial/help voice on',
+                              child: FilterChip(
+                                selected: _voiceEnabled,
+                                onSelected: _setVoiceEnabled,
+                                avatar: Icon(
+                                  _voiceEnabled
+                                      ? Icons.volume_up_rounded
+                                      : Icons.volume_off_rounded,
+                                  size: 16,
+                                ),
+                                label: const Text('Voice'),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
                             IconButton(
                               onPressed: _close,
                               tooltip: 'Close Norie help',
