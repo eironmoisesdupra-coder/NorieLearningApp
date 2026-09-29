@@ -135,7 +135,6 @@ class _LessonVisualPainter extends CustomPainter {
     canvas.drawCircle(center, 56, faint);
     canvas.drawCircle(center, 32, strong);
     for (var i = 0; i < 6; i++) {
-      final angle = i * 1.047;
       final p = Offset(
         center.dx + 72 * (i.isEven ? 1 : -1) * .7,
         center.dy + (i - 2.5) * 18,
