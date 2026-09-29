@@ -33,7 +33,7 @@ class _AnatomyReal3DModelState extends State<AnatomyReal3DModel> {
             controller: widget.controller,
             src: Anatomy3DAssets.model,
             onProgress: (value) {
-              if (mounted) setState(() => _progress = value.clamp(0.0, 1.0));
+              if (mounted) setState(() => _progress = value.clamp(0.0, 1.0).toDouble());
             },
             onLoad: (_) {
               if (mounted) setState(() {
