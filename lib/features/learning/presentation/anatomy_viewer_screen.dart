@@ -203,10 +203,13 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _selectRealHotspot(String hotspotId) {
-    final hotspot = AnatomyHotspotCatalog.skeletal
-        .where((item) => item.id == hotspotId)
-        .cast<AnatomyHotspot?>()
-        .firstOrNull;
+    AnatomyHotspot? hotspot;
+    for (final item in AnatomyHotspotCatalog.skeletal) {
+      if (item.id == hotspotId) {
+        hotspot = item;
+        break;
+      }
+    }
     if (hotspot == null) return;
 
     final structure =
@@ -599,7 +602,6 @@ class _TopBar extends StatelessWidget {
   });
 
   final VoidCallback onBack;
-  final VoidCallback onStructures;
   final VoidCallback onSettings;
   final VoidCallback onQuiz;
 
@@ -714,6 +716,7 @@ class _ViewerToolbar extends StatelessWidget {
   final VoidCallback onReset;
   final VoidCallback onFront;
   final VoidCallback onBack;
+  final VoidCallback onStructures;
 
   @override
   Widget build(BuildContext context) {
