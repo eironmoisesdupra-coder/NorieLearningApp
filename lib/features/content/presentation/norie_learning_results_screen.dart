@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../../core/widgets/norie_reward_feedback.dart';
 import '../domain/norie_content_models.dart';
 import 'norie_content_theme.dart';
 
@@ -29,6 +30,7 @@ class _NorieLearningResultsScreenState
   late final int _completionXp;
   late final int _totalXp;
   late final NorieXpAward _award;
+  late final NorieLessonCompletion _lessonCompletion;
   late final List<NorieAchievement> _newAchievements;
 
   @override
@@ -47,7 +49,7 @@ class _NorieLearningResultsScreenState
         .map((achievement) => achievement.id)
         .toSet();
 
-    progression.recordLessonCompletion(
+    _lessonCompletion = progression.recordLessonCompletion(
       quizScore: widget.quizScore,
       challengeScore: widget.challengeScore,
       category: widget.topic.category,
@@ -65,6 +67,18 @@ class _NorieLearningResultsScreenState
               !unlockedBefore.contains(achievement.id),
         )
         .toList();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      NorieRewardPopup.show(
+        context,
+        credits: _lessonCompletion.creditsAwarded,
+        xp: _totalXp,
+        title: _lessonCompletion.creditsAwarded > 0
+            ? 'Lesson rewards!'
+            : 'XP earned!',
+      );
+    });
   }
 
   @override
@@ -144,6 +158,14 @@ class _NorieLearningResultsScreenState
                     text: 'New rank unlocked: ${after.title}',
                   ),
                 ],
+                const SizedBox(height: 14),
+                NorieRewardBanner(
+                  credits: _lessonCompletion.creditsAwarded,
+                  xp: _totalXp,
+                  title: _lessonCompletion.perfectRewardAwarded
+                      ? 'Perfect clear reward'
+                      : 'Lesson reward claimed',
+                ),
                 const SizedBox(height: 28),
                 Container(
                   padding: const EdgeInsets.all(20),
