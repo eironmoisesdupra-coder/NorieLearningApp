@@ -3,7 +3,8 @@
     <application
         android:label="NorieLearning"
         android:name="${applicationName}"
-        android:icon="@drawable/norie_launcher_icon">
+        android:icon="@drawable/norie_launcher_icon"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

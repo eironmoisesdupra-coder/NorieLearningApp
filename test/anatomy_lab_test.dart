@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/features/learning/domain/anatomy_models.dart';
+import 'package:norie_learning/features/learning/domain/anatomy_render_policy.dart';
 
 void main() {
   test('Anatomy Lab covers all core body systems', () {
@@ -62,6 +63,23 @@ void main() {
         AnatomySystemId.muscular,
         AnatomySystemId.endocrine,
       },
+    );
+  });
+  test('real 3D renderer is used only for the standalone skeletal layer', () {
+    expect(
+      AnatomyRenderPolicy.useRealSkeleton({AnatomySystemId.skeletal}),
+      isTrue,
+    );
+    expect(
+      AnatomyRenderPolicy.useRealSkeleton({
+        AnatomySystemId.skeletal,
+        AnatomySystemId.muscular,
+      }),
+      isFalse,
+    );
+    expect(
+      AnatomyRenderPolicy.useRealSkeleton({AnatomySystemId.muscular}),
+      isFalse,
     );
   });
 }
