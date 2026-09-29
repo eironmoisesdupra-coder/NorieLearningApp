@@ -81,6 +81,7 @@ class NorieChallengeCompletion {
     required this.dailyRewardAwarded,
     required this.weeklyRewardAwarded,
     required this.bestScoreImproved,
+    required this.creditsAwarded,
     required this.before,
     required this.after,
   });
@@ -93,6 +94,7 @@ class NorieChallengeCompletion {
   final bool dailyRewardAwarded;
   final bool weeklyRewardAwarded;
   final bool bestScoreImproved;
+  final int creditsAwarded;
   final NorieLevelSnapshot before;
   final NorieLevelSnapshot after;
 
@@ -246,6 +248,25 @@ abstract final class NorieLevelSystem {
   }
 }
 
+abstract final class NorieEconomyRules {
+  static const int lessonCompletionCredits = 10;
+  static const int perfectLessonCredits = 20;
+  static const int dailyChallengeCredits = 25;
+  static const int weeklyGoalCredits = 100;
+}
+
+class NorieLessonCompletion {
+  const NorieLessonCompletion({
+    required this.creditsAwarded,
+    required this.lessonRewardAwarded,
+    required this.perfectRewardAwarded,
+  });
+
+  final int creditsAwarded;
+  final bool lessonRewardAwarded;
+  final bool perfectRewardAwarded;
+}
+
 abstract final class NorieChallengeRules {
   static const int dailyQuestionCount = 5;
   static const int speedQuestionCount = 10;
@@ -288,6 +309,9 @@ class NorieProgression extends ChangeNotifier {
   static const _weeklyRewardedWeeksKey = 'norie.weeklyRewardedWeeks';
   static const _topicMasteryKey = 'norie.topicMastery';
   static const _completedTopicIdsKey = 'norie.completedTopicIds';
+  static const _rewardedLessonTopicsKey = 'norie.rewardedLessonTopics';
+  static const _rewardedPerfectLessonTopicsKey =
+      'norie.rewardedPerfectLessonTopics';
   static const _lastModifiedKey = 'norie.lastModifiedAt';
 
   int _totalXp = 0;
@@ -304,6 +328,8 @@ class NorieProgression extends ChangeNotifier {
   Set<String> _speedRewardDates = <String>{};
   Set<String> _weeklyRewardedWeeks = <String>{};
   Set<String> _completedTopicIds = <String>{};
+  Set<String> _rewardedLessonTopics = <String>{};
+  Set<String> _rewardedPerfectLessonTopics = <String>{};
   Map<String, NorieTopicMastery> _topicMastery = <String, NorieTopicMastery>{};
   DateTime _lastModifiedAt = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   bool _onboardingComplete = false;
@@ -464,6 +490,13 @@ class NorieProgression extends ChangeNotifier {
     _completedTopicIds =
         (prefs.getStringList(_completedTopicIdsKey) ?? const <String>[])
             .toSet();
+    _rewardedLessonTopics =
+        (prefs.getStringList(_rewardedLessonTopicsKey) ?? const <String>[])
+            .toSet();
+    _rewardedPerfectLessonTopics =
+        (prefs.getStringList(_rewardedPerfectLessonTopicsKey) ??
+                const <String>[])
+            .toSet();
 
     final rawMastery = prefs.getString(_topicMasteryKey);
     if (rawMastery != null && rawMastery.isNotEmpty) {
@@ -539,7 +572,7 @@ class NorieProgression extends ChangeNotifier {
     _changed();
   }
 
-  void recordLessonCompletion({
+  NorieLessonCompletion recordLessonCompletion({
     required int quizScore,
     required int challengeScore,
     String category = 'Science',
@@ -560,9 +593,29 @@ class NorieProgression extends ChangeNotifier {
     _correctAnswers += totalCorrect;
     _questionsAnswered += totalAttempts;
     _recordStudyDay(DateTime.now());
-    if (topicId != null && topicId.trim().isNotEmpty) {
-      _completedTopicIds.add(topicId.trim());
+
+    var creditsAwarded = 0;
+    var lessonRewardAwarded = false;
+    var perfectRewardAwarded = false;
+    final normalizedTopicId = topicId?.trim() ?? '';
+
+    if (normalizedTopicId.isNotEmpty) {
+      _completedTopicIds.add(normalizedTopicId);
+
+      if (_rewardedLessonTopics.add(normalizedTopicId)) {
+        creditsAwarded += NorieEconomyRules.lessonCompletionCredits;
+        lessonRewardAwarded = true;
+      }
+
+      if (totalAttempts > 0 &&
+          totalCorrect == totalAttempts &&
+          _rewardedPerfectLessonTopics.add(normalizedTopicId)) {
+        creditsAwarded += NorieEconomyRules.perfectLessonCredits;
+        perfectRewardAwarded = true;
+      }
     }
+
+    _credits += creditsAwarded;
     _recordTopicBatch(
       category: category,
       topic: topic,
@@ -570,6 +623,12 @@ class NorieProgression extends ChangeNotifier {
       totalAttempts: totalAttempts,
     );
     _changed();
+
+    return NorieLessonCompletion(
+      creditsAwarded: creditsAwarded,
+      lessonRewardAwarded: lessonRewardAwarded,
+      perfectRewardAwarded: perfectRewardAwarded,
+    );
   }
 
   void recordStudySession() {
@@ -664,6 +723,7 @@ class NorieProgression extends ChangeNotifier {
     var dailyRewardAwarded = false;
     var weeklyRewardAwarded = false;
     var bestScoreImproved = false;
+    var creditsAwarded = 0;
 
     _challengeSessions++;
     _studySessions++;
@@ -682,6 +742,7 @@ class NorieProgression extends ChangeNotifier {
         );
         bonusXp += NorieChallengeRules.dailyCompletionBonus;
         dailyRewardAwarded = true;
+        creditsAwarded += NorieEconomyRules.dailyChallengeCredits;
 
         final weeklyDaysAfter = _weeklyChallengeDaysAt(now);
         final weekKey = _weekKey(now);
@@ -691,6 +752,7 @@ class NorieProgression extends ChangeNotifier {
           _weeklyRewardedWeeks.add(weekKey);
           bonusXp += NorieChallengeRules.weeklyGoalBonus;
           weeklyRewardAwarded = true;
+          creditsAwarded += NorieEconomyRules.weeklyGoalCredits;
         }
       }
     } else {
@@ -712,6 +774,7 @@ class NorieProgression extends ChangeNotifier {
     }
 
     _totalXp += baseXp + bonusXp;
+    _credits += creditsAwarded;
     final after = snapshot;
     _changed();
 
@@ -724,6 +787,7 @@ class NorieProgression extends ChangeNotifier {
       dailyRewardAwarded: dailyRewardAwarded,
       weeklyRewardAwarded: weeklyRewardAwarded,
       bestScoreImproved: bestScoreImproved,
+      creditsAwarded: creditsAwarded,
       before: before,
       after: after,
     );
@@ -780,6 +844,14 @@ class NorieProgression extends ChangeNotifier {
         _completedTopicIdsKey,
         _completedTopicIds.toList()..sort(),
       ),
+      prefs.setStringList(
+        _rewardedLessonTopicsKey,
+        _rewardedLessonTopics.toList()..sort(),
+      ),
+      prefs.setStringList(
+        _rewardedPerfectLessonTopicsKey,
+        _rewardedPerfectLessonTopics.toList()..sort(),
+      ),
       prefs.setString(
         _topicMasteryKey,
         jsonEncode(
@@ -808,6 +880,8 @@ class NorieProgression extends ChangeNotifier {
     _speedRewardDates = <String>{};
     _weeklyRewardedWeeks = <String>{};
     _completedTopicIds = <String>{};
+    _rewardedLessonTopics = <String>{};
+    _rewardedPerfectLessonTopics = <String>{};
     _topicMastery = <String, NorieTopicMastery>{};
     _onboardingComplete = true;
     _lastModifiedAt = DateTime.now().toUtc();
@@ -832,6 +906,9 @@ class NorieProgression extends ChangeNotifier {
         'speed_reward_dates': _speedRewardDates.toList()..sort(),
         'weekly_rewarded_weeks': _weeklyRewardedWeeks.toList()..sort(),
         'completed_topic_ids': _completedTopicIds.toList()..sort(),
+        'rewarded_lesson_topics': _rewardedLessonTopics.toList()..sort(),
+        'rewarded_perfect_lesson_topics':
+            _rewardedPerfectLessonTopics.toList()..sort(),
         'topic_mastery': _topicMastery.map(
           (key, value) => MapEntry(key, value.toJson()),
         ),
@@ -864,6 +941,9 @@ class NorieProgression extends ChangeNotifier {
     _speedRewardDates = _readStringSet(state['speed_reward_dates']);
     _weeklyRewardedWeeks = _readStringSet(state['weekly_rewarded_weeks']);
     _completedTopicIds = _readStringSet(state['completed_topic_ids']);
+    _rewardedLessonTopics = _readStringSet(state['rewarded_lesson_topics']);
+    _rewardedPerfectLessonTopics =
+        _readStringSet(state['rewarded_perfect_lesson_topics']);
 
     final rawMastery = state['topic_mastery'];
     if (rawMastery is Map) {
