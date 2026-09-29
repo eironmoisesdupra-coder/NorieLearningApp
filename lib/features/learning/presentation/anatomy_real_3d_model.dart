@@ -39,21 +39,25 @@ class _AnatomyReal3DModelState extends State<AnatomyReal3DModel> {
             src: Anatomy3DAssets.model,
             onProgress: (value) {
               if (mounted) {
-                setState(() => _progress = value.clamp(0.0, 1.0).toDouble());
+                setState(
+                  () => _progress = value.clamp(0.0, 1.0).toDouble(),
+                );
               }
             },
             onLoad: (_) {
               if (mounted) {
                 setState(() {
-                _loaded = true;
-                _failed = false;
-                _progress = 1;
-              });
+                  _loaded = true;
+                  _failed = false;
+                  _progress = 1;
+                });
+              }
             },
             onError: (_) {
-              if (mounted) setState(() {
-                _loaded = false;
-                _failed = true;
+              if (mounted) {
+                setState(() {
+                  _loaded = false;
+                  _failed = true;
                 });
               }
             },
