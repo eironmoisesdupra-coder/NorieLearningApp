@@ -140,7 +140,7 @@ abstract final class NorieFoundationCurriculum {
             accent: 'violet',
             points: core.skip(2).take(2).toList(),
           ),
-          NorieLessonSection(
+          const NorieLessonSection(
             title: 'Apply',
             symbol: '3',
             accent: 'orange',
