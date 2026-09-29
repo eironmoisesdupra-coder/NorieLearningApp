@@ -123,6 +123,22 @@ class _NorieMascotViewState extends State<NorieMascotView>
           final scale = 1 + (spec.scaleDelta * wave);
           final turns = spec.rotationTurns * oscillation;
 
+          final animatedContent = Stack(
+            fit: StackFit.expand,
+            children: [
+              if (child != null) child,
+              IgnorePointer(
+                child: CustomPaint(
+                  key: ValueKey('norie-expression-${_expressionKey(state)}'),
+                  painter: NorieMascotExpressionPainter(
+                    state: state,
+                    progress: raw,
+                  ),
+                ),
+              ),
+            ],
+          );
+
           return Transform.translate(
             offset: Offset(translateX, translateY),
             child: Transform.rotate(
@@ -135,45 +151,31 @@ class _NorieMascotViewState extends State<NorieMascotView>
                       : raw == 0 && state == NorieMascotState.entering
                           ? 0
                           : 1,
-                  child: child,
+                  child: animatedContent,
                 ),
               ),
             ),
           );
         },
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 160),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: Image.asset(
-                _assetForState(state),
-                key: ValueKey(_assetForState(state)),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 160),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: Image.asset(
+            _assetForState(state),
+            key: ValueKey(_assetForState(state)),
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              if (_assetForState(state) == NorieAssets.mascotBase) {
+                return const SizedBox.shrink();
+              }
+              return Image.asset(
+                NorieAssets.mascotBase,
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  if (_assetForState(state) == NorieAssets.mascotBase) {
-                    return const SizedBox.shrink();
-                  }
-                  return Image.asset(
-                    NorieAssets.mascotBase,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  );
-                },
-              ),
-            ),
-            IgnorePointer(
-              child: CustomPaint(
-                key: ValueKey('norie-expression-${_expressionKey(state)}'),
-                painter: NorieMascotExpressionPainter(
-                  state: state,
-                  progress: _motion.value,
-                ),
-              ),
-            ),
-          ],
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              );
+            },
+          ),
         ),
       ),
     );
