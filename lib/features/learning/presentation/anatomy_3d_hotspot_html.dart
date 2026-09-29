@@ -38,15 +38,14 @@ abstract final class Anatomy3DHotspotHtml {
         'slot="hotspot-$id" '
         'data-hotspot-id="$id" '
         'data-structure-id="$structureId" '
-        'data-nx="\${hotspot.x}" '
-        'data-ny="\${hotspot.y}" '
-        'data-nz="\${hotspot.z}" '
-        'data-priority="\${hotspot.priority}" '
-        'aria-label="$label">'
+        'data-nx="${hotspot.x}" '
+        'data-ny="${hotspot.y}" '
+        'data-nz="${hotspot.z}" '
+        'data-priority="${hotspot.priority}" '
+        'aria-label="$ariaLabel">'
         '<span class="hotspot-dot">$number</span>'
         '$displayLabel'
-        '<span class="hotspot-card"><strong>$label</strong>'
-        '<small>Tap to inspect this skeletal structure.</small></span>'
+        '$detailCard'
         '</button>',
       );
       number++;
