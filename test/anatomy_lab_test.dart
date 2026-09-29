@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/features/learning/domain/anatomy_hotspot_models.dart';
 import 'package:norie_learning/features/learning/domain/anatomy_models.dart';
@@ -133,6 +135,17 @@ void main() {
       AnatomyHotspotCatalog.calibration.sourceCommit,
       'e4d76fbb424d15e1364963528a082a78fa359161',
     );
+  });
+
+
+  test('skeleton fetch script is pinned to calibration source commit', () {
+    final script = File('scripts/fetch_anatomy_assets.sh').readAsStringSync();
+
+    expect(
+      script,
+      contains(AnatomyHotspotCatalog.calibration.sourceCommit),
+    );
+    expect(script, isNot(contains('refs/heads/main')));
   });
 
   test('clean hotspot mode exposes no renderable hotspots', () {
