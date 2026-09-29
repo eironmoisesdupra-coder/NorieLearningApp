@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../norie_app_context.dart';
 import '../norie_mascot_controller.dart';
+import '../voice/norie_voice_controller.dart';
 import '../norie_mascot_state.dart';
 import 'norie_tutorial_models.dart';
 import 'norie_tutorial_store.dart';
@@ -9,10 +13,12 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   NorieTutorialCoordinator({
     required this.controller,
     required this.store,
+    this.voiceController,
   });
 
   final NorieMascotController controller;
   final NorieTutorialStore store;
+  final NorieVoiceController? voiceController;
 
   final Map<String, GlobalKey> _targets = <String, GlobalKey>{};
 
@@ -70,6 +76,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   void dismissWithoutCompletion() {
     _activeDefinition = null;
     _currentIndex = 0;
+    unawaited(voiceController?.stop());
     controller.idle();
     _notify();
   }
@@ -139,6 +146,17 @@ class NorieTutorialCoordinator extends ChangeNotifier {
       case NorieMascotState.speaking:
         controller.guide();
     }
+
+    final voiceAsset = step.voiceAsset;
+    final voice = voiceController;
+    if (voiceAsset != null && voice != null) {
+      unawaited(
+        voice.playAsset(
+          voiceAsset,
+          area: NorieAppArea.tutorial,
+        ),
+      );
+    }
   }
 
   Future<void> _finish({required bool markComplete}) async {
@@ -151,6 +169,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
 
     _activeDefinition = null;
     _currentIndex = 0;
+    unawaited(voiceController?.stop());
     controller.idle();
     _notify();
   }
