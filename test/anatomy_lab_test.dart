@@ -83,8 +83,6 @@ void main() {
       isFalse,
     );
   });
-}
-
 
   test('3D skeletal hotspots have unique ids and resolve to structures', () {
     final ids = <String>{};
@@ -146,3 +144,4 @@ void main() {
       isEmpty,
     );
   });
+}
