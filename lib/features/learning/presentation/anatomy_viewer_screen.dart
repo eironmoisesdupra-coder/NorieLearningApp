@@ -1,12 +1,15 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 
 import '../../../core/theme/norie_theme.dart';
 import '../domain/anatomy_models.dart';
+import '../domain/anatomy_render_policy.dart';
 import 'anatomy_animated_backdrop.dart';
 import 'anatomy_body_model.dart';
 import 'anatomy_quiz_screen.dart';
+import 'anatomy_real_3d_model.dart';
 
 enum _ViewerGestureMode { rotate, pan }
 
@@ -28,6 +31,7 @@ class AnatomyViewerScreen extends StatefulWidget {
 class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
     with SingleTickerProviderStateMixin {
   final TransformationController _transform = TransformationController();
+  final Flutter3DController _real3DController = Flutter3DController();
   late final AnimationController _autoRotateController = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 18),
@@ -44,11 +48,19 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   double _layerOpacity = .88;
   double _minZoom = .75;
   double _maxZoom = 4.2;
+  double _realTheta = 0;
+  double _realPhi = 75;
+  double _realRadius = 4.5;
+  double _realTargetX = 0;
+  double _realTargetY = 0;
 
   bool _showLabels = false;
   bool _showMarkers = true;
   bool _particles = true;
   bool _autoRotate = false;
+
+  bool get _useRealSkeleton =>
+      AnatomyRenderPolicy.useRealSkeleton(_selectedSystems);
 
   @override
   void initState() {
@@ -67,13 +79,45 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _tickAutoRotate() {
-    if (!_autoRotate || !mounted) return;
+    if (!_autoRotate || !mounted || _useRealSkeleton) return;
     setState(() {
       _rotationY = (_autoRotateController.value * math.pi * 2) - math.pi;
     });
   }
 
+  void _setAutoRotate(bool value) {
+    setState(() => _autoRotate = value);
+    if (!_useRealSkeleton) return;
+    if (value) {
+      _real3DController.startRotation(rotationSpeed: 12);
+    } else {
+      _real3DController.pauseRotation();
+    }
+  }
+
+  void _applyRealCamera() {
+    _real3DController.setCameraOrbit(_realTheta, _realPhi, _realRadius);
+    _real3DController.setCameraTarget(_realTargetX, _realTargetY, 0);
+  }
+
   void _resetView() {
+    if (_useRealSkeleton) {
+      _realTheta = 0;
+      _realPhi = 75;
+      _realRadius = 4.5;
+      _realTargetX = 0;
+      _realTargetY = 0;
+      _real3DController
+        ..stopRotation()
+        ..resetCameraOrbit()
+        ..resetCameraTarget();
+      if (_autoRotate) {
+        _real3DController.startRotation(rotationSpeed: 12);
+      }
+      setState(() => _selectedStructure = null);
+      return;
+    }
+
     _transform.value = Matrix4.identity();
     setState(() {
       _rotationY = 0;
@@ -83,6 +127,28 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _presetView(String view) {
+    if (_useRealSkeleton) {
+      switch (view) {
+        case 'front':
+          _realTheta = 0;
+          _realPhi = 75;
+        case 'back':
+          _realTheta = 180;
+          _realPhi = 75;
+        case 'left':
+          _realTheta = -90;
+          _realPhi = 75;
+        case 'right':
+          _realTheta = 90;
+          _realPhi = 75;
+        case 'top':
+          _realTheta = 0;
+          _realPhi = 18;
+      }
+      _applyRealCamera();
+      return;
+    }
+
     setState(() {
       switch (view) {
         case 'front':
@@ -105,11 +171,25 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _adjustZoom(double factor) {
+    if (_useRealSkeleton) {
+      _realRadius = (_realRadius / factor).clamp(2.0, 8.0);
+      _applyRealCamera();
+      return;
+    }
+
     final current = _transform.value.getMaxScaleOnAxis();
     final next = (current * factor).clamp(_minZoom, _maxZoom);
     final ratio = next / current;
     final scale = Matrix4.diagonal3Values(ratio, ratio, 1);
     _transform.value = scale * _transform.value;
+  }
+
+  void _panRealSkeleton(DragUpdateDetails details) {
+    _realTargetX =
+        (_realTargetX - details.delta.dx * .004).clamp(-1.4, 1.4);
+    _realTargetY =
+        (_realTargetY + details.delta.dy * .004).clamp(-1.8, 1.8);
+    _applyRealCamera();
   }
 
   void _toggleSystem(AnatomySystemId id) {
@@ -197,11 +277,11 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                           ),
                         )
                       else
-                        const Positioned(
+                        Positioned(
                           left: 18,
                           right: 18,
                           bottom: 16,
-                          child: _ViewerHint(),
+                          child: _ViewerHint(real3D: _useRealSkeleton),
                         ),
                     ],
                   ),
@@ -215,6 +295,10 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   Widget _buildViewer(List<AnatomyStructure> structures) {
+    if (_useRealSkeleton) {
+      return _buildRealSkeletonViewer();
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final bodyWidth = math.min(constraints.maxWidth * .82, 430.0);
@@ -283,6 +367,32 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildRealSkeletonViewer() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: AnatomyReal3DModel(
+                controller: _real3DController,
+                enableTouch: _gestureMode == _ViewerGestureMode.rotate,
+              ),
+            ),
+            if (_gestureMode == _ViewerGestureMode.pan)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanUpdate: _panRealSkeleton,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -369,7 +479,10 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                     _SettingSwitch(
                       label: 'Auto rotate model',
                       value: _autoRotate,
-                      onChanged: (value) => update(() => _autoRotate = value),
+                      onChanged: (value) {
+                        _setAutoRotate(value);
+                        setSheetState(() {});
+                      },
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -793,7 +906,9 @@ class _StructureInfoCard extends StatelessWidget {
 }
 
 class _ViewerHint extends StatelessWidget {
-  const _ViewerHint();
+  const _ViewerHint({required this.real3D});
+
+  final bool real3D;
 
   @override
   Widget build(BuildContext context) {
@@ -805,10 +920,12 @@ class _ViewerHint extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: NorieColors.border),
         ),
-        child: const Text(
-          'Drag to rotate · pinch to zoom · Pan mode moves the model · tap numbered markers to inspect',
+        child: Text(
+          real3D
+              ? 'Real 3D skeleton · drag to orbit · pinch to zoom · Pan mode shifts the camera target'
+              : 'Drag to rotate · pinch to zoom · Pan mode moves the model · tap numbered markers to inspect',
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             color: NorieColors.textSecondary,
             fontSize: 9,
             fontWeight: FontWeight.w700,
