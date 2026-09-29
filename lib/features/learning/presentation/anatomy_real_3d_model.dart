@@ -8,9 +8,14 @@ abstract final class Anatomy3DAssets {
 }
 
 class AnatomyReal3DModel extends StatefulWidget {
-  const AnatomyReal3DModel({required this.controller, super.key});
+  const AnatomyReal3DModel({
+    required this.controller,
+    this.enableTouch = true,
+    super.key,
+  });
 
   final Flutter3DController controller;
+  final bool enableTouch;
 
   @override
   State<AnatomyReal3DModel> createState() => _AnatomyReal3DModelState();
@@ -29,7 +34,7 @@ class _AnatomyReal3DModelState extends State<AnatomyReal3DModel> {
           child: Flutter3DViewer(
             activeGestureInterceptor: true,
             progressBarColor: NorieColors.cyan,
-            enableTouch: true,
+            enableTouch: widget.enableTouch,
             controller: widget.controller,
             src: Anatomy3DAssets.model,
             onProgress: (value) {
