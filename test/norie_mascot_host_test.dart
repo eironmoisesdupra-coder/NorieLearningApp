@@ -58,9 +58,9 @@ void main() {
   testWidgets('changing main tabs updates context without replacing controller',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         home: NorieMascotHost(
-          child: const MainShell(),
+          child: MainShell(),
         ),
       ),
     );
@@ -104,9 +104,9 @@ void main() {
   testWidgets('app lifecycle pauses and resumes mascot ticker safely',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         home: NorieMascotHost(
-          child: const Scaffold(body: SizedBox.expand()),
+          child: Scaffold(body: SizedBox.expand()),
         ),
       ),
     );
