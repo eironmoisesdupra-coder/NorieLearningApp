@@ -805,7 +805,7 @@ class _HotspotModeSelector extends StatelessWidget {
       },
       style: const ButtonStyle(
         visualDensity: VisualDensity.compact,
-        textStyle: const WidgetStatePropertyAll(
+        textStyle: WidgetStatePropertyAll(
           TextStyle(fontSize: 8, fontWeight: FontWeight.w800),
         ),
       ),
