@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../../core/widgets/norie_reward_feedback.dart';
 import 'challenge_quiz_screen.dart';
 
 class ChallengeResultsScreen extends StatefulWidget {
@@ -52,6 +53,18 @@ class _ChallengeResultsScreenState extends State<ChallengeResultsScreen> {
               !unlockedBefore.contains(achievement.id),
         )
         .toList();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      NorieRewardPopup.show(
+        context,
+        credits: _completion.creditsAwarded,
+        xp: _completion.totalXpAwarded,
+        title: _completion.creditsAwarded > 0
+            ? 'Challenge rewards!'
+            : 'Challenge complete!',
+      );
+    });
   }
 
   @override
@@ -108,7 +121,15 @@ class _ChallengeResultsScreenState extends State<ChallengeResultsScreen> {
                     ),
                   ),
                 ],
-                const SizedBox(height: 22),
+                const SizedBox(height: 14),
+                NorieRewardBanner(
+                  credits: _completion.creditsAwarded,
+                  xp: _completion.totalXpAwarded,
+                  title: _completion.weeklyRewardAwarded
+                      ? 'Weekly reward claimed'
+                      : 'Challenge reward claimed',
+                ),
+                const SizedBox(height: 14),
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -162,7 +183,7 @@ class _ChallengeResultsScreenState extends State<ChallengeResultsScreen> {
                         const SizedBox(height: 7),
                         const _RewardNote(
                           icon: Icons.calendar_today_rounded,
-                          text: 'Daily completion bonus awarded.',
+                          text: 'Daily completion bonus · +25 Credits.',
                           color: NorieColors.magenta,
                         ),
                       ],
@@ -170,7 +191,7 @@ class _ChallengeResultsScreenState extends State<ChallengeResultsScreen> {
                         const SizedBox(height: 7),
                         const _RewardNote(
                           icon: Icons.emoji_events_rounded,
-                          text: 'Weekly goal complete · +250 XP!',
+                          text: 'Weekly goal · +250 XP · +100 Credits!',
                           color: NorieColors.orange,
                         ),
                       ],

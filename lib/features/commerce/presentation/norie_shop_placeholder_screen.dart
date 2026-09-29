@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../../core/widgets/norie_credit_coin.dart';
 import '../../../core/widgets/norie_ambient_backdrop.dart';
 import '../../../core/widgets/norie_glass_card.dart';
 
 class NorieShopPlaceholderScreen extends StatelessWidget {
   const NorieShopPlaceholderScreen({super.key});
-
-  static const int previewBalance = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +29,12 @@ class NorieShopPlaceholderScreen extends StatelessWidget {
                   children: [
                     _Header(onBack: () => Navigator.of(context).maybePop()),
                     const SizedBox(height: 22),
-                    const _WalletCard(balance: previewBalance),
+                    AnimatedBuilder(
+                      animation: NorieProgression.instance,
+                      builder: (context, _) => _WalletCard(
+                        balance: NorieProgression.instance.credits,
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     const Text(
                       'Learning Shop',
@@ -152,27 +157,11 @@ class _WalletCard extends StatelessWidget {
       padding: const EdgeInsets.all(22),
       child: Row(
         children: [
-          Container(
+          const SizedBox(
             width: 66,
             height: 66,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [NorieColors.orange, NorieColors.magenta],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: NorieColors.orange.withValues(alpha: .25),
-                  blurRadius: 22,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.hexagon_rounded,
-              size: 34,
-              color: Colors.white,
+            child: Center(
+              child: NorieCreditCoin(size: 52),
             ),
           ),
           const SizedBox(width: 16),
@@ -198,7 +187,7 @@ class _WalletCard extends StatelessWidget {
                   ),
                 ),
                 const Text(
-                  'Wallet backend is not active yet.',
+                  'Earn Credits by completing lessons and challenges.',
                   style: TextStyle(
                     color: NorieColors.textSecondary,
                     fontSize: 10,
@@ -273,10 +262,9 @@ class _ShopItem extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.hexagon_rounded,
-                    size: 14,
-                    color: NorieColors.orange,
+                  const NorieCreditCoin(
+                    size: 15,
+                    animate: false,
                   ),
                   const SizedBox(width: 3),
                   Text(
