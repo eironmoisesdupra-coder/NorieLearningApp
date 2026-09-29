@@ -252,6 +252,8 @@ class NorieQuestionContent {
     required this.correctIndex,
     required this.explanation,
     this.difficulty = 'foundation',
+    this.acceptedAnswers = const <String>[],
+    this.orderedItems = const <String>[],
   });
 
   final String id;
@@ -260,6 +262,14 @@ class NorieQuestionContent {
   final int correctIndex;
   final String explanation;
   final String difficulty;
+  final List<String> acceptedAnswers;
+  final List<String> orderedItems;
+
+  List<String> get resolvedAcceptedAnswers {
+    if (acceptedAnswers.isNotEmpty) return acceptedAnswers;
+    if (!hasValidAnswer) return const <String>[];
+    return <String>[options[correctIndex]];
+  }
 
   bool get hasValidAnswer =>
       options.isNotEmpty && correctIndex >= 0 && correctIndex < options.length;
@@ -271,6 +281,8 @@ class NorieQuestionContent {
         'correct_index': correctIndex,
         'explanation': explanation,
         'difficulty': difficulty,
+        'accepted_answers': acceptedAnswers,
+        'ordered_items': orderedItems,
       };
 
   factory NorieQuestionContent.fromJson(Map<String, dynamic> json) {
@@ -281,6 +293,10 @@ class NorieQuestionContent {
       correctIndex: (json['correct_index'] as num?)?.toInt() ?? 0,
       explanation: json['explanation'] as String? ?? '',
       difficulty: json['difficulty'] as String? ?? 'foundation',
+      acceptedAnswers:
+          List<String>.from(json['accepted_answers'] as List? ?? const []),
+      orderedItems:
+          List<String>.from(json['ordered_items'] as List? ?? const []),
     );
   }
 }
