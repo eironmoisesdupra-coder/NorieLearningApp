@@ -42,6 +42,9 @@ jobs:
       - name: Remove generated default test
         run: rm -f test/widget_test.dart
 
+      - name: Fetch anatomy 3D assets
+        run: bash scripts/fetch_anatomy_assets.sh
+
       - name: Install dependencies
         run: flutter pub get
 
