@@ -45,6 +45,37 @@ jobs:
       - name: Build web preview
         run: flutter build web --release --base-href "/NorieLearningApp/"
 
+      - name: Make preview cache-safe
+        env:
+          NORIE_BUILD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          build = Path("build/web")
+          bootstrap = build / "flutter_bootstrap.js"
+          text = bootstrap.read_text()
+
+          sha = os.environ["NORIE_BUILD_SHA"]
+          text = text.replace(
+              '"mainJsPath":"main.dart.js"',
+              f'"mainJsPath":"main.dart.js?v={sha}"',
+          )
+          text = re.sub(
+              r'_flutter\.loader\.load\(\{\s*serviceWorkerSettings:\s*\{.*?\}\s*\}\);',
+              '_flutter.loader.load();',
+              text,
+              flags=re.S,
+          )
+          bootstrap.write_text(text)
+
+          worker = build / "flutter_service_worker.js"
+          if worker.exists():
+              worker.unlink()
+          PY
+
       - name: Publish to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
