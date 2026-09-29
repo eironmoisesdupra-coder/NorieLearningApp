@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../data/norie_foundation_curriculum.dart';
+import '../domain/norie_content_models.dart';
 import 'norie_lesson_screen.dart';
 
 class NorieGradeLessonsScreen extends StatelessWidget {
@@ -81,7 +82,7 @@ class _LessonTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final dynamic topic;
+  final NorieTopicContent topic;
   final Color accent;
   final bool completed;
   final VoidCallback onTap;
