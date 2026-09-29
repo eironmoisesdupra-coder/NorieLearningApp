@@ -434,11 +434,10 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: _ordered.length,
-          onReorder: _checked
+          onReorderItem: _checked
               ? (_, __) {}
               : (oldIndex, newIndex) {
                   setState(() {
-                    if (newIndex > oldIndex) newIndex--;
                     final value = _ordered.removeAt(oldIndex);
                     _ordered.insert(newIndex, value);
                   });
