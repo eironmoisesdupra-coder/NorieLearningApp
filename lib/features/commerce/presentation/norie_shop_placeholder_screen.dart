@@ -187,7 +187,7 @@ class _WalletCard extends StatelessWidget {
                   ),
                 ),
                 const Text(
-                  'Wallet backend is not active yet.',
+                  'Earn Credits by completing lessons and challenges.',
                   style: TextStyle(
                     color: NorieColors.textSecondary,
                     fontSize: 10,
