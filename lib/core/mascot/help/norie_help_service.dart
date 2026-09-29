@@ -17,7 +17,7 @@ class NorieHelpService {
 
     final query = raw.toLowerCase();
 
-    if (query.contains('credit') || query.contains('xp')) {
+    if (query.contains('credit') || RegExp(r'\\bxp\\b').hasMatch(query)) {
       return const NorieHelpResponse(
         kind: NorieHelpResponseKind.appHelp,
         text: 'XP tracks your learning progress and levels. Credits are Norie’s spendable reward currency, earned from eligible lessons, challenges, and other milestones.',
