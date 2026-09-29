@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/assets/norie_assets.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_credit_coin.dart';
@@ -29,7 +31,9 @@ class HomeScreen extends StatelessWidget {
         onTabSelected: onTabSelected,
       ),
       drawerEdgeDragWidth: 48,
-      body: Stack(
+      body: NorieTutorialEntry(
+        definition: NorieTutorialCatalog.home,
+        child: Stack(
         children: [
           const Positioned.fill(child: _HomeBackdrop()),
           SafeArea(
@@ -54,8 +58,11 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 18),
-                          _HomeHero(
-                            onLearnTap: () => onTabSelected?.call(1),
+                          NorieTutorialTarget(
+                            id: 'home.learn',
+                            child: _HomeHero(
+                              onLearnTap: () => onTabSelected?.call(1),
+                            ),
                           ),
                           const SizedBox(height: 18),
                           const _ContinueLearningCard(),
@@ -78,6 +85,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
+      ),
       bottomNavigationBar:
           embedded ? null : _BottomNavigation(onTabSelected: onTabSelected),
     );
@@ -98,16 +106,19 @@ class _Header extends StatelessWidget {
 
         return Row(
           children: [
-            IconButton(
-              onPressed: onMenuPressed,
-              tooltip: 'Open menu',
-              style: IconButton.styleFrom(
-                backgroundColor: NorieColors.surface,
-                foregroundColor: NorieColors.textPrimary,
-                side: const BorderSide(color: NorieColors.border),
-                minimumSize: const Size(42, 42),
+            NorieTutorialTarget(
+              id: 'home.menu',
+              child: IconButton(
+                onPressed: onMenuPressed,
+                tooltip: 'Open menu',
+                style: IconButton.styleFrom(
+                  backgroundColor: NorieColors.surface,
+                  foregroundColor: NorieColors.textPrimary,
+                  side: const BorderSide(color: NorieColors.border),
+                  minimumSize: const Size(42, 42),
+                ),
+                icon: const Icon(Icons.menu_rounded),
               ),
-              icon: const Icon(Icons.menu_rounded),
             ),
             const SizedBox(width: 8),
             const NorieLogoMark(size: 42, showGlow: false),
@@ -130,6 +141,9 @@ class _Header extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            const NorieTutorialReplayButton(
+              definition: NorieTutorialCatalog.home,
             ),
             _HomeBalancePill(
               xp: progression.totalXp,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/mascot/norie_mascot_scope.dart';
+import '../../../core/mascot/norie_quiz_reaction_policy.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_reward_feedback.dart';
@@ -70,6 +72,15 @@ class _NorieLearningResultsScreenState
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final totalAttempts = widget.topic.quiz.questions.length +
+          widget.topic.challenge.rounds.length;
+      final totalCorrect = widget.quizScore + widget.challengeScore;
+      NorieMascotScope.maybeOf(context)?.controller.celebrate(
+            level: NorieQuizReactionPolicy.celebrationFor(
+              correct: totalCorrect,
+              total: totalAttempts,
+            ),
+          );
       NorieRewardPopup.show(
         context,
         credits: _lessonCompletion.creditsAwarded,

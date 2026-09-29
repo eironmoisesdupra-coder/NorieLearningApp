@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/mascot/norie_mascot_scope.dart';
+import '../../../core/mascot/norie_quiz_reaction_policy.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../data/norie_study_service.dart';
 import '../domain/norie_study_models.dart';
@@ -102,6 +104,10 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
       _correct = correct;
     });
 
+    if (correct) {
+      NorieMascotScope.maybeOf(context)?.controller.correct();
+    }
+
     _answers.add(
       NorieStudyAnswer(
         question: _question,
@@ -118,6 +124,10 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
       _correct = knewIt;
     });
 
+    if (knewIt) {
+      NorieMascotScope.maybeOf(context)?.controller.correct();
+    }
+
     _answers.add(
       NorieStudyAnswer(
         question: _question,
@@ -131,6 +141,22 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
     if (!_checked || _finishing) return;
 
     if (_index < _questions.length - 1) {
+      final previousTier =
+          NorieQuizReactionPolicy.difficultyTier(_questions[_index].difficulty);
+      final nextTier = NorieQuizReactionPolicy.difficultyTier(
+        _questions[_index + 1].difficulty,
+      );
+      if (NorieQuizReactionPolicy.shouldShowDifficultyReaction(
+        previousTier: previousTier,
+        nextTier: nextTier,
+      )) {
+        final mascot = NorieMascotScope.maybeOf(context)?.controller;
+        mascot?.nervous();
+        Future<void>.delayed(const Duration(milliseconds: 900), () {
+          if (mounted) mascot?.challengeMode();
+        });
+      }
+
       setState(() {
         _index++;
         _selected = null;

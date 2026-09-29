@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/mascot/norie_mascot_scope.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../domain/norie_content_models.dart';
 import 'norie_challenge_screen.dart';
@@ -26,13 +27,18 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
   void _checkAnswer() {
     if (_selectedIndex == null || _checked) return;
     final question = widget.topic.quiz.questions[_current];
+    final isCorrect = _selectedIndex == question.correctIndex;
 
     setState(() {
       _checked = true;
-      if (_selectedIndex == question.correctIndex) {
+      if (isCorrect) {
         _score++;
       }
     });
+
+    if (isCorrect) {
+      NorieMascotScope.maybeOf(context)?.controller.correct();
+    }
   }
 
   void _next() {

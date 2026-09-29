@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/mascot/norie_mascot_scope.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../domain/challenge_question.dart';
@@ -84,6 +85,10 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
         _score++;
       }
     });
+
+    if (isCorrect) {
+      NorieMascotScope.maybeOf(context)?.controller.correct();
+    }
   }
 
   void _next() {
