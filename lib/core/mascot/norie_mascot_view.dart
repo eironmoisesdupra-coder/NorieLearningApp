@@ -221,9 +221,13 @@ class _ArticulatedMascotSprite extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final leftAngle = pose.leftArmTurns * math.pi * 2 * oscillation;
-    final rightAngle = pose.rightArmTurns * math.pi * 2 * oscillation;
-    final headAngle = pose.headTurns * math.pi * 2 * oscillation;
+    final leftPhase = .72 + (.28 * oscillation);
+    final rightPhase = .82 + (.18 * oscillation);
+    final headPhase = .68 + (.32 * oscillation);
+
+    final leftAngle = pose.leftArmTurns * math.pi * 2 * leftPhase;
+    final rightAngle = pose.rightArmTurns * math.pi * 2 * rightPhase;
+    final headAngle = pose.headTurns * math.pi * 2 * headPhase;
 
     return Stack(
       fit: StackFit.expand,
@@ -242,7 +246,10 @@ class _ArticulatedMascotSprite extends StatelessWidget {
           ),
         ),
         Transform.translate(
-          offset: Offset(0, -pose.leftArmLift * wave),
+          offset: Offset(
+            -2 * oscillation,
+            -pose.leftArmLift * (.60 + (.40 * wave)),
+          ),
           child: Transform.rotate(
             key: const ValueKey('norie-left-arm'),
             angle: leftAngle,
@@ -254,7 +261,10 @@ class _ArticulatedMascotSprite extends StatelessWidget {
           ),
         ),
         Transform.translate(
-          offset: Offset(0, -pose.rightArmLift * wave),
+          offset: Offset(
+            3 * oscillation,
+            -pose.rightArmLift * (.65 + (.35 * wave)),
+          ),
           child: Transform.rotate(
             key: const ValueKey('norie-right-arm'),
             angle: rightAngle,
