@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:norie_learning/features/learning/domain/anatomy_hotspot_models.dart';
 import 'package:norie_learning/features/learning/domain/anatomy_models.dart';
 import 'package:norie_learning/features/learning/domain/anatomy_render_policy.dart';
 
@@ -55,7 +58,7 @@ void main() {
       AnatomySystemId.endocrine,
     });
 
-    expect(selected, hasLength(12));
+    expect(selected, hasLength(23));
     expect(
       selected.map((item) => item.system).toSet(),
       {
@@ -112,4 +115,105 @@ void main() {
       isFalse,
     );
   });
+
+  test('3D skeletal hotspots have unique ids and resolve to structures', () {
+    final ids = <String>{};
+
+    for (final hotspot
+        in AnatomyHotspotCatalog.skeletal.where((item) => item.enabled)) {
+      expect(ids.add(hotspot.id), isTrue, reason: hotspot.id);
+      final structure =
+          AnatomyHotspotCatalog.resolveStructure(hotspot.structureId);
+      expect(structure, isNotNull, reason: hotspot.structureId);
+      expect(structure!.system, AnatomySystemId.skeletal);
+      expect(hotspot.x, inInclusiveRange(-0.5, 0.5));
+      expect(hotspot.y, inInclusiveRange(-0.5, 0.5));
+      expect(hotspot.z, inInclusiveRange(-0.5, 0.5));
+      expect(hotspot.sourceNode, isNotEmpty, reason: hotspot.id);
+    }
+  });
+
+  test('3D skeletal hotspot catalog covers minimum v1 bones', () {
+    final ids = AnatomyHotspotCatalog.skeletal
+        .where((item) => item.enabled)
+        .map((item) => item.structureId)
+        .toSet();
+
+    expect(
+      ids,
+      containsAll(const {
+        'skull',
+        'mandible',
+        'clavicle',
+        'scapula',
+        'sternum',
+        'rib-cage',
+        'vertebral-column',
+        'pelvis',
+        'humerus',
+        'radius',
+        'ulna',
+        'femur',
+        'patella',
+        'tibia',
+        'fibula',
+      }),
+    );
+  });
+
+  test('3D skeleton calibration is versioned and source-pinned', () {
+    expect(AnatomyHotspotCatalog.calibration.id, isNotEmpty);
+    expect(AnatomyHotspotCatalog.calibration.schemaVersion, greaterThan(0));
+    expect(
+      AnatomyHotspotCatalog.calibration.sourceCommit,
+      'e4d76fbb424d15e1364963528a082a78fa359161',
+    );
+  });
+
+  test('skeleton calibration pins checksum and measured bounds', () {
+    expect(
+      AnatomyHotspotCatalog.calibration.sha256,
+      '253c47077e4ae11421c8ff3eae68c9414335ee2f0ad911eddf8ea0ea7dc0a6ce',
+    );
+    expect(
+      AnatomyHotspotCatalog.calibration.dimensionsX,
+      closeTo(.409679, 1e-6),
+    );
+    expect(
+      AnatomyHotspotCatalog.calibration.dimensionsY,
+      closeTo(1.69587, 1e-6),
+    );
+    expect(
+      AnatomyHotspotCatalog.calibration.dimensionsZ,
+      closeTo(.254124, 1e-6),
+    );
+  });
+
+  test('skeleton fetch script pins the calibrated skeleton source', () {
+    final script = File('scripts/fetch_anatomy_assets.sh').readAsStringSync();
+
+    expect(
+      script,
+      contains(AnatomyHotspotCatalog.calibration.sourceCommit),
+    );
+    expect(
+      script,
+      contains(AnatomyHotspotCatalog.calibration.sha256),
+    );
+    expect(
+      script,
+      contains('SKELETON_SOURCE='),
+    );
+  });
+
+  test('clean hotspot mode exposes no renderable hotspots', () {
+    expect(
+      AnatomyHotspotCatalog.renderable(
+        AnatomyHotspotCatalog.skeletal,
+        mode: AnatomyHotspotMode.clean,
+      ),
+      isEmpty,
+    );
+  });
+
 }
