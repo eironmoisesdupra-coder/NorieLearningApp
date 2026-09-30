@@ -70,11 +70,15 @@ def main(path):
     lo=[math.inf]*3
     hi=[-math.inf]*3
     mesh_nodes=0
+    node_bounds=[]
     for i,node in enumerate(nodes):
         mi=node.get("mesh")
         if mi is None: continue
         mesh_nodes+=1
         m=world(i)
+        node_lo=[math.inf]*3
+        node_hi=[-math.inf]*3
+        has_bounds=False
         for prim in meshes[mi].get("primitives",[]):
             ai=prim.get("attributes",{}).get("POSITION")
             if ai is None: continue
@@ -87,6 +91,16 @@ def main(path):
                         p=point(m,(x,y,z))
                         for k in range(3):
                             lo[k]=min(lo[k],p[k]); hi[k]=max(hi[k],p[k])
+                            node_lo[k]=min(node_lo[k],p[k]); node_hi[k]=max(node_hi[k],p[k])
+                        has_bounds=True
+        if has_bounds:
+            node_center=[(node_lo[k]+node_hi[k])/2 for k in range(3)]
+            node_bounds.append({
+                "name": node.get("name",""),
+                "center": [round(v,6) for v in node_center],
+                "min": [round(v,6) for v in node_lo],
+                "max": [round(v,6) for v in node_hi],
+            })
     dims=[hi[i]-lo[i] for i in range(3)]
     center=[(lo[i]+hi[i])/2 for i in range(3)]
     out={
@@ -99,6 +113,9 @@ def main(path):
         "dimensions": [round(v,6) for v in dims],
     }
     print("ANATOMY_GLB_BOUNDS="+json.dumps(out,separators=(",",":")))
+    patterns=("skull","cranium","mandib","clav","scap","stern","rib","verte","sacrum","pelv","ilium","humer","radius","ulna","femur","patell","tibia","fibula")
+    calibration=[item for item in node_bounds if any(p in item["name"].lower() for p in patterns)]
+    print("ANATOMY_GLB_CALIBRATION_NODES="+json.dumps(calibration,separators=(",",":")))
 
 if __name__ == "__main__":
     main(sys.argv[1])
