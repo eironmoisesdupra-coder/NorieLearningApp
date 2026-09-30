@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../theme/norie_theme.dart';
 import '../norie_mascot_scope.dart';
 import 'norie_tutorial_coordinator.dart';
 import 'norie_tutorial_models.dart';
 
-class NorieTutorialOverlay extends StatelessWidget {
+class NorieTutorialOverlay extends StatefulWidget {
   const NorieTutorialOverlay({
     required this.coordinator,
     super.key,
@@ -16,23 +17,85 @@ class NorieTutorialOverlay extends StatelessWidget {
   final NorieTutorialCoordinator coordinator;
 
   @override
+  State<NorieTutorialOverlay> createState() => _NorieTutorialOverlayState();
+}
+
+class _NorieTutorialOverlayState extends State<NorieTutorialOverlay>
+    with SingleTickerProviderStateMixin {
+  late final Ticker _trackingTicker = createTicker(_trackTarget);
+  Rect? _trackedTarget;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.coordinator.addListener(_handleCoordinator);
+    _handleCoordinator();
+  }
+
+  @override
+  void didUpdateWidget(covariant NorieTutorialOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(oldWidget.coordinator, widget.coordinator)) return;
+    oldWidget.coordinator.removeListener(_handleCoordinator);
+    widget.coordinator.addListener(_handleCoordinator);
+    _trackedTarget = null;
+    _handleCoordinator();
+  }
+
+  @override
+  void dispose() {
+    widget.coordinator.removeListener(_handleCoordinator);
+    _trackingTicker.dispose();
+    super.dispose();
+  }
+
+  void _handleCoordinator() {
+    if (!mounted) return;
+
+    if (widget.coordinator.isActive) {
+      if (!_trackingTicker.isActive) _trackingTicker.start();
+      _syncTarget();
+    } else {
+      _trackingTicker.stop();
+      if (_trackedTarget != null) {
+        setState(() => _trackedTarget = null);
+      }
+    }
+  }
+
+  void _trackTarget(Duration _) {
+    if (!widget.coordinator.isActive) return;
+    _syncTarget();
+  }
+
+  void _syncTarget() {
+    final step = widget.coordinator.currentStep;
+    final next = widget.coordinator.targetRect(step?.targetId);
+    if (next == _trackedTarget) return;
+    if (!mounted) return;
+    setState(() => _trackedTarget = next);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: coordinator,
+      animation: widget.coordinator,
       builder: (context, _) {
-        final step = coordinator.currentStep;
+        final step = widget.coordinator.currentStep;
         if (step == null) return const SizedBox.shrink();
 
-        final target = coordinator.targetRect(step.targetId);
+        final target =
+            _trackedTarget ?? widget.coordinator.targetRect(step.targetId);
 
         return Stack(
           children: [
-            const Positioned.fill(
-              child: AbsorbPointer(
-                key: ValueKey('norie-tutorial-input-lock'),
-                absorbing: true,
-                child: ColoredBox(
-                  color: Color(0x42000000),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  key: const ValueKey('norie-tutorial-live-spotlight'),
+                  painter: _TutorialSpotlightPainter(
+                    target: target?.inflate(7),
+                  ),
                 ),
               ),
             ),
@@ -41,19 +104,21 @@ class NorieTutorialOverlay extends StatelessWidget {
                 rect: target.inflate(6),
                 child: IgnorePointer(
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
+                    key: const ValueKey('norie-tutorial-target-highlight'),
+                    duration: const Duration(milliseconds: 80),
                     curve: Curves.easeOutCubic,
                     decoration: BoxDecoration(
+                      color: NorieColors.cyan.withValues(alpha: .07),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: NorieColors.cyan,
-                        width: 2,
+                        width: 2.4,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: NorieColors.cyan.withValues(alpha: .22),
-                          blurRadius: 22,
-                          spreadRadius: 4,
+                          color: NorieColors.cyan.withValues(alpha: .30),
+                          blurRadius: 24,
+                          spreadRadius: 5,
                         ),
                       ],
                     ),
@@ -62,16 +127,49 @@ class NorieTutorialOverlay extends StatelessWidget {
               ),
             _TutorialCard(
               step: step,
-              current: coordinator.currentIndex + 1,
-              total: coordinator.stepCount,
-              isLast: coordinator.isLastStep,
-              onSkip: () => unawaited(coordinator.skip()),
-              onNext: () => unawaited(coordinator.next()),
+              current: widget.coordinator.currentIndex + 1,
+              total: widget.coordinator.stepCount,
+              isLast: widget.coordinator.isLastStep,
+              onSkip: () => unawaited(widget.coordinator.skip()),
+              onNext: () => unawaited(widget.coordinator.next()),
             ),
           ],
         );
       },
     );
+  }
+}
+
+class _TutorialSpotlightPainter extends CustomPainter {
+  const _TutorialSpotlightPainter({required this.target});
+
+  final Rect? target;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final full = Offset.zero & size;
+    final path = Path()..fillType = PathFillType.evenOdd;
+    path.addRect(full);
+
+    final hole = target;
+    if (hole != null) {
+      path.addRRect(
+        RRect.fromRectAndRadius(
+          hole,
+          const Radius.circular(18),
+        ),
+      );
+    }
+
+    canvas.drawPath(
+      path,
+      Paint()..color = const Color(0x78020A18),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _TutorialSpotlightPainter oldDelegate) {
+    return oldDelegate.target != target;
   }
 }
 
@@ -277,7 +375,19 @@ class _NorieTutorialEntryState extends State<NorieTutorialEntry> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollEndNotification) {
+          final coordinator =
+              NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
+          coordinator?.handleTutorialScrollEnd();
+        }
+        return false;
+      },
+      child: widget.child,
+    );
+  }
 }
 
 class NorieTutorialReplayButton extends StatelessWidget {
