@@ -134,6 +134,15 @@ class NorieTutorialCoordinator extends ChangeNotifier {
     _notify();
   }
 
+  void handleTutorialScrollEnd() {
+    if (!isActive || currentStep?.targetId == null || _disposed) return;
+    unawaited(
+      focusCurrentTarget(
+        duration: const Duration(milliseconds: 260),
+      ),
+    );
+  }
+
   void _start(NorieTutorialDefinition definition) {
     _focusGeneration++;
     _activeDefinition = definition;
