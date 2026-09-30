@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import '../../../core/theme/norie_theme.dart';
+import '../domain/anatomy_hotspot_models.dart';
+import 'anatomy_3d_hotspot_html.dart';
 
 abstract final class Anatomy3DAssets {
   static const model = 'assets/anatomy/overview-skeleton.glb';
@@ -13,6 +15,10 @@ class AnatomyReal3DModel extends StatelessWidget {
     required this.cameraTarget,
     required this.autoRotate,
     required this.enableTouch,
+    this.hotspots = const <AnatomyHotspot>[],
+    this.hotspotMode = AnatomyHotspotMode.explore,
+    this.selectedHotspotId,
+    this.onHotspotSelected,
     super.key,
   });
 
@@ -20,13 +26,25 @@ class AnatomyReal3DModel extends StatelessWidget {
   final String cameraTarget;
   final bool autoRotate;
   final bool enableTouch;
+  final List<AnatomyHotspot> hotspots;
+  final AnatomyHotspotMode hotspotMode;
+  final String? selectedHotspotId;
+  final ValueChanged<String>? onHotspotSelected;
 
   @override
   Widget build(BuildContext context) {
+    final innerHtml = Anatomy3DHotspotHtml.innerHtml(
+      hotspots: hotspots,
+      mode: hotspotMode,
+    );
+
     return Stack(
       children: [
         Positioned.fill(
           child: ModelViewer(
+            key: ValueKey(
+              'anatomy-real-3d-${hotspotMode.name}-${hotspots.length}',
+            ),
             backgroundColor: Colors.transparent,
             src: Anatomy3DAssets.model,
             alt: 'Interactive 3D human skeletal system',
@@ -42,9 +60,25 @@ class AnatomyReal3DModel extends StatelessWidget {
             maxCameraOrbit: 'auto auto 8m',
             minFieldOfView: '15deg',
             maxFieldOfView: '55deg',
+            minHotspotOpacity: .16,
+            maxHotspotOpacity: 1,
             exposure: 1.05,
             shadowIntensity: .72,
             shadowSoftness: .85,
+            innerModelViewerHtml: innerHtml,
+            relatedCss: Anatomy3DHotspotHtml.css,
+            relatedJs: Anatomy3DHotspotHtml.javascript(
+              selectedHotspotId: selectedHotspotId,
+            ),
+            javascriptChannels: {
+              JavascriptChannel(
+                'AnatomyHotspot',
+                onMessageReceived: (message) {
+                  final value = message.message.toString();
+                  if (value.isNotEmpty) onHotspotSelected?.call(value);
+                },
+              ),
+            },
             debugLogging: false,
           ),
         ),
@@ -60,9 +94,11 @@ class AnatomyReal3DModel extends StatelessWidget {
                 color: NorieColors.cyan.withValues(alpha: .42),
               ),
             ),
-            child: const Text(
-              'REAL 3D · SKELETAL',
-              style: TextStyle(
+            child: Text(
+              hotspotMode == AnatomyHotspotMode.clean
+                  ? 'REAL 3D · CLEAN'
+                  : 'REAL 3D · SKELETAL',
+              style: const TextStyle(
                 color: NorieColors.cyan,
                 fontSize: 8,
                 letterSpacing: .8,
