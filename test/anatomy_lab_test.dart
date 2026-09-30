@@ -97,6 +97,7 @@ void main() {
       expect(hotspot.x, inInclusiveRange(-0.5, 0.5));
       expect(hotspot.y, inInclusiveRange(-0.5, 0.5));
       expect(hotspot.z, inInclusiveRange(-0.5, 0.5));
+      expect(hotspot.sourceNode, isNotEmpty, reason: hotspot.id);
     }
   });
 
