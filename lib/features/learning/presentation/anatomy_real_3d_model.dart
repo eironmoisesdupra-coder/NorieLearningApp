@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import '../../../core/theme/norie_theme.dart';
+import '../domain/anatomy_hotspot_models.dart';
+import 'anatomy_3d_hotspot_html.dart';
 
 enum Anatomy3DAssetKind { skeleton, organs }
 
@@ -18,6 +20,10 @@ class AnatomyReal3DModel extends StatelessWidget {
     required this.autoRotate,
     required this.enableTouch,
     required this.enablePan,
+    this.hotspots = const <AnatomyHotspot>[],
+    this.hotspotMode = AnatomyHotspotMode.clean,
+    this.selectedHotspotId,
+    this.onHotspotSelected,
     super.key,
   });
 
@@ -27,6 +33,10 @@ class AnatomyReal3DModel extends StatelessWidget {
   final bool autoRotate;
   final bool enableTouch;
   final bool enablePan;
+  final List<AnatomyHotspot> hotspots;
+  final AnatomyHotspotMode hotspotMode;
+  final String? selectedHotspotId;
+  final ValueChanged<String>? onHotspotSelected;
 
   bool get _isOrgans => kind == Anatomy3DAssetKind.organs;
 
@@ -34,7 +44,20 @@ class AnatomyReal3DModel extends StatelessWidget {
   Widget build(BuildContext context) {
     final src =
         _isOrgans ? Anatomy3DAssets.organs : Anatomy3DAssets.skeleton;
-    final badge = _isOrgans ? 'REAL 3D · ORGAN ATLAS' : 'REAL 3D · SKELETAL';
+    final effectiveHotspots =
+        _isOrgans ? const <AnatomyHotspot>[] : hotspots;
+    final effectiveMode =
+        _isOrgans ? AnatomyHotspotMode.clean : hotspotMode;
+    final innerHtml = Anatomy3DHotspotHtml.innerHtml(
+      hotspots: effectiveHotspots,
+      mode: effectiveMode,
+    );
+
+    final badge = _isOrgans
+        ? 'REAL 3D · ORGAN ATLAS'
+        : effectiveMode == AnatomyHotspotMode.clean
+            ? 'REAL 3D · CLEAN'
+            : 'REAL 3D · SKELETAL';
     final alt = _isOrgans
         ? 'Interactive 3D human internal organ atlas'
         : 'Interactive 3D human skeletal system';
@@ -46,7 +69,9 @@ class AnatomyReal3DModel extends StatelessWidget {
       children: [
         Positioned.fill(
           child: ModelViewer(
-            key: ValueKey(kind),
+            key: ValueKey(
+              'anatomy-real-3d-${kind.name}-${effectiveMode.name}-${effectiveHotspots.length}',
+            ),
             backgroundColor: Colors.transparent,
             src: src,
             alt: alt,
@@ -63,9 +88,27 @@ class AnatomyReal3DModel extends StatelessWidget {
             maxCameraOrbit: 'auto auto 100m',
             minFieldOfView: '15deg',
             maxFieldOfView: '55deg',
+            minHotspotOpacity: .16,
+            maxHotspotOpacity: 1,
             exposure: _isOrgans ? 1.1 : 1.05,
             shadowIntensity: _isOrgans ? .78 : .72,
             shadowSoftness: .85,
+            innerModelViewerHtml: innerHtml,
+            relatedCss: Anatomy3DHotspotHtml.css,
+            relatedJs: Anatomy3DHotspotHtml.javascript(
+              selectedHotspotId:
+                  _isOrgans ? null : selectedHotspotId,
+            ),
+            javascriptChannels: {
+              JavascriptChannel(
+                'AnatomyHotspot',
+                onMessageReceived: (message) {
+                  if (_isOrgans) return;
+                  final value = message.message.toString();
+                  if (value.isNotEmpty) onHotspotSelected?.call(value);
+                },
+              ),
+            },
             debugLogging: false,
           ),
         ),
