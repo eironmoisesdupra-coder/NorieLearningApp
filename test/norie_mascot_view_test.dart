@@ -1,14 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/core/assets/norie_assets.dart';
+import 'package:norie_learning/core/mascot/norie_cartoon_frames.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_controller.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_expression_painter.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_motion.dart';
-import 'package:norie_learning/core/mascot/norie_mascot_pose.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_state.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_view.dart';
 
 void main() {
+  test('cartoon animation stays within the 20 to 30 FPS target', () {
+    expect(
+      NorieCartoonSequence.targetFps,
+      inInclusiveRange(20, 30),
+    );
+
+    final effectiveFps =
+        1000 / NorieCartoonSequence.animationFrameDuration.inMilliseconds;
+    expect(effectiveFps, inInclusiveRange(20, 30));
+
+    for (final state in NorieMascotState.values) {
+      final sequence = NorieCartoonSequence.forState(
+        state,
+        reduceMotion: false,
+      );
+      if (sequence.frames.length <= 1) continue;
+      expect(
+        sequence.frameDuration,
+        NorieCartoonSequence.animationFrameDuration,
+        reason: state.name,
+      );
+    }
+  });
+
   test('reduced motion keeps mascot translation within four pixels', () {
     for (final state in NorieMascotState.values) {
       final spec = NorieMascotMotionSpec.forState(
@@ -30,19 +54,23 @@ void main() {
   });
 
 
-  test('pointing pose gives the two arms independent movement', () {
-    final pose = NorieMascotPoseSpec.forState(
+  test('pointing uses multiple complete cartoon frames', () {
+    final sequence = NorieCartoonSequence.forState(
       NorieMascotState.pointing,
       reduceMotion: false,
     );
 
-    expect(pose.leftArmTurns, isNot(equals(pose.rightArmTurns)));
-    expect(pose.rightArmTurns, lessThan(-.10));
-    expect(pose.rightArmLift, greaterThanOrEqualTo(12));
-    expect(pose.rightArmLift, greaterThan(pose.leftArmLift));
+    expect(sequence.frames.length, greaterThanOrEqualTo(3));
+    expect(sequence.loop, isTrue);
+    expect(
+      sequence.frames.every(
+        (frame) => frame.asset == NorieAssets.mascotBase,
+      ),
+      isTrue,
+    );
   });
 
-  testWidgets('pointing state renders articulated arm and head layers',
+  testWidgets('pointing state renders one full-body frame without limb clips',
       (tester) async {
     final controller = NorieMascotController()..point('learn.subjects');
 
@@ -56,12 +84,13 @@ void main() {
     );
 
     expect(
-      find.byKey(const ValueKey('norie-articulated-rig')),
+      find.byKey(const ValueKey('norie-full-body-frame-assets/mascot/Norie_001_base.png')),
       findsOneWidget,
     );
-    expect(find.byKey(const ValueKey('norie-left-arm')), findsOneWidget);
-    expect(find.byKey(const ValueKey('norie-right-arm')), findsOneWidget);
-    expect(find.byKey(const ValueKey('norie-head')), findsOneWidget);
+    expect(find.byType(ClipPath), findsNothing);
+    expect(find.byKey(const ValueKey('norie-left-arm')), findsNothing);
+    expect(find.byKey(const ValueKey('norie-right-arm')), findsNothing);
+    expect(find.byKey(const ValueKey('norie-head')), findsNothing);
     expect(
       find.byKey(const ValueKey('norie-expression-pointing')),
       findsOneWidget,
