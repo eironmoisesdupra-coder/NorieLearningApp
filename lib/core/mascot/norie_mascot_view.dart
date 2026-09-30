@@ -3,10 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../assets/norie_assets.dart';
+import 'norie_cartoon_frames.dart';
 import 'norie_mascot_controller.dart';
 import 'norie_mascot_expression_painter.dart';
-import 'norie_mascot_motion.dart';
-import 'norie_mascot_pose.dart';
 import 'norie_mascot_state.dart';
 
 class NorieMascotView extends StatefulWidget {
@@ -27,7 +26,7 @@ class NorieMascotView extends StatefulWidget {
 
 class _NorieMascotViewState extends State<NorieMascotView>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _motion = AnimationController(vsync: this);
+  late final AnimationController _frames = AnimationController(vsync: this);
   NorieMascotState? _lastState;
 
   @override
@@ -39,7 +38,7 @@ class _NorieMascotViewState extends State<NorieMascotView>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _syncMotion(force: true);
+    _syncSequence(force: true);
   }
 
   @override
@@ -50,20 +49,20 @@ class _NorieMascotViewState extends State<NorieMascotView>
       widget.controller.addListener(_handleController);
       _lastState = null;
     }
-    _syncMotion(force: true);
+    _syncSequence(force: true);
   }
 
   @override
   void dispose() {
     widget.controller.removeListener(_handleController);
-    _motion.dispose();
+    _frames.dispose();
     super.dispose();
   }
 
   void _handleController() {
     if (!mounted) return;
     setState(() {});
-    _syncMotion();
+    _syncSequence();
   }
 
   bool get _reduceMotion {
@@ -72,25 +71,32 @@ class _NorieMascotViewState extends State<NorieMascotView>
     return MediaQuery.maybeOf(context)?.disableAnimations ?? false;
   }
 
-  void _syncMotion({bool force = false}) {
+  void _syncSequence({bool force = false}) {
     if (!mounted) return;
     final state = widget.controller.state;
     if (!force && state == _lastState) return;
     _lastState = state;
 
-    final spec = NorieMascotMotionSpec.forState(
+    final sequence = NorieCartoonSequence.forState(
       state,
       reduceMotion: _reduceMotion,
     );
 
-    _motion
-      ..stop()
-      ..duration = spec.duration;
+    final milliseconds =
+        sequence.frameDuration.inMilliseconds * sequence.frames.length;
 
-    if (_reduceMotion || !spec.loops) {
-      _motion.forward(from: 0);
+    _frames
+      ..stop()
+      ..duration = Duration(
+        milliseconds: math.max(milliseconds, 1),
+      );
+
+    if (_reduceMotion || sequence.frames.length <= 1) {
+      _frames.value = 0;
+    } else if (sequence.loop) {
+      _frames.repeat();
     } else {
-      _motion.repeat(reverse: true);
+      _frames.forward(from: 0);
     }
   }
 
@@ -101,11 +107,7 @@ class _NorieMascotViewState extends State<NorieMascotView>
       return SizedBox.square(dimension: widget.size);
     }
 
-    final spec = NorieMascotMotionSpec.forState(
-      state,
-      reduceMotion: _reduceMotion,
-    );
-    final pose = NorieMascotPoseSpec.forState(
+    final sequence = NorieCartoonSequence.forState(
       state,
       reduceMotion: _reduceMotion,
     );
@@ -113,60 +115,44 @@ class _NorieMascotViewState extends State<NorieMascotView>
     return SizedBox.square(
       dimension: widget.size,
       child: AnimatedBuilder(
-        animation: _motion,
-        builder: (context, child) {
-          final raw = _motion.value;
-          final wave = spec.loops
-              ? Curves.easeInOut.transform(raw)
-              : Curves.easeOutBack.transform(raw.clamp(0.0, 1.0));
-          final oscillation = spec.loops
-              ? math.sin(raw * math.pi * 2)
-              : math.sin(raw * math.pi);
+        animation: _frames,
+        builder: (context, _) {
+          final frameCount = sequence.frames.length;
+          final rawIndex = (_frames.value * frameCount).floor();
+          final frameIndex = rawIndex.clamp(0, frameCount - 1);
+          final frame = sequence.frames[frameIndex];
+          final opacity = state == NorieMascotState.exiting
+              ? (1 - _frames.value).clamp(0.0, 1.0)
+              : 1.0;
 
-          final translateX = spec.translationX * oscillation;
-          final translateY = -spec.translationY * wave;
-          final scale = 1 + (spec.scaleDelta * wave);
-          final turns = spec.rotationTurns * oscillation;
-
-          final art = NorieMascotPoseSpec.usesArticulatedBase(state)
-              ? _ArticulatedMascotSprite(
-                  key: const ValueKey('norie-articulated-rig'),
-                  asset: NorieAssets.mascotBase,
-                  pose: pose,
-                  wave: wave,
-                  oscillation: oscillation,
-                )
-              : _MascotImage(asset: _assetForState(state));
-
-          final animatedContent = Stack(
-            fit: StackFit.expand,
-            children: [
-              art,
-              IgnorePointer(
-                child: CustomPaint(
-                  key: ValueKey('norie-expression-${_expressionKey(state)}'),
-                  painter: NorieMascotExpressionPainter(
-                    state: state,
-                    progress: raw,
+          return Opacity(
+            opacity: opacity,
+            child: Transform.translate(
+              key: ValueKey('norie-cartoon-frame-${state.name}-$frameIndex'),
+              offset: Offset(frame.dx, frame.dy),
+              child: Transform.rotate(
+                angle: frame.rotationTurns * math.pi * 2,
+                child: Transform.scale(
+                  scale: frame.scale,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _FullBodyFrame(
+                        asset: frame.asset,
+                      ),
+                      IgnorePointer(
+                        child: CustomPaint(
+                          key: ValueKey(
+                            'norie-expression-${_expressionKey(state)}',
+                          ),
+                          painter: NorieMascotExpressionPainter(
+                            state: state,
+                            progress: _frames.value,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-            ],
-          );
-
-          return Transform.translate(
-            offset: Offset(translateX, translateY),
-            child: Transform.rotate(
-              angle: turns * math.pi * 2,
-              child: Transform.scale(
-                scale: scale,
-                child: Opacity(
-                  opacity: state == NorieMascotState.exiting
-                      ? (1 - raw).clamp(0.0, 1.0)
-                      : raw == 0 && state == NorieMascotState.entering
-                          ? 0
-                          : 1,
-                  child: animatedContent,
                 ),
               ),
             ),
@@ -174,17 +160,6 @@ class _NorieMascotViewState extends State<NorieMascotView>
         },
       ),
     );
-  }
-
-  String _assetForState(NorieMascotState state) {
-    return switch (state) {
-      NorieMascotState.thinking ||
-      NorieMascotState.searching => NorieAssets.mascotStudying,
-      NorieMascotState.correct ||
-      NorieMascotState.idea ||
-      NorieMascotState.celebrating => NorieAssets.mascotCelebrating,
-      _ => NorieAssets.mascotBase,
-    };
   }
 
   String _expressionKey(NorieMascotState state) {
@@ -205,101 +180,8 @@ class _NorieMascotViewState extends State<NorieMascotView>
   }
 }
 
-class _ArticulatedMascotSprite extends StatelessWidget {
-  const _ArticulatedMascotSprite({
-    required this.asset,
-    required this.pose,
-    required this.wave,
-    required this.oscillation,
-    super.key,
-  });
-
-  final String asset;
-  final NorieMascotPoseSpec pose;
-  final double wave;
-  final double oscillation;
-
-  @override
-  Widget build(BuildContext context) {
-    final leftPhase = .72 + (.28 * oscillation);
-    final rightPhase = .82 + (.18 * oscillation);
-    final headPhase = .68 + (.32 * oscillation);
-
-    final leftAngle = pose.leftArmTurns * math.pi * 2 * leftPhase;
-    final rightAngle = pose.rightArmTurns * math.pi * 2 * rightPhase;
-    final headAngle = pose.headTurns * math.pi * 2 * headPhase;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        _MascotPiece(
-          asset: asset,
-          clipper: const _BodyClipper(),
-        ),
-        Transform.rotate(
-          key: const ValueKey('norie-head'),
-          angle: headAngle,
-          alignment: const Alignment(0, -.35),
-          child: _MascotPiece(
-            asset: asset,
-            clipper: const _HeadClipper(),
-          ),
-        ),
-        Transform.translate(
-          offset: Offset(
-            -2 * oscillation,
-            -pose.leftArmLift * (.60 + (.40 * wave)),
-          ),
-          child: Transform.rotate(
-            key: const ValueKey('norie-left-arm'),
-            angle: leftAngle,
-            alignment: const Alignment(-.28, -.12),
-            child: _MascotPiece(
-              asset: asset,
-              clipper: const _LeftArmClipper(),
-            ),
-          ),
-        ),
-        Transform.translate(
-          offset: Offset(
-            3 * oscillation,
-            -pose.rightArmLift * (.65 + (.35 * wave)),
-          ),
-          child: Transform.rotate(
-            key: const ValueKey('norie-right-arm'),
-            angle: rightAngle,
-            alignment: const Alignment(.28, -.12),
-            child: _MascotPiece(
-              asset: asset,
-              clipper: const _RightArmClipper(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MascotPiece extends StatelessWidget {
-  const _MascotPiece({
-    required this.asset,
-    required this.clipper,
-  });
-
-  final String asset;
-  final CustomClipper<Path> clipper;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: clipper,
-      child: _MascotImage(asset: asset),
-    );
-  }
-}
-
-class _MascotImage extends StatelessWidget {
-  const _MascotImage({required this.asset});
+class _FullBodyFrame extends StatelessWidget {
+  const _FullBodyFrame({required this.asset});
 
   final String asset;
 
@@ -307,7 +189,9 @@ class _MascotImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       asset,
+      key: ValueKey('norie-full-body-frame-$asset'),
       fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
       errorBuilder: (context, error, stackTrace) {
         if (asset == NorieAssets.mascotBase) {
           return const SizedBox.shrink();
@@ -315,80 +199,10 @@ class _MascotImage extends StatelessWidget {
         return Image.asset(
           NorieAssets.mascotBase,
           fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
           errorBuilder: (_, __, ___) => const SizedBox.shrink(),
         );
       },
     );
   }
-}
-
-class _BodyClipper extends CustomClipper<Path> {
-  const _BodyClipper();
-
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..moveTo(size.width * .22, size.height * .38)
-      ..lineTo(size.width * .78, size.height * .38)
-      ..lineTo(size.width * .73, size.height)
-      ..lineTo(size.width * .27, size.height)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(covariant _BodyClipper oldClipper) => false;
-}
-
-class _HeadClipper extends CustomClipper<Path> {
-  const _HeadClipper();
-
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..addOval(
-        Rect.fromLTWH(
-          size.width * .08,
-          0,
-          size.width * .84,
-          size.height * .55,
-        ),
-      );
-  }
-
-  @override
-  bool shouldReclip(covariant _HeadClipper oldClipper) => false;
-}
-
-class _LeftArmClipper extends CustomClipper<Path> {
-  const _LeftArmClipper();
-
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..moveTo(size.width * .02, size.height * .27)
-      ..lineTo(size.width * .44, size.height * .27)
-      ..lineTo(size.width * .45, size.height * .73)
-      ..lineTo(size.width * .03, size.height * .86)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(covariant _LeftArmClipper oldClipper) => false;
-}
-
-class _RightArmClipper extends CustomClipper<Path> {
-  const _RightArmClipper();
-
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..moveTo(size.width * .56, size.height * .27)
-      ..lineTo(size.width * .98, size.height * .27)
-      ..lineTo(size.width * .97, size.height * .86)
-      ..lineTo(size.width * .55, size.height * .73)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(covariant _RightArmClipper oldClipper) => false;
 }
