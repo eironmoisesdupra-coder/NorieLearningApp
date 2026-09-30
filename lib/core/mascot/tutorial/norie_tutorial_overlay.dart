@@ -27,11 +27,22 @@ class NorieTutorialOverlay extends StatelessWidget {
 
         return Stack(
           children: [
+            const Positioned.fill(
+              child: AbsorbPointer(
+                key: ValueKey('norie-tutorial-input-lock'),
+                absorbing: true,
+                child: ColoredBox(
+                  color: Color(0x42000000),
+                ),
+              ),
+            ),
             if (target != null)
               Positioned.fromRect(
                 rect: target.inflate(6),
                 child: IgnorePointer(
-                  child: DecoratedBox(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(

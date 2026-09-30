@@ -48,9 +48,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   double _maxZoom = 4.2;
   double _realTheta = 0;
   double _realPhi = 75;
-  double _realRadius = 4.5;
-  double _realTargetX = 0;
-  double _realTargetY = 0;
+  double _realFieldOfView = 35;
 
   bool _showLabels = false;
   bool _showMarkers = true;
@@ -60,14 +58,20 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   bool get _useRealSkeleton =>
       AnatomyRenderPolicy.useRealSkeleton(_selectedSystems);
 
+  bool get _useRealOrgans =>
+      AnatomyRenderPolicy.useRealOrgans(_selectedSystems);
+
+  bool get _useReal3D => _useRealSkeleton || _useRealOrgans;
+
+  Anatomy3DAssetKind get _real3DKind =>
+      _useRealOrgans ? Anatomy3DAssetKind.organs : Anatomy3DAssetKind.skeleton;
+
   String get _realCameraOrbit =>
       '${_realTheta.toStringAsFixed(1)}deg '
-      '${_realPhi.toStringAsFixed(1)}deg '
-      '${_realRadius.toStringAsFixed(2)}m';
+      '${_realPhi.toStringAsFixed(1)}deg auto';
 
-  String get _realCameraTarget =>
-      '${_realTargetX.toStringAsFixed(2)}m '
-      '${_realTargetY.toStringAsFixed(2)}m 0m';
+  String get _realFieldOfViewValue =>
+      '${_realFieldOfView.toStringAsFixed(1)}deg';
 
   @override
   void initState() {
@@ -86,7 +90,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _tickAutoRotate() {
-    if (!_autoRotate || !mounted || _useRealSkeleton) return;
+    if (!_autoRotate || !mounted || _useReal3D) return;
     setState(() {
       _rotationY = (_autoRotateController.value * math.pi * 2) - math.pi;
     });
@@ -97,13 +101,11 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _resetView() {
-    if (_useRealSkeleton) {
+    if (_useReal3D) {
       setState(() {
         _realTheta = 0;
         _realPhi = 75;
-        _realRadius = 4.5;
-        _realTargetX = 0;
-        _realTargetY = 0;
+        _realFieldOfView = 35;
         _selectedStructure = null;
       });
       return;
@@ -118,7 +120,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _presetView(String view) {
-    if (_useRealSkeleton) {
+    if (_useReal3D) {
       setState(() {
         switch (view) {
           case 'front':
@@ -163,9 +165,10 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _adjustZoom(double factor) {
-    if (_useRealSkeleton) {
+    if (_useReal3D) {
       setState(() {
-        _realRadius = (_realRadius / factor).clamp(2.0, 8.0);
+        _realFieldOfView =
+            (_realFieldOfView / factor).clamp(18.0, 52.0);
       });
       return;
     }
@@ -175,15 +178,6 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
     final ratio = next / current;
     final scale = Matrix4.diagonal3Values(ratio, ratio, 1);
     _transform.value = scale * _transform.value;
-  }
-
-  void _panRealSkeleton(DragUpdateDetails details) {
-    setState(() {
-      _realTargetX =
-          (_realTargetX - details.delta.dx * .004).clamp(-1.4, 1.4);
-      _realTargetY =
-          (_realTargetY + details.delta.dy * .004).clamp(-1.8, 1.8);
-    });
   }
 
   void _toggleSystem(AnatomySystemId id) {
@@ -275,7 +269,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                           left: 18,
                           right: 18,
                           bottom: 16,
-                          child: _ViewerHint(real3D: _useRealSkeleton),
+                          child: _ViewerHint(real3D: _useReal3D),
                         ),
                     ],
                   ),
@@ -289,8 +283,8 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   Widget _buildViewer(List<AnatomyStructure> structures) {
-    if (_useRealSkeleton) {
-      return _buildRealSkeletonViewer();
+    if (_useReal3D) {
+      return _buildReal3DViewer();
     }
 
     return LayoutBuilder(
@@ -364,7 +358,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
     );
   }
 
-  Widget _buildRealSkeletonViewer() {
+  Widget _buildReal3DViewer() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
       child: ClipRRect(
@@ -373,19 +367,14 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
           children: [
             Positioned.fill(
               child: AnatomyReal3DModel(
+                kind: _real3DKind,
                 cameraOrbit: _realCameraOrbit,
-                cameraTarget: _realCameraTarget,
+                fieldOfView: _realFieldOfViewValue,
                 autoRotate: _autoRotate,
-                enableTouch: _gestureMode == _ViewerGestureMode.rotate,
+                enableTouch: true,
+                enablePan: _gestureMode == _ViewerGestureMode.pan,
               ),
             ),
-            if (_gestureMode == _ViewerGestureMode.pan)
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onPanUpdate: _panRealSkeleton,
-                ),
-              ),
           ],
         ),
       ),
@@ -918,7 +907,7 @@ class _ViewerHint extends StatelessWidget {
         ),
         child: Text(
           real3D
-              ? 'Real 3D skeleton · drag to orbit · pinch to zoom · Pan mode shifts the camera target'
+              ? 'Real 3D anatomy · drag to orbit · pinch to zoom · Pan mode shifts the camera target'
               : 'Drag to rotate · pinch to zoom · Pan mode moves the model · tap numbered markers to inspect',
           textAlign: TextAlign.center,
           style: const TextStyle(

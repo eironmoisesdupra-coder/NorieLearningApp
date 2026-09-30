@@ -4,6 +4,7 @@ import 'package:norie_learning/core/assets/norie_assets.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_controller.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_expression_painter.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_motion.dart';
+import 'package:norie_learning/core/mascot/norie_mascot_pose.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_state.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_view.dart';
 
@@ -26,6 +27,45 @@ void main() {
         reason: state.name,
       );
     }
+  });
+
+
+  test('pointing pose gives the two arms independent movement', () {
+    final pose = NorieMascotPoseSpec.forState(
+      NorieMascotState.pointing,
+      reduceMotion: false,
+    );
+
+    expect(pose.leftArmTurns, isNot(equals(pose.rightArmTurns)));
+    expect(pose.rightArmLift, greaterThan(pose.leftArmLift));
+  });
+
+  testWidgets('pointing state renders articulated arm and head layers',
+      (tester) async {
+    final controller = NorieMascotController()..point('learn.subjects');
+
+    await tester.pumpWidget(
+      _Host(
+        child: NorieMascotView(
+          controller: controller,
+          reduceMotion: false,
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('norie-articulated-rig')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('norie-left-arm')), findsOneWidget);
+    expect(find.byKey(const ValueKey('norie-right-arm')), findsOneWidget);
+    expect(find.byKey(const ValueKey('norie-head')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('norie-expression-pointing')),
+      findsOneWidget,
+    );
+
+    controller.dispose();
   });
 
   testWidgets('idle state renders the base Norie artwork', (tester) async {
