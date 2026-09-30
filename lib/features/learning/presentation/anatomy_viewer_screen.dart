@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
 import '../domain/anatomy_hotspot_models.dart';
+import '../domain/anatomy_hotspot_viewer_policy.dart';
 import '../domain/anatomy_models.dart';
 import '../domain/anatomy_render_policy.dart';
 import 'anatomy_animated_backdrop.dart';
@@ -203,17 +204,8 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _selectRealHotspot(String hotspotId) {
-    AnatomyHotspot? hotspot;
-    for (final item in AnatomyHotspotCatalog.skeletal) {
-      if (item.id == hotspotId) {
-        hotspot = item;
-        break;
-      }
-    }
-    if (hotspot == null) return;
-
     final structure =
-        AnatomyHotspotCatalog.resolveStructure(hotspot.structureId);
+        AnatomyHotspotViewerPolicy.structureForHotspotId(hotspotId);
     if (structure == null) return;
 
     setState(() {
@@ -223,13 +215,10 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   Future<void> _openStructureList() async {
-    final structures = _useRealSkeleton
-        ? AnatomyHotspotCatalog.skeletal
-            .map((hotspot) =>
-                AnatomyHotspotCatalog.resolveStructure(hotspot.structureId))
-            .whereType<AnatomyStructure>()
-            .toList(growable: false)
-        : AnatomyCatalog.structuresFor(_selectedSystems);
+    final structures = AnatomyHotspotViewerPolicy.fallbackStructures(
+      selectedSystems: _selectedSystems,
+      realSkeleton: _useRealSkeleton,
+    );
 
     await showModalBottomSheet<void>(
       context: context,
