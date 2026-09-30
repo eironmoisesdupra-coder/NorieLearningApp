@@ -9,6 +9,30 @@ import 'package:norie_learning/core/mascot/norie_mascot_state.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_view.dart';
 
 void main() {
+  test('cartoon animation stays within the 20 to 30 FPS target', () {
+    expect(
+      NorieCartoonSequence.targetFps,
+      inInclusiveRange(20, 30),
+    );
+
+    final effectiveFps =
+        1000 / NorieCartoonSequence.animationFrameDuration.inMilliseconds;
+    expect(effectiveFps, inInclusiveRange(20, 30));
+
+    for (final state in NorieMascotState.values) {
+      final sequence = NorieCartoonSequence.forState(
+        state,
+        reduceMotion: false,
+      );
+      if (sequence.frames.length <= 1) continue;
+      expect(
+        sequence.frameDuration,
+        NorieCartoonSequence.animationFrameDuration,
+        reason: state.name,
+      );
+    }
+  });
+
   test('reduced motion keeps mascot translation within four pixels', () {
     for (final state in NorieMascotState.values) {
       final spec = NorieMascotMotionSpec.forState(
