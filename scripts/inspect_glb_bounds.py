@@ -113,9 +113,10 @@ def main(path):
         "dimensions": [round(v,6) for v in dims],
     }
     print("ANATOMY_GLB_BOUNDS="+json.dumps(out,separators=(",",":")))
-    patterns=("skull","cranium","frontal","parietal","occipital","temporal","zygomatic","mandib","clav","scap","stern","rib","verte","sacrum","pelv","ilium","hip","humer","radius","ulna","femur","patell","tibia","fibula")
-    calibration=[item for item in node_bounds if any(p in item["name"].lower() for p in patterns)]
-    print("ANATOMY_GLB_CALIBRATION_NODES="+json.dumps(calibration,separators=(",",":")))
+    if "--calibration-nodes" in sys.argv[2:]:
+        patterns=("skull","cranium","frontal","parietal","occipital","temporal","zygomatic","mandib","clav","scap","stern","rib","verte","sacrum","pelv","ilium","hip","humer","radius","ulna","femur","patell","tibia","fibula")
+        calibration=[item for item in node_bounds if any(p in item["name"].lower() for p in patterns)]
+        print("ANATOMY_GLB_CALIBRATION_NODES="+json.dumps(calibration,separators=(",",":")))
 
 if __name__ == "__main__":
     main(sys.argv[1])
