@@ -48,9 +48,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   double _maxZoom = 4.2;
   double _realTheta = 0;
   double _realPhi = 75;
-  double _realRadius = 4.5;
-  double _realTargetX = 0;
-  double _realTargetY = 0;
+  double _realFieldOfView = 35;
 
   bool _showLabels = false;
   bool _showMarkers = true;
@@ -70,12 +68,10 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
 
   String get _realCameraOrbit =>
       '${_realTheta.toStringAsFixed(1)}deg '
-      '${_realPhi.toStringAsFixed(1)}deg '
-      '${_realRadius.toStringAsFixed(2)}m';
+      '${_realPhi.toStringAsFixed(1)}deg auto';
 
-  String get _realCameraTarget =>
-      '${_realTargetX.toStringAsFixed(2)}m '
-      '${_realTargetY.toStringAsFixed(2)}m 0m';
+  String get _realFieldOfViewValue =>
+      '${_realFieldOfView.toStringAsFixed(1)}deg';
 
   @override
   void initState() {
@@ -109,9 +105,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
       setState(() {
         _realTheta = 0;
         _realPhi = 75;
-        _realRadius = 4.5;
-        _realTargetX = 0;
-        _realTargetY = 0;
+        _realFieldOfView = 35;
         _selectedStructure = null;
       });
       return;
@@ -173,7 +167,8 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   void _adjustZoom(double factor) {
     if (_useReal3D) {
       setState(() {
-        _realRadius = (_realRadius / factor).clamp(2.0, 8.0);
+        _realFieldOfView =
+            (_realFieldOfView / factor).clamp(18.0, 52.0);
       });
       return;
     }
@@ -183,15 +178,6 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
     final ratio = next / current;
     final scale = Matrix4.diagonal3Values(ratio, ratio, 1);
     _transform.value = scale * _transform.value;
-  }
-
-  void _panReal3D(DragUpdateDetails details) {
-    setState(() {
-      _realTargetX =
-          (_realTargetX - details.delta.dx * .004).clamp(-1.4, 1.4);
-      _realTargetY =
-          (_realTargetY + details.delta.dy * .004).clamp(-1.8, 1.8);
-    });
   }
 
   void _toggleSystem(AnatomySystemId id) {
@@ -383,18 +369,12 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
               child: AnatomyReal3DModel(
                 kind: _real3DKind,
                 cameraOrbit: _realCameraOrbit,
-                cameraTarget: _realCameraTarget,
+                fieldOfView: _realFieldOfViewValue,
                 autoRotate: _autoRotate,
-                enableTouch: _gestureMode == _ViewerGestureMode.rotate,
+                enableTouch: true,
+                enablePan: _gestureMode == _ViewerGestureMode.pan,
               ),
             ),
-            if (_gestureMode == _ViewerGestureMode.pan)
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onPanUpdate: _panReal3D,
-                ),
-              ),
           ],
         ),
       ),
