@@ -14,17 +14,19 @@ class AnatomyReal3DModel extends StatelessWidget {
   const AnatomyReal3DModel({
     required this.kind,
     required this.cameraOrbit,
-    required this.cameraTarget,
+    required this.fieldOfView,
     required this.autoRotate,
     required this.enableTouch,
+    required this.enablePan,
     super.key,
   });
 
   final Anatomy3DAssetKind kind;
   final String cameraOrbit;
-  final String cameraTarget;
+  final String fieldOfView;
   final bool autoRotate;
   final bool enableTouch;
+  final bool enablePan;
 
   bool get _isOrgans => kind == Anatomy3DAssetKind.organs;
 
@@ -49,15 +51,16 @@ class AnatomyReal3DModel extends StatelessWidget {
             src: src,
             alt: alt,
             cameraControls: enableTouch,
-            disablePan: true,
+            disablePan: !enablePan,
             disableZoom: false,
             autoRotate: autoRotate,
             autoRotateDelay: 0,
             rotationPerSecond: '12deg',
             cameraOrbit: cameraOrbit,
-            cameraTarget: cameraTarget,
-            minCameraOrbit: 'auto auto 1.5m',
-            maxCameraOrbit: 'auto auto 8m',
+            cameraTarget: 'auto auto auto',
+            fieldOfView: fieldOfView,
+            minCameraOrbit: 'auto auto 0.05m',
+            maxCameraOrbit: 'auto auto 100m',
             minFieldOfView: '15deg',
             maxFieldOfView: '55deg',
             exposure: _isOrgans ? 1.1 : 1.05,
