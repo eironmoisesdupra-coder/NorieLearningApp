@@ -138,6 +138,16 @@ void main() {
   });
 
 
+  test('skeleton calibration pins checksum and measured bounds', () {
+    expect(
+      AnatomyHotspotCatalog.calibration.sha256,
+      '253c47077e4ae11421c8ff3eae68c9414335ee2f0ad911eddf8ea0ea7dc0a6ce',
+    );
+    expect(AnatomyHotspotCatalog.calibration.dimensionsX, closeTo(.409679, 1e-6));
+    expect(AnatomyHotspotCatalog.calibration.dimensionsY, closeTo(1.69587, 1e-6));
+    expect(AnatomyHotspotCatalog.calibration.dimensionsZ, closeTo(.254124, 1e-6));
+  });
+
   test('skeleton fetch script is pinned to calibration source commit', () {
     final script = File('scripts/fetch_anatomy_assets.sh').readAsStringSync();
 
