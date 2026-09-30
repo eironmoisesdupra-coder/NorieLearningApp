@@ -12,7 +12,7 @@ void main() {
     );
 
     expect(html, contains('slot="hotspot-skeletal-skull"'));
-    expect(html, contains('data-nx="0.0"'));
+    expect(html, contains('data-nx="${sample.first.x}"'));
     expect(html, contains('data-structure-id="skull"'));
     expect(html, contains('aria-label="Skull"'));
     expect(html, contains('hotspot-card'));
