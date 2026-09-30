@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../norie_app_context.dart';
 import '../norie_mascot_controller.dart';
-import '../voice/norie_voice_controller.dart';
 import '../norie_mascot_state.dart';
+import '../voice/norie_voice_controller.dart';
 import 'norie_tutorial_models.dart';
 import 'norie_tutorial_store.dart';
 
@@ -24,6 +24,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
 
   NorieTutorialDefinition? _activeDefinition;
   int _currentIndex = 0;
+  int _focusGeneration = 0;
   bool _disposed = false;
 
   NorieTutorialDefinition? get activeDefinition => _activeDefinition;
@@ -74,6 +75,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   }
 
   void dismissWithoutCompletion() {
+    _focusGeneration++;
     _activeDefinition = null;
     _currentIndex = 0;
     unawaited(voiceController?.stop());
@@ -83,7 +85,10 @@ class NorieTutorialCoordinator extends ChangeNotifier {
 
   void registerTarget(String id, GlobalKey key) {
     _targets[id] = key;
-    if (currentStep?.targetId == id) _notify();
+    if (currentStep?.targetId == id) {
+      _scheduleFocusForCurrentStep();
+      _notify();
+    }
   }
 
   void unregisterTarget(String id, GlobalKey key) {
@@ -104,7 +109,36 @@ class NorieTutorialCoordinator extends ChangeNotifier {
     return topLeft & renderObject.size;
   }
 
+  Future<void> focusCurrentTarget({
+    Duration duration = const Duration(milliseconds: 360),
+  }) async {
+    final step = currentStep;
+    final targetId = step?.targetId;
+    if (step == null || targetId == null || _disposed) return;
+
+    final key = _targets[targetId];
+    final context = key?.currentContext;
+    if (context == null) return;
+
+    final generation = ++_focusGeneration;
+
+    await Scrollable.ensureVisible(
+      context,
+      alignment: .5,
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
+    );
+
+    if (_disposed || generation != _focusGeneration) return;
+
+    await Future<void>.delayed(const Duration(milliseconds: 16));
+    if (_disposed || generation != _focusGeneration) return;
+    _notify();
+  }
+
   void _start(NorieTutorialDefinition definition) {
+    _focusGeneration++;
     _activeDefinition = definition;
     _currentIndex = 0;
     _activateStep();
@@ -157,6 +191,18 @@ class NorieTutorialCoordinator extends ChangeNotifier {
         ),
       );
     }
+
+    _scheduleFocusForCurrentStep();
+  }
+
+  void _scheduleFocusForCurrentStep() {
+    final stepId = currentStep?.id;
+    if (stepId == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_disposed || currentStep?.id != stepId) return;
+      unawaited(focusCurrentTarget());
+    });
   }
 
   Future<void> _finish({required bool markComplete}) async {
@@ -167,6 +213,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
       await store.markComplete(definition.id);
     }
 
+    _focusGeneration++;
     _activeDefinition = null;
     _currentIndex = 0;
     unawaited(voiceController?.stop());
@@ -181,6 +228,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _focusGeneration++;
     _targets.clear();
     super.dispose();
   }
