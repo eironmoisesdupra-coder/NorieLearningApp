@@ -40,15 +40,23 @@ class AnatomyModelCalibration {
     required this.id,
     required this.modelAsset,
     required this.sourceCommit,
+    required this.sha256,
     required this.schemaVersion,
     required this.frontDirection,
+    required this.dimensionsX,
+    required this.dimensionsY,
+    required this.dimensionsZ,
   });
 
   final String id;
   final String modelAsset;
   final String sourceCommit;
+  final String sha256;
   final int schemaVersion;
   final String frontDirection;
+  final double dimensionsX;
+  final double dimensionsY;
+  final double dimensionsZ;
 }
 
 abstract final class AnatomyHotspotCatalog {
@@ -56,8 +64,12 @@ abstract final class AnatomyHotspotCatalog {
     id: 'open3dmodel-skeleton-v1',
     modelAsset: 'assets/anatomy/overview-skeleton.glb',
     sourceCommit: 'e4d76fbb424d15e1364963528a082a78fa359161',
+    sha256: '253c47077e4ae11421c8ff3eae68c9414335ee2f0ad911eddf8ea0ea7dc0a6ce',
     schemaVersion: 1,
     frontDirection: '+z',
+    dimensionsX: .409679,
+    dimensionsY: 1.69587,
+    dimensionsZ: .254124,
   );
 
   static const skeletal = <AnatomyHotspot>[
