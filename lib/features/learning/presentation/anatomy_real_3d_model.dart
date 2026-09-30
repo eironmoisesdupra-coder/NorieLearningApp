@@ -3,47 +3,68 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import '../../../core/theme/norie_theme.dart';
 
+enum Anatomy3DAssetKind { skeleton, organs }
+
 abstract final class Anatomy3DAssets {
-  static const model = 'assets/anatomy/overview-skeleton.glb';
+  static const skeleton = 'assets/anatomy/overview-skeleton.glb';
+  static const organs = 'assets/anatomy/anatomy-organs.glb';
 }
 
 class AnatomyReal3DModel extends StatelessWidget {
   const AnatomyReal3DModel({
+    required this.kind,
     required this.cameraOrbit,
-    required this.cameraTarget,
+    required this.fieldOfView,
     required this.autoRotate,
     required this.enableTouch,
+    required this.enablePan,
     super.key,
   });
 
+  final Anatomy3DAssetKind kind;
   final String cameraOrbit;
-  final String cameraTarget;
+  final String fieldOfView;
   final bool autoRotate;
   final bool enableTouch;
+  final bool enablePan;
+
+  bool get _isOrgans => kind == Anatomy3DAssetKind.organs;
 
   @override
   Widget build(BuildContext context) {
+    final src =
+        _isOrgans ? Anatomy3DAssets.organs : Anatomy3DAssets.skeleton;
+    final badge = _isOrgans ? 'REAL 3D · ORGAN ATLAS' : 'REAL 3D · SKELETAL';
+    final alt = _isOrgans
+        ? 'Interactive 3D human internal organ atlas'
+        : 'Interactive 3D human skeletal system';
+    final attribution = _isOrgans
+        ? 'BodyParts3D · CC BY-SA 2.1 JP'
+        : 'Open3Dmodel · CC BY-SA 4.0';
+
     return Stack(
       children: [
         Positioned.fill(
           child: ModelViewer(
+            key: ValueKey(kind),
             backgroundColor: Colors.transparent,
-            src: Anatomy3DAssets.model,
-            alt: 'Interactive 3D human skeletal system',
+            src: src,
+            alt: alt,
             cameraControls: enableTouch,
-            disablePan: true,
+            disablePan: !enablePan,
             disableZoom: false,
             autoRotate: autoRotate,
             autoRotateDelay: 0,
             rotationPerSecond: '12deg',
             cameraOrbit: cameraOrbit,
-            cameraTarget: cameraTarget,
-            minCameraOrbit: 'auto auto 1.5m',
-            maxCameraOrbit: 'auto auto 8m',
+            cameraTarget: 'auto auto auto',
+            fieldOfView: fieldOfView,
+            minCameraOrbit: 'auto auto 0.05m',
+            maxCameraOrbit: 'auto auto 100m',
             minFieldOfView: '15deg',
             maxFieldOfView: '55deg',
-            exposure: 1.05,
-            shadowIntensity: .72,
+            exposure: _isOrgans ? 1.1 : 1.05,
+            shadowIntensity: _isOrgans ? .78 : .72,
             shadowSoftness: .85,
             debugLogging: false,
           ),
@@ -60,9 +81,9 @@ class AnatomyReal3DModel extends StatelessWidget {
                 color: NorieColors.cyan.withValues(alpha: .42),
               ),
             ),
-            child: const Text(
-              'REAL 3D · SKELETAL',
-              style: TextStyle(
+            child: Text(
+              badge,
+              style: const TextStyle(
                 color: NorieColors.cyan,
                 fontSize: 8,
                 letterSpacing: .8,
@@ -71,19 +92,19 @@ class AnatomyReal3DModel extends StatelessWidget {
             ),
           ),
         ),
-        const Positioned(
+        Positioned(
           right: 12,
           bottom: 12,
           child: DecoratedBox(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Color(0xB3071227),
               borderRadius: BorderRadius.all(Radius.circular(8)),
             ),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
               child: Text(
-                'Open3Dmodel · CC BY-SA 4.0',
-                style: TextStyle(
+                attribution,
+                style: const TextStyle(
                   color: NorieColors.textSecondary,
                   fontSize: 7.5,
                   fontWeight: FontWeight.w700,

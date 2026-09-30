@@ -101,6 +101,79 @@ void main() {
     controller.dispose();
   });
 
+
+  testWidgets('tutorial automatically scrolls its registered target into view',
+      (tester) async {
+    final controller = NorieMascotController();
+    final coordinator = NorieTutorialCoordinator(
+      controller: controller,
+      store: NorieTutorialStore(),
+    );
+    final scrollController = ScrollController();
+    final targetKey = GlobalKey();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+              children: [
+                const SizedBox(height: 1200),
+                SizedBox(
+                  key: targetKey,
+                  height: 80,
+                  child: const Text('Tutorial target'),
+                ),
+                const SizedBox(height: 300),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    coordinator.registerTarget('learn.hero', targetKey);
+    await coordinator.replay(definition);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(scrollController.offset, greaterThan(0));
+
+    coordinator.dispose();
+    controller.dispose();
+    scrollController.dispose();
+  });
+
+  testWidgets('active tutorial locks background scrolling and input',
+      (tester) async {
+    final controller = NorieMascotController();
+    final coordinator = NorieTutorialCoordinator(
+      controller: controller,
+      store: NorieTutorialStore(),
+    );
+    await coordinator.replay(definition);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: NorieTutorialOverlay(
+            coordinator: coordinator,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final lock = tester.widget<AbsorbPointer>(
+      find.byKey(const ValueKey('norie-tutorial-input-lock')),
+    );
+    expect(lock.absorbing, isTrue);
+
+    coordinator.dispose();
+    controller.dispose();
+  });
+
   testWidgets('missing target falls back to a centered tutorial card',
       (tester) async {
     final controller = NorieMascotController();

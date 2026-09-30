@@ -32,12 +32,15 @@ class NorieMascotExpressionPainter extends CustomPainter {
         _paintNervous(canvas, size, t);
       case NorieMascotState.challenge:
         _paintChallenge(canvas, size, center, t);
+      case NorieMascotState.pointing:
+        _paintGesturePulse(canvas, size, t, rightSide: true);
+      case NorieMascotState.guiding:
+        _paintGesturePulse(canvas, size, t, rightSide: false);
+      case NorieMascotState.speaking:
+        _paintSpeaking(canvas, size, t);
       case NorieMascotState.hidden:
       case NorieMascotState.entering:
       case NorieMascotState.idle:
-      case NorieMascotState.guiding:
-      case NorieMascotState.pointing:
-      case NorieMascotState.speaking:
       case NorieMascotState.exiting:
         break;
     }
@@ -145,6 +148,48 @@ class NorieMascotExpressionPainter extends CustomPainter {
       false,
       paint,
     );
+  }
+
+  void _paintGesturePulse(
+    Canvas canvas,
+    Size size,
+    double t, {
+    required bool rightSide,
+  }) {
+    final phase = .5 + (.5 * math.sin(t * math.pi * 2));
+    final x = size.width * (rightSide ? .85 : .15);
+    final y = size.height * .48;
+    final paint = Paint()
+      ..color = const Color(0xFF77F3FF).withValues(alpha: .28 + (.48 * phase))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.1;
+
+    for (var i = 0; i < 2; i++) {
+      final radius = 6 + (i * 6) + (phase * 3);
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(x, y), radius: radius),
+        rightSide ? -.9 : math.pi - .9,
+        1.8,
+        false,
+        paint,
+      );
+    }
+  }
+
+  void _paintSpeaking(Canvas canvas, Size size, double t) {
+    final pulse = .5 + (.5 * math.sin(t * math.pi * 4));
+    final paint = Paint()
+      ..color = const Color(0xFFB7F5FF).withValues(alpha: .35 + (.45 * pulse));
+
+    final origin = Offset(size.width * .73, size.height * .32);
+    for (var i = 0; i < 3; i++) {
+      final radius = 2.5 + (i * 1.6) + (pulse * 1.5);
+      canvas.drawCircle(
+        origin.translate(i * 8.0, -i * 3.0),
+        radius,
+        paint,
+      );
+    }
   }
 
   @override
