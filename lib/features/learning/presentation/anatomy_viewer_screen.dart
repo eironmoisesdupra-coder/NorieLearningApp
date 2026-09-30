@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
+import '../domain/anatomy_hotspot_models.dart';
+import '../domain/anatomy_hotspot_viewer_policy.dart';
 import '../domain/anatomy_models.dart';
 import '../domain/anatomy_render_policy.dart';
 import 'anatomy_animated_backdrop.dart';
@@ -38,6 +40,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   late Set<AnatomySystemId> _selectedSystems;
   AnatomyStructure? _selectedStructure;
   _ViewerGestureMode _gestureMode = _ViewerGestureMode.rotate;
+  AnatomyHotspotMode _hotspotMode = AnatomyHotspotMode.explore;
 
   double _rotationY = 0;
   double _rotationX = 0;
@@ -194,6 +197,57 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
     });
   }
 
+  void _selectRealHotspot(String hotspotId) {
+    final structure =
+        AnatomyHotspotViewerPolicy.structureForHotspotId(hotspotId);
+    if (structure == null) return;
+
+    setState(() {
+      _selectedStructure = structure;
+      _autoRotate = false;
+    });
+  }
+
+  Future<void> _openStructureList() async {
+    final structures = AnatomyHotspotViewerPolicy.fallbackStructures(
+      selectedSystems: _selectedSystems,
+      realSkeleton: _useRealSkeleton,
+    );
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0C1730),
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          itemCount: structures.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final structure = structures[index];
+            return ListTile(
+              title: Text(
+                structure.name,
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+              subtitle: Text(
+                structure.function,
+                style: const TextStyle(
+                  color: NorieColors.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+              onTap: () {
+                setState(() => _selectedStructure = structure);
+                Navigator.of(sheetContext).pop();
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final structures = AnatomyCatalog.structuresFor(_selectedSystems);
@@ -245,6 +299,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                           onReset: _resetView,
                           onFront: () => _presetView('front'),
                           onBack: () => _presetView('back'),
+                          onStructures: _openStructureList,
                         ),
                       ),
                       Positioned(
@@ -252,6 +307,23 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                         top: 10,
                         child: _OrientationPad(onView: _presetView),
                       ),
+                      if (_useRealSkeleton)
+                        Positioned(
+                          left: 86,
+                          right: 86,
+                          top: 12,
+                          child: Center(
+                            child: _HotspotModeSelector(
+                              mode: _hotspotMode,
+                              onChanged: (mode) => setState(() {
+                                _hotspotMode = mode;
+                                if (mode == AnatomyHotspotMode.clean) {
+                                  _selectedStructure = null;
+                                }
+                              }),
+                            ),
+                          ),
+                        ),
                       if (_selectedStructure != null)
                         Positioned(
                           left: 10,
@@ -373,6 +445,20 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                 autoRotate: _autoRotate,
                 enableTouch: true,
                 enablePan: _gestureMode == _ViewerGestureMode.pan,
+                hotspots: _useRealSkeleton
+                    ? AnatomyHotspotCatalog.skeletal
+                    : const <AnatomyHotspot>[],
+                hotspotMode: _useRealSkeleton
+                    ? _hotspotMode
+                    : AnatomyHotspotMode.clean,
+                selectedHotspotId: _useRealSkeleton &&
+                        _selectedStructure != null
+                    ? AnatomyHotspotCatalog
+                        .hotspotForStructureId(_selectedStructure!.id)
+                        ?.id
+                    : null,
+                onHotspotSelected:
+                    _useRealSkeleton ? _selectRealHotspot : null,
               ),
             ),
           ],
@@ -603,6 +689,7 @@ class _ViewerToolbar extends StatelessWidget {
     required this.onReset,
     required this.onFront,
     required this.onBack,
+    required this.onStructures,
   });
 
   final _ViewerGestureMode gestureMode;
@@ -613,6 +700,7 @@ class _ViewerToolbar extends StatelessWidget {
   final VoidCallback onReset;
   final VoidCallback onFront;
   final VoidCallback onBack;
+  final VoidCallback onStructures;
 
   @override
   Widget build(BuildContext context) {
@@ -659,7 +747,52 @@ class _ViewerToolbar extends StatelessWidget {
         action(Icons.restart_alt_rounded, 'Reset', onReset),
         action(Icons.face_rounded, 'Front', onFront),
         action(Icons.flip_rounded, 'Back', onBack),
+        action(Icons.list_alt_rounded, 'Structure list', onStructures),
       ],
+    );
+  }
+}
+
+class _HotspotModeSelector extends StatelessWidget {
+  const _HotspotModeSelector({
+    required this.mode,
+    required this.onChanged,
+  });
+
+  final AnatomyHotspotMode mode;
+  final ValueChanged<AnatomyHotspotMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<AnatomyHotspotMode>(
+      showSelectedIcon: false,
+      segments: const [
+        ButtonSegment(
+          value: AnatomyHotspotMode.explore,
+          icon: Icon(Icons.label_rounded, size: 14),
+          label: Text('Explore'),
+        ),
+        ButtonSegment(
+          value: AnatomyHotspotMode.identification,
+          icon: Icon(Icons.pin_rounded, size: 14),
+          label: Text('Identify'),
+        ),
+        ButtonSegment(
+          value: AnatomyHotspotMode.clean,
+          icon: Icon(Icons.visibility_off_rounded, size: 14),
+          label: Text('Clean'),
+        ),
+      ],
+      selected: {mode},
+      onSelectionChanged: (selection) {
+        if (selection.isNotEmpty) onChanged(selection.first);
+      },
+      style: const ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        textStyle: WidgetStatePropertyAll(
+          TextStyle(fontSize: 8, fontWeight: FontWeight.w800),
+        ),
+      ),
     );
   }
 }
