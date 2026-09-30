@@ -348,10 +348,12 @@ class _QuestionVisual extends StatelessWidget {
       ),
       child: realHotspot != null
           ? AnatomyReal3DModel(
-              cameraOrbit: '0deg 75deg 4.5m',
-              cameraTarget: '0m 0m 0m',
+              kind: Anatomy3DAssetKind.skeleton,
+              cameraOrbit: '0deg 75deg auto',
+              fieldOfView: '35deg',
               autoRotate: false,
               enableTouch: true,
+              enablePan: false,
               hotspots:
                   AnatomyHotspotQuizPolicy.quizHotspotsFor(realHotspot),
               hotspotMode: AnatomyHotspotMode.quiz,
