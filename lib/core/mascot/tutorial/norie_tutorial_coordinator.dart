@@ -131,9 +131,6 @@ class NorieTutorialCoordinator extends ChangeNotifier {
     );
 
     if (_disposed || generation != _focusGeneration) return;
-
-    await Future<void>.delayed(const Duration(milliseconds: 16));
-    if (_disposed || generation != _focusGeneration) return;
     _notify();
   }
 
