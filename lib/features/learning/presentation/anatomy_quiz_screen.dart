@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../domain/anatomy_hotspot_models.dart';
+import '../domain/anatomy_hotspot_quiz_policy.dart';
 import '../domain/anatomy_models.dart';
 import 'anatomy_animated_backdrop.dart';
 import 'anatomy_body_model.dart';
+import 'anatomy_real_3d_model.dart';
 
 class AnatomyQuizScreen extends StatefulWidget {
   const AnatomyQuizScreen({
@@ -330,6 +333,9 @@ class _QuestionVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final realHotspot =
+        AnatomyHotspotQuizPolicy.hotspotForStructureId(question.target.id);
+
     return Container(
       height: 300,
       clipBehavior: Clip.antiAlias,
@@ -340,57 +346,67 @@ class _QuestionVisual extends StatelessWidget {
           color: question.system.color.withValues(alpha: .35),
         ),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          const width = 180.0;
-          const height = 280.0;
-          final markerX = width * question.target.x;
-          final markerY = height * question.target.y;
+      child: realHotspot != null
+          ? AnatomyReal3DModel(
+              cameraOrbit: '0deg 75deg 4.5m',
+              cameraTarget: '0m 0m 0m',
+              autoRotate: false,
+              enableTouch: true,
+              hotspots:
+                  AnatomyHotspotQuizPolicy.quizHotspotsFor(realHotspot),
+              hotspotMode: AnatomyHotspotMode.quiz,
+            )
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                const width = 180.0;
+                const height = 280.0;
+                final markerX = width * question.target.x;
+                final markerY = height * question.target.y;
 
-          return Center(
-            child: SizedBox(
-              width: width,
-              height: height,
-              child: Stack(
-                children: [
-                  AnatomyBodyModel(
-                    selectedSystems: {question.system.id},
-                    opacity: .95,
-                  ),
-                  Positioned(
-                    left: markerX - 16,
-                    top: markerY - 16,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: question.system.color,
-                        border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: question.system.color
-                                .withValues(alpha: .55),
-                            blurRadius: 12,
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        '1',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w900,
+                return Center(
+                  child: SizedBox(
+                    width: width,
+                    height: height,
+                    child: Stack(
+                      children: [
+                        AnatomyBodyModel(
+                          selectedSystems: {question.system.id},
+                          opacity: .95,
                         ),
-                      ),
+                        Positioned(
+                          left: markerX - 16,
+                          top: markerY - 16,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: question.system.color,
+                              border: Border.all(color: Colors.white, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: question.system.color
+                                      .withValues(alpha: .55),
+                                  blurRadius: 12,
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              '1',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }
