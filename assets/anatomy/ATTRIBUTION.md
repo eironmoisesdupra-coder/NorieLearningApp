@@ -19,6 +19,10 @@ License:
 
 NorieLearning does not claim ownership of this anatomy mesh. Any redistributed adaptations of this mesh remain subject to the applicable CC BY-SA terms.
 
+### Pinned hotspot calibration source
+
+The skeletal GLB used for hotspot calibration is pinned to `yamz8/human-body-simulator` commit `e4d76fbb424d15e1364963528a082a78fa359161`. Pinning prevents hotspot anchor coordinates from silently drifting if the upstream model changes.
+
 ## Internal organ atlas model
 
 **Asset:** `anatomy-organs.glb`
