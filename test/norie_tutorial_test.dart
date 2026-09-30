@@ -185,7 +185,8 @@ void main() {
 
     coordinator.registerTarget('learn.hero', targetKey);
     await coordinator.replay(definition);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 420));
 
     final highlight =
         find.byKey(const ValueKey('norie-tutorial-target-highlight'));
@@ -193,10 +194,12 @@ void main() {
     final before = tester.getTopLeft(highlight);
 
     scrollController.jumpTo(
-      (scrollController.offset + 80).clamp(
-        0,
-        scrollController.position.maxScrollExtent,
-      ),
+      (scrollController.offset + 80)
+          .clamp(
+            0.0,
+            scrollController.position.maxScrollExtent,
+          )
+          .toDouble(),
     );
     await tester.pump(const Duration(milliseconds: 32));
 
