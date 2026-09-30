@@ -37,6 +37,8 @@ void main() {
     );
 
     expect(pose.leftArmTurns, isNot(equals(pose.rightArmTurns)));
+    expect(pose.rightArmTurns, lessThan(-.10));
+    expect(pose.rightArmLift, greaterThanOrEqualTo(12));
     expect(pose.rightArmLift, greaterThan(pose.leftArmLift));
   });
 

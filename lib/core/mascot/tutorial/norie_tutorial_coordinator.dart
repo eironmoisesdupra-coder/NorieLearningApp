@@ -25,6 +25,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   NorieTutorialDefinition? _activeDefinition;
   int _currentIndex = 0;
   int _focusGeneration = 0;
+  bool _autoRecentering = false;
   bool _disposed = false;
 
   NorieTutorialDefinition? get activeDefinition => _activeDefinition;
@@ -132,6 +133,24 @@ class NorieTutorialCoordinator extends ChangeNotifier {
 
     if (_disposed || generation != _focusGeneration) return;
     _notify();
+  }
+
+  void handleTutorialScrollEnd() {
+    if (!isActive ||
+        currentStep?.targetId == null ||
+        _disposed ||
+        _autoRecentering) {
+      return;
+    }
+
+    _autoRecentering = true;
+    unawaited(
+      focusCurrentTarget(
+        duration: const Duration(milliseconds: 260),
+      ).whenComplete(() {
+        _autoRecentering = false;
+      }),
+    );
   }
 
   void _start(NorieTutorialDefinition definition) {
