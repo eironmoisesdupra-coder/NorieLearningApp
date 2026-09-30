@@ -3,16 +3,25 @@ set -euo pipefail
 
 mkdir -p assets/anatomy
 
-TARGET="assets/anatomy/overview-skeleton.glb"
-SOURCE="https://github.com/yamz8/human-body-simulator/raw/refs/heads/main/public/models/overview-skeleton.glb"
+fetch_asset() {
+  local label="$1"
+  local source="$2"
+  local target="$3"
+  local minimum_size="$4"
 
-echo "Fetching Open3Dmodel skeleton..."
-curl -L --fail --retry 3 --retry-delay 2 "$SOURCE" -o "$TARGET"
+  echo "Fetching $label..."
+  curl -L --fail --retry 3 --retry-delay 2 "$source" -o "$target"
 
-SIZE=$(wc -c < "$TARGET")
-if [ "$SIZE" -lt 1000000 ]; then
-  echo "Downloaded anatomy asset is unexpectedly small: $SIZE bytes" >&2
-  exit 1
-fi
+  local size
+  size=$(wc -c < "$target")
+  if [ "$size" -lt "$minimum_size" ]; then
+    echo "Downloaded $label is unexpectedly small: $size bytes" >&2
+    exit 1
+  fi
 
-echo "Anatomy skeleton ready: $SIZE bytes"
+  echo "$label ready: $size bytes"
+}
+
+fetch_asset   "Open3Dmodel skeleton"   "https://github.com/yamz8/human-body-simulator/raw/refs/heads/main/public/models/overview-skeleton.glb"   "assets/anatomy/overview-skeleton.glb"   1000000
+
+fetch_asset   "BodyParts3D organ atlas"   "https://github.com/yamz8/human-body-simulator/raw/refs/heads/main/public/models/anatomy-organs.glb"   "assets/anatomy/anatomy-organs.glb"   250000

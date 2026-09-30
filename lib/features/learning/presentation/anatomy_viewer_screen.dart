@@ -60,6 +60,14 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   bool get _useRealSkeleton =>
       AnatomyRenderPolicy.useRealSkeleton(_selectedSystems);
 
+  bool get _useRealOrgans =>
+      AnatomyRenderPolicy.useRealOrgans(_selectedSystems);
+
+  bool get _useReal3D => _useRealSkeleton || _useRealOrgans;
+
+  Anatomy3DAssetKind get _real3DKind =>
+      _useRealOrgans ? Anatomy3DAssetKind.organs : Anatomy3DAssetKind.skeleton;
+
   String get _realCameraOrbit =>
       '${_realTheta.toStringAsFixed(1)}deg '
       '${_realPhi.toStringAsFixed(1)}deg '
@@ -86,7 +94,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _tickAutoRotate() {
-    if (!_autoRotate || !mounted || _useRealSkeleton) return;
+    if (!_autoRotate || !mounted || _useReal3D) return;
     setState(() {
       _rotationY = (_autoRotateController.value * math.pi * 2) - math.pi;
     });
@@ -97,7 +105,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _resetView() {
-    if (_useRealSkeleton) {
+    if (_useReal3D) {
       setState(() {
         _realTheta = 0;
         _realPhi = 75;
@@ -118,7 +126,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _presetView(String view) {
-    if (_useRealSkeleton) {
+    if (_useReal3D) {
       setState(() {
         switch (view) {
           case 'front':
@@ -163,7 +171,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _adjustZoom(double factor) {
-    if (_useRealSkeleton) {
+    if (_useReal3D) {
       setState(() {
         _realRadius = (_realRadius / factor).clamp(2.0, 8.0);
       });
@@ -177,7 +185,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
     _transform.value = scale * _transform.value;
   }
 
-  void _panRealSkeleton(DragUpdateDetails details) {
+  void _panReal3D(DragUpdateDetails details) {
     setState(() {
       _realTargetX =
           (_realTargetX - details.delta.dx * .004).clamp(-1.4, 1.4);
@@ -275,7 +283,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                           left: 18,
                           right: 18,
                           bottom: 16,
-                          child: _ViewerHint(real3D: _useRealSkeleton),
+                          child: _ViewerHint(real3D: _useReal3D),
                         ),
                     ],
                   ),
@@ -289,8 +297,8 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   Widget _buildViewer(List<AnatomyStructure> structures) {
-    if (_useRealSkeleton) {
-      return _buildRealSkeletonViewer();
+    if (_useReal3D) {
+      return _buildReal3DViewer();
     }
 
     return LayoutBuilder(
@@ -364,7 +372,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
     );
   }
 
-  Widget _buildRealSkeletonViewer() {
+  Widget _buildReal3DViewer() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
       child: ClipRRect(
@@ -373,6 +381,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
           children: [
             Positioned.fill(
               child: AnatomyReal3DModel(
+                kind: _real3DKind,
                 cameraOrbit: _realCameraOrbit,
                 cameraTarget: _realCameraTarget,
                 autoRotate: _autoRotate,
@@ -383,7 +392,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
               Positioned.fill(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onPanUpdate: _panRealSkeleton,
+                  onPanUpdate: _panReal3D,
                 ),
               ),
           ],
@@ -918,7 +927,7 @@ class _ViewerHint extends StatelessWidget {
         ),
         child: Text(
           real3D
-              ? 'Real 3D skeleton · drag to orbit · pinch to zoom · Pan mode shifts the camera target'
+              ? 'Real 3D anatomy · drag to orbit · pinch to zoom · Pan mode shifts the camera target'
               : 'Drag to rotate · pinch to zoom · Pan mode moves the model · tap numbered markers to inspect',
           textAlign: TextAlign.center,
           style: const TextStyle(

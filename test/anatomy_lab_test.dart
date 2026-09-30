@@ -82,4 +82,34 @@ void main() {
       isFalse,
     );
   });
+
+  test('real 3D organ atlas is used for organ-only layer selections', () {
+    for (final system in AnatomyRenderPolicy.organAtlasSystems) {
+      expect(
+        AnatomyRenderPolicy.useRealOrgans({system}),
+        isTrue,
+        reason: system.name,
+      );
+    }
+
+    expect(
+      AnatomyRenderPolicy.useRealOrgans({
+        AnatomySystemId.respiratory,
+        AnatomySystemId.digestive,
+        AnatomySystemId.endocrine,
+      }),
+      isTrue,
+    );
+    expect(
+      AnatomyRenderPolicy.useRealOrgans({
+        AnatomySystemId.skeletal,
+        AnatomySystemId.respiratory,
+      }),
+      isFalse,
+    );
+    expect(
+      AnatomyRenderPolicy.useRealOrgans({AnatomySystemId.muscular}),
+      isFalse,
+    );
+  });
 }
