@@ -145,33 +145,71 @@ void main() {
     scrollController.dispose();
   });
 
-  testWidgets('active tutorial locks background scrolling and input',
+  testWidgets('tutorial spotlight tracks its target while content scrolls',
       (tester) async {
     final controller = NorieMascotController();
     final coordinator = NorieTutorialCoordinator(
       controller: controller,
       store: NorieTutorialStore(),
     );
-    await coordinator.replay(definition);
+    final scrollController = ScrollController();
+    final targetKey = GlobalKey();
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: NorieTutorialOverlay(
-            coordinator: coordinator,
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 500),
+                    SizedBox(
+                      key: targetKey,
+                      height: 100,
+                      child: const Text('Tracked target'),
+                    ),
+                    const SizedBox(height: 900),
+                  ],
+                ),
+              ),
+              NorieTutorialOverlay(
+                coordinator: coordinator,
+              ),
+            ],
           ),
         ),
       ),
     );
-    await tester.pump();
 
-    final lock = tester.widget<AbsorbPointer>(
-      find.byKey(const ValueKey('norie-tutorial-input-lock')),
+    coordinator.registerTarget('learn.hero', targetKey);
+    await coordinator.replay(definition);
+    await tester.pumpAndSettle();
+
+    final highlight =
+        find.byKey(const ValueKey('norie-tutorial-target-highlight'));
+    expect(highlight, findsOneWidget);
+    final before = tester.getTopLeft(highlight);
+
+    scrollController.jumpTo(
+      (scrollController.offset + 80).clamp(
+        0,
+        scrollController.position.maxScrollExtent,
+      ),
     );
-    expect(lock.absorbing, isTrue);
+    await tester.pump(const Duration(milliseconds: 32));
+
+    final after = tester.getTopLeft(highlight);
+    expect(after.dy, isNot(equals(before.dy)));
+    expect(
+      find.byKey(const ValueKey('norie-tutorial-live-spotlight')),
+      findsOneWidget,
+    );
 
     coordinator.dispose();
     controller.dispose();
+    scrollController.dispose();
   });
 
   testWidgets('missing target falls back to a centered tutorial card',
