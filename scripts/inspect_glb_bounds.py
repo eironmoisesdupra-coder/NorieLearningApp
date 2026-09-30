@@ -113,7 +113,7 @@ def main(path):
         "dimensions": [round(v,6) for v in dims],
     }
     print("ANATOMY_GLB_BOUNDS="+json.dumps(out,separators=(",",":")))
-    patterns=("skull","cranium","mandib","clav","scap","stern","rib","verte","sacrum","pelv","ilium","humer","radius","ulna","femur","patell","tibia","fibula")
+    patterns=("skull","cranium","frontal","parietal","occipital","temporal","zygomatic","mandib","clav","scap","stern","rib","verte","sacrum","pelv","ilium","hip","humer","radius","ulna","femur","patell","tibia","fibula")
     calibration=[item for item in node_bounds if any(p in item["name"].lower() for p in patterns)]
     print("ANATOMY_GLB_CALIBRATION_NODES="+json.dumps(calibration,separators=(",",":")))
 
