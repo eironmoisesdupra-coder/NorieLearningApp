@@ -37,6 +37,7 @@ jobs:
         with:
           path: build/anatomy-research
           key: anatomy-sources-${{ hashFiles('scripts/anatomy/sources.json') }}
+          restore-keys: anatomy-sources-
 
       - name: Generate Android and web platform scaffolding
         run: flutter create --platforms=android,web --project-name norie_learning .

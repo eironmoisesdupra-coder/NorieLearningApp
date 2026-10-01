@@ -1,7 +1,7 @@
 """Convert official BodyParts3D OBJ archive to named, meter-scale GLBs.
 
-The source uses x/right, y/posterior, z/superior in millimeters. Output is glTF
-x/right, y/superior, z/anterior in meters. No source geometry is synthesized.
+The source uses x/patient-left, y/posterior, z/superior in millimeters. Output is
+x/patient-left, y/superior, z/anterior in meters. No geometry is synthesized.
 """
 import argparse
 from array import array
@@ -49,6 +49,20 @@ def named_system(mesh_id, name):
         if re.search(pattern, name, re.IGNORECASE):
             return system
     return None
+
+
+def organ_systems(primary, name):
+    """Keep explicit endocrine organ overlap, excluding exocrine/support parts."""
+    if primary == 'endocrine' and re.search(r'\bduct', name, re.I):
+        return ['digestive']
+    systems = [primary]
+    if not re.search(r'duct|ligament|arter|vein|nerve|ampulla', name, re.I):
+        if re.search(r'\b(pineal|pituitary|adrenal|suprarenal|parathyroid|thyroid|thymus|pancreas|ovary|testis)\b', name, re.I):
+            if 'endocrine' not in systems:
+                systems.append('endocrine')
+        if primary == 'endocrine' and re.search(r'\bpancreas\b', name, re.I):
+            systems.append('digestive')
+    return systems
 
 
 def memberships(folder):
@@ -198,7 +212,8 @@ def build(folder, output):
             primary = systems[0]
             # Anatomical organ membership does not make its vessels or muscles
             # part of the organ-only layer. Preserve explicit endocrine overlap.
-            systems = [primary] + (['digestive'] if primary == 'endocrine' and 'pancrea' in name.lower() else [])
+            systems = organ_systems(primary, name)
+            primary = systems[0]
             positions, normals, indices, bounds = parse_obj(text)
             writers[primary].add(mesh_id, positions, normals, indices, bounds)
             structures.append({'id': 'bp-' + mesh_id, 'name': name, 'ontology': ontology,

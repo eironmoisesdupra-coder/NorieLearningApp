@@ -80,6 +80,37 @@ async function main() {
     await page.getByRole('button', { name: 'Back to Anatomy Lab', exact: true }).click();
     assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), beforeXp + 100);
     console.log('PASS: phone-sized atlas quiz completed offline and awarded exactly 100 XP once');
+    let referenceLabel = 'Adult male · BodyParts3D';
+    for (const [label, name, count] of [
+      ['Joints & ligaments · detail', 'Anterior cruciate ligament (left)', 626],
+      ['Endocrine glands · detail', 'Inferior parathyroid gland (left)', 11],
+    ]) {
+      await page.getByText(referenceLabel, { exact: true }).click();
+      // Flutter paints the dropdown route without DOM text nodes. Exercise its
+      // keyboard navigation, then assert the resulting visible structure count.
+      const currentIndex = catalog.references.findIndex(r => r.label === referenceLabel);
+      const nextIndex = catalog.references.findIndex(r => r.label === label);
+      for (let step = 0; step < Math.abs(nextIndex - currentIndex); step++) {
+        await page.keyboard.press(nextIndex < currentIndex ? 'ArrowUp' : 'ArrowDown');
+      }
+      await page.keyboard.press('Enter');
+      referenceLabel = label;
+      await viewer.locator('#status').waitFor({ state: 'hidden', timeout: 60000 });
+      const search = page.getByRole('button', { name: `Search ${count} parts`, exact: true });
+      await search.click();
+      await page.getByRole('textbox').fill(name);
+      await page.getByText(new RegExp('^' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+')).click({ force: true });
+      await page.getByRole('button', { name: 'Isolate', exact: true }).click();
+      await page.waitForTimeout(500);
+      const detailSize = await canvas.boundingBox();
+      assert.ok(detailSize.height > 150, `${label} retains usable phone model space`);
+      await atlasFrame.evaluate(() => { window.atlasEvents = []; });
+      await canvas.click({ position: { x: detailSize.width / 2, y: detailSize.height / 2 } });
+      const target = catalog.structures.find(s => s.name === name);
+      await atlasFrame.waitForFunction(id => window.atlasEvents.some(e => e.type === 'selected' && e.payload.id === id), target.id);
+      await page.screenshot({ path: path.resolve(__dirname, `../../build/windows-offline-${target.reference}-phone.png`) });
+      console.log(`PASS: ${label} searched, focused and picked offline at phone size`);
+    }
     await page.setViewportSize(originalSize);
     await page.reload();
     await enableAccessibility();

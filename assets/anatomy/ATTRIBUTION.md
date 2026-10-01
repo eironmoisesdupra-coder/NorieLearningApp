@@ -106,12 +106,41 @@ License: https://creativecommons.org/licenses/by-sa/4.0/
 
 NorieLearning retains world transforms, adds selectable identifiers, normalizes
 left/right labels, and re-encodes the geometry with meshopt. The adapted model
-remains CC BY-SA 4.0. Only the lymphatic model is used from this export; its
-non-commercial nervous/visceral components, definition text and application code
-are not included. The exporter's component-specific terms and upstream notices
+remains CC BY-SA 4.0. Additional reviewed joint and gland selections are described
+below. Non-commercial kidney/inner-ear components, nervous-source geometry,
+definition text and application code are not included. The exporter's component-specific terms and upstream notices
 are retained in `Z_ANATOMY_EXPORT_LICENSE.txt`, `Z_ANATOMY_NOTICE.txt` and
 `Z_ANATOMY_UPSTREAM_LICENSE.txt`. Their references to other components describe
 the original complete export, not additional assets included in NorieLearning.
+
+## Detailed atlas: joints, bone context and endocrine glands
+
+Assets: `detail-joints.glb`, `detail-joint-bones.glb`, `detail-glands.glb`.
+Adapted under CC BY-SA 4.0 from the same pinned Z-Anatomy GLB export and upstream
+authors credited above; the same required attribution strings and retained
+license notices apply. Source files: `public/models/joints.glb`,
+`public/models/skeletal.glb`, and a strict selection from `public/models/visceral.glb`.
+
+Joint detail contains 349 model parts, with 277 matching skeletal context parts.
+These are alternative source models, not 626 previously unmodeled human structures.
+The gland selection contains only adenohypophysis, neurohypophysis, pineal,
+thyroid, four parathyroids, two suprarenal glands and pancreas (11 parts).
+The mixed-license visceral file itself is never shipped. Kidney geometry and
+all other unselected meshes are excluded by a named whitelist in
+`anatomy_viewer/source-selection.mjs`; conversion fails on missing/duplicate names.
+
+NorieLearning preserves source world matrices and source colors, normalizes
+side labels, adds selectable IDs, and re-encodes only selected meshes with meshopt.
+The export is Y-up, meter-scale; coordinates remain separate from the BodyParts3D
+and HRA references. Joint bones share the joint export's coordinate system.
+These adapted GLBs remain CC BY-SA 4.0; source hashes and URLs are in
+`scripts/anatomy/sources.json` and conversion instructions in the repository.
+
+Endocrine category cross-listing follows the source anatomical labels, with ducts
+and supporting ligaments excluded. Gland/organ distinctions were checked against
+OpenStax Anatomy and Physiology 2e, section 17.1:
+https://openstax.org/books/anatomy-and-physiology-2e/pages/17-1-an-overview-of-the-endocrine-system
+No textbook text, figures or questions are reproduced.
 
 ## Detailed atlas: SPL inner and middle ear
 

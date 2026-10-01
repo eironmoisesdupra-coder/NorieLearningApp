@@ -7,6 +7,7 @@ import { copyToDocument, getBounds, dedup, prune, unpartition, weld, meshopt, si
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import draco3d from 'draco3d';
 import { VTKLoader } from 'three/addons/loaders/VTKLoader.js';
+import { selectGlands, isEndocrineOrgan } from './source-selection.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const output = path.join(root, 'assets/anatomy');
@@ -20,6 +21,8 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
 const catalog = {
   schemaVersion: 1,
   references: [
+    { id: 'joints', label: 'Joints & ligaments · detail', description: 'Z-Anatomy joint capsules, ligaments, discs and matching optional bone context in source coordinates.' },
+    { id: 'glands', label: 'Endocrine glands · detail', description: 'Thyroid, parathyroids, pituitary lobes, pineal, adrenals and pancreas. Gonads remain in the male and female body references.' },
     { id: 'male', label: 'Adult male · BodyParts3D', description: 'Full-body reference with separately modeled systems.' },
     { id: 'female', label: 'Adult female · Human Reference Atlas', description: 'Female organ reference including reproductive anatomy. Some whole-body systems have partial coverage.' },
     { id: 'lymphatic', label: 'Lymph nodes & organs · detail', description: 'Z-Anatomy lymph nodes and organs in their own source reference coordinates; lymph vessels are not included.' },
@@ -98,7 +101,7 @@ for (const [system, nodes] of groups) {
     const extras = node.getExtras();
     const label = typeof extras.label === 'string' && extras.label !== '-' ? extras.label : name.replace(/^VH_F_/, '').replaceAll('_', ' ');
     const systems = [system];
-    if (/pancreas|ovary/.test(name.toLowerCase())) systems.push('endocrine');
+    if (isEndocrineOrgan(label) && system !== 'endocrine') systems.push('endocrine');
     catalog.structures.push({ id: `hra-${name}`, name: label, ontology: extras.ontologyid ?? '',
       systems, reference: 'female', asset: `female-${system}`, meshes: [name],
       bounds: [bounds.min, bounds.max], source: 'hra-female' });
@@ -124,6 +127,33 @@ for (const extension of lymph.getRoot().listExtensionsUsed()) {
   if (extension.extensionName === 'KHR_draco_mesh_compression') extension.dispose();
 }
 await writeAsset('detail-lymphatic', lymph);
+
+// Copy selected meshes into a fresh document, never the full visceral scene.
+// Flatten world transforms exactly as in the other detail references.
+async function addZDetail(sourceId, asset, reference, system, select = nodes => nodes) {
+  const source = await io.read(path.join(root, `build/anatomy-research/${sourceId}.glb`));
+  const nodes = select(source.getRoot().listNodes().filter(n => n.getMesh()));
+  const doc = new Document(), scene = doc.createScene();
+  const copied = copyToDocument(doc, source, [...new Set(nodes.map(n => n.getMesh()))]);
+  for (const [index, node] of nodes.entries()) {
+    const original = node.getExtras().za_name || node.getName();
+    const meshName = `${asset}-${index}`;
+    const target = doc.createNode(meshName).setMesh(copied.get(node.getMesh())).setMatrix(node.getWorldMatrix());
+    scene.addChild(target);
+    const bounds = getBounds(target);
+    catalog.structures.push({ id: `za-${asset}-${index}`,
+      name: original.replace(/\.l\b/g, ' (left)').replace(/\.r\b/g, ' (right)'),
+      ontology: '', systems: [system], reference, asset, meshes: [meshName],
+      bounds: [bounds.min, bounds.max], source: sourceId, sourceName: original });
+  }
+  for (const extension of doc.getRoot().listExtensionsUsed()) {
+    if (extension.extensionName === 'KHR_draco_mesh_compression') extension.dispose();
+  }
+  await writeAsset(asset, doc);
+}
+await addZDetail('z-joints', 'detail-joints', 'joints', 'articular');
+await addZDetail('z-skeletal', 'detail-joint-bones', 'joints', 'skeletal');
+await addZDetail('z-visceral', 'detail-glands', 'glands', 'endocrine', selectGlands);
 
 const earData = JSON.parse(await fs.readFile(path.join(root, 'build/anatomy-research/ear-atlas.json'), 'utf8'));
 const earSources = new Map(earData.filter(x => x['@type'] === 'DataSource').map(x => [x['@id'], x]));

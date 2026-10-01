@@ -40,6 +40,7 @@ jobs:
         with:
           path: build/anatomy-research
           key: anatomy-sources-${{ hashFiles('scripts/anatomy/sources.json') }}
+          restore-keys: anatomy-sources-
 
       - name: Apply Norie web branding
         run: |

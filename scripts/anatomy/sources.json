@@ -144,6 +144,24 @@
       "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_12_Fenestra_Rotunda.vtk",
       "bytes": 41252,
       "sha256": "c63124ee52ccdec37651fa66b0e4118f55a783606ac4351499e1d76c015ad456"
+    },
+    {
+      "file": "z-joints.glb",
+      "url": "https://raw.githubusercontent.com/nqwrc/3d-anatomy/8ca3b7421bcfbe88b85859eb1983d5cf79f21749/public/models/joints.glb",
+      "bytes": 921960,
+      "sha256": "9fdab1a257652597cf8f0b2ac93d12abc817e8f9a9099b9628e764018490afa2"
+    },
+    {
+      "file": "z-skeletal.glb",
+      "url": "https://raw.githubusercontent.com/nqwrc/3d-anatomy/8ca3b7421bcfbe88b85859eb1983d5cf79f21749/public/models/skeletal.glb",
+      "bytes": 1863828,
+      "sha256": "c2b70b31ddec4062cbc5ba969fc24ecfed61d00397a0bca795e2701d997200f8"
+    },
+    {
+      "file": "z-visceral.glb",
+      "url": "https://raw.githubusercontent.com/nqwrc/3d-anatomy/8ca3b7421bcfbe88b85859eb1983d5cf79f21749/public/models/visceral.glb",
+      "bytes": 1844996,
+      "sha256": "b21a0f34b3da1bb0b6a9a6ae71d16ffbc036beb504944af2422d4b91a9317fe5"
     }
   ]
 }

@@ -74,6 +74,24 @@ try {
   await page.screenshot({ path: path.join(root, 'build/anatomy-lymphatic-reference.png') });
   await load('ear', ['sensory']);
   await page.screenshot({ path: path.join(root, 'build/anatomy-ear-reference.png') });
+  await load('joints', ['articular', 'skeletal']);
+  await page.screenshot({ path: path.join(root, 'build/anatomy-joints-reference.png') });
+  for (const [reference, systems, name] of [
+    ['joints', ['articular'], 'Anterior cruciate ligament (left)'],
+    ['glands', ['endocrine'], 'Thyroid gland'],
+    ['glands', ['endocrine'], 'Inferior parathyroid gland (left)'],
+  ]) {
+    await load(reference, systems);
+    const target = catalog.structures.find(s => s.reference === reference && s.name === name);
+    assert.ok(target, name);
+    await command('isolate', { id: target.id });
+    await page.waitForTimeout(400);
+    // Search/isolate must make even a tiny gland large enough to select.
+    await page.locator('canvas').click({ position: { x: 450, y: 450 } });
+    await page.waitForFunction(id => window.atlasEvents.some(e => e.type === 'selected' && e.payload.id === id), target.id);
+    await page.screenshot({ path: path.join(root, `build/anatomy-${target.id}.png`) });
+    console.log('Picked detail', name);
+  }
   await page.route('**/male-skeletal.glb', async route => { await new Promise(resolve => setTimeout(resolve, 150)); await route.continue(); });
   await page.evaluate(() => { window.atlasEvents = []; });
   await command('configure', { reference: 'male', systems: ['skeletal'] });
@@ -90,5 +108,5 @@ try {
   await load('male', ['skeletal', 'muscular']);
   await page.screenshot({ path: path.join(root, 'build/anatomy-body-reference.png') });
   assert.deepEqual(errors, []);
-  console.log('PASS: 15 systems, female reproductive, lymphatic and ear detail scenes, actual mesh picking and hidden-mesh rejection; external networking blocked.');
+  console.log('PASS: 15 systems, female reproductive, lymphatic, ear, joints and glands; actual mesh picking and hidden-mesh rejection; external networking blocked.');
 } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
