@@ -16,7 +16,7 @@ const OPTIONAL_ASSETS = [
   './assets/AssetManifest.bin.json',
   './assets/FontManifest.json',
   './assets/NOTICES',
-  ...__NORIE_EXTRA_ASSETS__,
+  /*__NORIE_EXTRA_ASSETS__*/
 ];
 
 async function cacheRequired(cache) {
