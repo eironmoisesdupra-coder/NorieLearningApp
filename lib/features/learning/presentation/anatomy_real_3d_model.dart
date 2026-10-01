@@ -133,7 +133,7 @@ class AnatomyReal3DModel extends StatelessWidget {
             maxHotspotOpacity: 1,
             environmentImage: _isOrgans ? null : 'neutral',
             exposure: _isOrgans ? 1.1 : .94,
-            shadowIntensity: _isOrgans ? .78 : 1.10,
+            shadowIntensity: _isOrgans ? .78 : 1,
             shadowSoftness: _isOrgans ? .85 : .58,
             innerModelViewerHtml: innerHtml,
             relatedCss: Anatomy3DHotspotHtml.css,

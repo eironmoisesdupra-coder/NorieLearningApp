@@ -1,0 +1,61 @@
+name: Windows Desktop
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+jobs:
+  offline-windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Prepare web platform and branding
+        shell: pwsh
+        run: |
+          flutter create --platforms=web --project-name norie_learning .
+          Copy-Item branding/web/* web/ -Force
+          Remove-Item test/widget_test.dart -ErrorAction SilentlyContinue
+      - name: Fetch licensed anatomy assets
+        shell: bash
+        run: bash scripts/fetch_anatomy_assets.sh
+      - name: Build bundled Flutter app
+        run: flutter build web --release --base-href "/" --no-web-resources-cdn
+      - name: Install desktop build dependencies
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+      - name: Test desktop asset boundaries
+        working-directory: desktop
+        run: npm test
+      - name: Package Windows app
+        working-directory: desktop
+        run: npm run package:windows
+      - name: Run packaged app without internet
+        working-directory: desktop
+        run: npm run test:offline
+      - name: Zip complete portable app
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/windows-desktop/NorieLearning-win32-x64 -DestinationPath build/NorieLearning-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NorieLearning-Windows-offline
+          path: build/NorieLearning-Windows.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Windows-offline-test-screenshots
+          path: build/windows-offline-*.png

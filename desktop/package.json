@@ -1,0 +1,19 @@
+{
+  "name": "norie-learning-desktop",
+  "productName": "NorieLearning",
+  "version": "0.1.0",
+  "description": "Offline NorieLearning for Windows",
+  "author": "eironmoisesdupra-coder",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "test": "node --test test/asset-policy.test.cjs",
+    "package:windows": "node package-windows.cjs",
+    "test:offline": "node test/offline-app.cjs"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "electron": "44.5.1",
+    "playwright": "1.63.0"
+  }
+}

@@ -68,3 +68,31 @@ initial online visit long enough to finish downloading its offline cache,
 including anatomy models and learning assets. Keep the browser's site storage
 to retain offline access and progress. Sign-in and cloud synchronization still
 require a connection.
+
+## Windows offline app
+
+The Windows 64-bit package bundles the existing Flutter app and its rendering
+engine. Extract the whole ZIP and run `NorieLearning.exe`; keep the other files
+alongside it. Learning and anatomy work on the first launch without internet.
+Progress is retained for the current Windows user when the app closes.
+AI quiz generation, uploads, sign-in and cloud sync still need internet.
+
+To build on Windows with Flutter, Node 24 and Microsoft Edge installed:
+
+```powershell
+flutter create --platforms=web --project-name norie_learning .
+Copy-Item branding/web/* web/ -Force
+& 'C:/Program Files/Git/bin/bash.exe' scripts/fetch_anatomy_assets.sh
+flutter build web --release --base-href "/" --no-web-resources-cdn
+Set-Location desktop
+npm ci
+npm test
+npm run package:windows
+npm run test:offline
+```
+
+Output: `build/windows-desktop/NorieLearning-win32-x64/`. The offline integration
+test launches the packaged executable with an isolated profile and blocked
+internet access, completes a lesson quiz and challenge, checks anatomy, then
+closes and reopens it to verify saved XP. Windows Desktop CI builds, tests and
+uploads the complete portable ZIP.
