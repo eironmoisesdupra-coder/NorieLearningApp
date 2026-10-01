@@ -47,6 +47,9 @@ class AnatomyModelCalibration {
     required this.sha256,
     required this.schemaVersion,
     required this.frontDirection,
+    required this.centerX,
+    required this.centerY,
+    required this.centerZ,
     required this.dimensionsX,
     required this.dimensionsY,
     required this.dimensionsZ,
@@ -58,6 +61,9 @@ class AnatomyModelCalibration {
   final String sha256;
   final int schemaVersion;
   final String frontDirection;
+  final double centerX;
+  final double centerY;
+  final double centerZ;
   final double dimensionsX;
   final double dimensionsY;
   final double dimensionsZ;
@@ -65,12 +71,15 @@ class AnatomyModelCalibration {
 
 abstract final class AnatomyHotspotCatalog {
   static const calibration = AnatomyModelCalibration(
-    id: 'open3dmodel-skeleton-v1',
+    id: 'open3dmodel-skeleton-v2-full-body',
     modelAsset: 'assets/anatomy/overview-skeleton.glb',
     sourceCommit: 'e4d76fbb424d15e1364963528a082a78fa359161',
     sha256: '253c47077e4ae11421c8ff3eae68c9414335ee2f0ad911eddf8ea0ea7dc0a6ce',
-    schemaVersion: 1,
+    schemaVersion: 2,
     frontDirection: '+z',
+    centerX: -.130685,
+    centerY: .857076,
+    centerZ: .009998,
     dimensionsX: .409679,
     dimensionsY: 1.69587,
     dimensionsZ: .254124,
@@ -250,6 +259,70 @@ abstract final class AnatomyHotspotCatalog {
       side: AnatomyHotspotSide.right,
     ),
   ];
+
+  static double modelX(AnatomyHotspot hotspot) =>
+      calibration.centerX + (hotspot.x * calibration.dimensionsX);
+
+  static double modelY(AnatomyHotspot hotspot) =>
+      calibration.centerY + (hotspot.y * calibration.dimensionsY);
+
+  static double modelZ(AnatomyHotspot hotspot) =>
+      calibration.centerZ + (hotspot.z * calibration.dimensionsZ);
+
+  static String displaySourceNode(String sourceNode) {
+    final trimmed = sourceNode.trim();
+    return trimmed
+        .replaceFirst(RegExp(r'\.r\.?    if (!systems.contains(AnatomySystemId.skeletal)) return const [];
+    return skeletal.where((item) => item.enabled).toList(growable: false);
+  }
+
+  static List<AnatomyHotspot> renderable(
+    Iterable<AnatomyHotspot> hotspots, {
+    required AnatomyHotspotMode mode,
+  }) {
+    if (mode == AnatomyHotspotMode.clean) return const [];
+    return hotspots.where((item) => item.enabled).toList(growable: false);
+  }
+
+  static AnatomyStructure? resolveStructure(String structureId) =>
+      AnatomyCatalog.structureById(structureId);
+
+  static AnatomyHotspot? hotspotForStructureId(String structureId) {
+    for (final hotspot in skeletal) {
+      if (hotspot.enabled && hotspot.structureId == structureId) {
+        return hotspot;
+      }
+    }
+    return null;
+  }
+}
+, caseSensitive: false), ' — right')
+        .replaceFirst(RegExp(r'\.l    if (!systems.contains(AnatomySystemId.skeletal)) return const [];
+    return skeletal.where((item) => item.enabled).toList(growable: false);
+  }
+
+  static List<AnatomyHotspot> renderable(
+    Iterable<AnatomyHotspot> hotspots, {
+    required AnatomyHotspotMode mode,
+  }) {
+    if (mode == AnatomyHotspotMode.clean) return const [];
+    return hotspots.where((item) => item.enabled).toList(growable: false);
+  }
+
+  static AnatomyStructure? resolveStructure(String structureId) =>
+      AnatomyCatalog.structureById(structureId);
+
+  static AnatomyHotspot? hotspotForStructureId(String structureId) {
+    for (final hotspot in skeletal) {
+      if (hotspot.enabled && hotspot.structureId == structureId) {
+        return hotspot;
+      }
+    }
+    return null;
+  }
+}
+, caseSensitive: false), ' — left');
+  }
 
   static List<AnatomyHotspot> hotspotsFor(Set<AnatomySystemId> systems) {
     if (!systems.contains(AnatomySystemId.skeletal)) return const [];
