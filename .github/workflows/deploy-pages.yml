@@ -35,6 +35,7 @@ jobs:
           cp branding/web/index.html web/index.html
           cp branding/web/manifest.json web/manifest.json
           cp branding/web/norie-logo.svg web/norie-logo.svg
+          cp branding/web/norie-sw.js web/norie-sw.js
 
       - name: Remove generated default test
         run: rm -f test/widget_test.dart
@@ -46,37 +47,83 @@ jobs:
         run: flutter pub get
 
       - name: Build web preview
-        run: flutter build web --release --base-href "/NorieLearningApp/"
+        run: flutter build web --release --base-href "/NorieLearningApp/" --no-web-resources-cdn
 
-      - name: Make preview cache-safe
+      - name: Prepare offline-safe preview
         env:
           NORIE_BUILD_SHA: ${{ github.sha }}
         run: |
           python - <<'PY'
+          import json
           import os
           import re
           from pathlib import Path
 
           build = Path("build/web")
-          bootstrap = build / "flutter_bootstrap.js"
-          text = bootstrap.read_text()
-
           sha = os.environ["NORIE_BUILD_SHA"]
-          text = text.replace(
+
+          bootstrap = build / "flutter_bootstrap.js"
+          bootstrap_text = bootstrap.read_text()
+          bootstrap_text = bootstrap_text.replace(
               '"mainJsPath":"main.dart.js"',
               f'"mainJsPath":"main.dart.js?v={sha}"',
           )
-          text = re.sub(
+          bootstrap_text = re.sub(
               r'_flutter\.loader\.load\(\{\s*serviceWorkerSettings:\s*\{.*?\}\s*\}\);',
               '_flutter.loader.load();',
-              text,
+              bootstrap_text,
               flags=re.S,
           )
-          bootstrap.write_text(text)
+          bootstrap.write_text(bootstrap_text)
 
-          worker = build / "flutter_service_worker.js"
-          if worker.exists():
-              worker.unlink()
+          generated_worker = build / "flutter_service_worker.js"
+          if generated_worker.exists():
+              generated_worker.unlink()
+
+          required = [
+              build / "index.html",
+              build / "flutter_bootstrap.js",
+              build / "main.dart.js",
+              build / "norie-sw.js",
+              build / "assets/assets/anatomy/overview-skeleton.glb",
+              build / "assets/packages/model_viewer_plus/assets/model-viewer.min.js",
+          ]
+          missing = [str(path) for path in required if not path.exists()]
+          if missing:
+              raise SystemExit("Missing offline prerequisite(s): " + ", ".join(missing))
+
+          extra = []
+          patterns = [
+              "canvaskit/**/*",
+              "assets/fonts/**/*",
+              "assets/packages/cupertino_icons/assets/**/*",
+              "assets/shaders/**/*",
+          ]
+          for pattern in patterns:
+              for path in build.glob(pattern):
+                  if path.is_file():
+                      extra.append("./" + path.relative_to(build).as_posix())
+
+          for name in ("flutter.js",):
+              path = build / name
+              if path.exists():
+                  extra.append("./" + name)
+
+          extra = sorted(set(extra))
+
+          sw = build / "norie-sw.js"
+          sw_text = sw.read_text()
+          sw_text = sw_text.replace("__NORIE_BUILD_SHA__", sha)
+          injected_assets = ",\n  ".join(json.dumps(path) for path in extra)
+          sw_text = sw_text.replace(
+              "/*__NORIE_EXTRA_ASSETS__*/",
+              injected_assets,
+          )
+          sw.write_text(sw_text)
+
+          index = build / "index.html"
+          index_text = index.read_text().replace("__NORIE_BUILD_SHA__", sha)
+          index.write_text(index_text)
           PY
 
       - name: Publish to gh-pages branch

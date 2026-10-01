@@ -35,6 +35,7 @@ jobs:
           cp branding/web/index.html web/index.html
           cp branding/web/manifest.json web/manifest.json
           cp branding/web/norie-logo.svg web/norie-logo.svg
+          cp branding/web/norie-sw.js web/norie-sw.js
           mkdir -p android/app/src/main/res/drawable
           cp branding/android/norie_launcher_icon.xml android/app/src/main/res/drawable/norie_launcher_icon.xml
           cp branding/android/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
@@ -82,5 +83,25 @@ jobs:
           name: NorieLearning-android-release
           path: build/app/outputs/flutter-apk/app-release.apk
 
+      - name: Verify offline web configuration
+        run: |
+          grep -q 'norie-sw.js' branding/web/index.html
+          grep -q 'overview-skeleton.glb' branding/web/norie-sw.js
+          if grep -q 'registration.unregister' branding/web/index.html; then
+            echo "Offline mode must not unregister service workers" >&2
+            exit 1
+          fi
+          if grep -q 'caches.delete' branding/web/index.html; then
+            echo "Offline mode must not clear browser caches on startup" >&2
+            exit 1
+          fi
+
       - name: Build web release
-        run: flutter build web --release
+        run: flutter build web --release --no-web-resources-cdn
+
+      - name: Verify offline web artifacts
+        run: |
+          test -f build/web/norie-sw.js
+          test -f build/web/assets/assets/anatomy/overview-skeleton.glb
+          test -f build/web/assets/packages/model_viewer_plus/assets/model-viewer.min.js
+          test -d build/web/canvaskit
