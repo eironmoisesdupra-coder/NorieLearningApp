@@ -49,6 +49,55 @@ void main() {
     }
   });
 
+  test('Grade 1 Mathematics ships five proper guided lessons', () {
+    final topics =
+        NorieFoundationCurriculum.topicsFor('Mathematics', 'g1');
+
+    expect(
+      topics.map((topic) => topic.title).toList(),
+      const [
+        'Counting to 100',
+        'Place Value',
+        'Addition Basics',
+        'Subtraction Basics',
+        'Shapes & Patterns',
+      ],
+    );
+
+    for (final topic in topics) {
+      expect(topic.lesson.objectives.length, greaterThanOrEqualTo(3),
+          reason: topic.id);
+      expect(topic.lesson.estimatedMinutes, isNotNull, reason: topic.id);
+      expect(topic.lesson.sections.length, greaterThanOrEqualTo(5),
+          reason: topic.id);
+      expect(
+        topic.lesson.sections.where((section) => section.visualType != null),
+        isNotEmpty,
+        reason: '${topic.id} should include inline visual models',
+      );
+      expect(topic.quiz.questions, hasLength(20), reason: topic.id);
+      expect(topic.challenge.rounds, hasLength(3), reason: topic.id);
+      expect(topic.visualType, startsWith('g1-'), reason: topic.id);
+
+      for (final question in topic.quiz.questions) {
+        expect(question.hasValidAnswer, isTrue, reason: question.id);
+        expect(question.explanation, isNotEmpty, reason: question.id);
+      }
+    }
+  });
+
+  test('Grade 1 Math lessons no longer use generic study-habit questions', () {
+    final topics =
+        NorieFoundationCurriculum.topicsFor('Mathematics', 'g1');
+
+    for (final topic in topics) {
+      final prompts =
+          topic.quiz.questions.map((question) => question.prompt).join(' ');
+      expect(prompts, isNot(contains('study habit')), reason: topic.id);
+      expect(prompts, isNot(contains('learning approach')), reason: topic.id);
+    }
+  });
+
   test('foundation topic ids are globally unique', () {
     final ids = <String>{};
     for (final subject in subjects) {

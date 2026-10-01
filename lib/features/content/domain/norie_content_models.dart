@@ -157,6 +157,8 @@ class NorieLessonContent {
     required this.sections,
     required this.keyConceptTitle,
     required this.keyConceptBody,
+    this.objectives = const <String>[],
+    this.estimatedMinutes,
     this.completionXp = 50,
   });
 
@@ -165,6 +167,8 @@ class NorieLessonContent {
   final List<NorieLessonSection> sections;
   final String keyConceptTitle;
   final String keyConceptBody;
+  final List<String> objectives;
+  final int? estimatedMinutes;
   final int completionXp;
 
   Map<String, dynamic> toJson() => {
@@ -173,6 +177,8 @@ class NorieLessonContent {
         'sections': sections.map((item) => item.toJson()).toList(),
         'key_concept_title': keyConceptTitle,
         'key_concept_body': keyConceptBody,
+        'objectives': objectives,
+        'estimated_minutes': estimatedMinutes,
         'completion_xp': completionXp,
       };
 
@@ -189,6 +195,8 @@ class NorieLessonContent {
           .toList(),
       keyConceptTitle: json['key_concept_title'] as String? ?? '',
       keyConceptBody: json['key_concept_body'] as String? ?? '',
+      objectives: List<String>.from(json['objectives'] as List? ?? const []),
+      estimatedMinutes: (json['estimated_minutes'] as num?)?.toInt(),
       completionXp: (json['completion_xp'] as num?)?.toInt() ?? 50,
     );
   }
@@ -200,18 +208,24 @@ class NorieLessonSection {
     required this.symbol,
     required this.points,
     this.accent = 'cyan',
+    this.visualType,
+    this.visualCaption,
   });
 
   final String title;
   final String symbol;
   final List<String> points;
   final String accent;
+  final String? visualType;
+  final String? visualCaption;
 
   Map<String, dynamic> toJson() => {
         'title': title,
         'symbol': symbol,
         'points': points,
         'accent': accent,
+        'visual_type': visualType,
+        'visual_caption': visualCaption,
       };
 
   factory NorieLessonSection.fromJson(Map<String, dynamic> json) {
@@ -220,6 +234,8 @@ class NorieLessonSection {
       symbol: json['symbol'] as String? ?? '',
       points: List<String>.from(json['points'] as List? ?? const []),
       accent: json['accent'] as String? ?? 'cyan',
+      visualType: json['visual_type'] as String?,
+      visualCaption: json['visual_caption'] as String?,
     );
   }
 }

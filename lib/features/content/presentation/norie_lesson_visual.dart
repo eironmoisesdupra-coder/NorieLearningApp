@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
@@ -7,12 +9,14 @@ class NorieLessonVisual extends StatelessWidget {
     required this.type,
     required this.title,
     required this.accent,
+    this.compact = false,
     super.key,
   });
 
   final String type;
   final String title;
   final Color accent;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -20,12 +24,12 @@ class NorieLessonVisual extends StatelessWidget {
       label: 'Educational illustration for $title',
       image: true,
       child: Container(
-        height: 190,
+        height: compact ? 155 : 210,
         width: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: NorieColors.surface,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(compact ? 16 : 22),
           border: Border.all(color: accent.withValues(alpha: .35)),
         ),
         child: CustomPaint(
@@ -33,10 +37,10 @@ class NorieLessonVisual extends StatelessWidget {
           child: Align(
             alignment: Alignment.bottomLeft,
             child: Container(
-              margin: const EdgeInsets.all(13),
+              margin: const EdgeInsets.all(11),
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
-                color: NorieColors.background.withValues(alpha: .82),
+                color: NorieColors.background.withValues(alpha: .86),
                 borderRadius: BorderRadius.circular(99),
               ),
               child: Text(
@@ -56,11 +60,37 @@ class NorieLessonVisual extends StatelessWidget {
 
 class _LessonVisualPainter extends CustomPainter {
   const _LessonVisualPainter({required this.type, required this.accent});
+
   final String type;
   final Color accent;
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (type.startsWith('g1-counting')) {
+      _paintCounting(canvas, size);
+      return;
+    }
+    if (type.startsWith('g1-place-value')) {
+      _paintPlaceValue(canvas, size);
+      return;
+    }
+    if (type.startsWith('g1-addition')) {
+      _paintAddition(canvas, size);
+      return;
+    }
+    if (type.startsWith('g1-subtraction')) {
+      _paintSubtraction(canvas, size);
+      return;
+    }
+    if (type == 'g1-shapes-basic') {
+      _paintBasicShapes(canvas, size);
+      return;
+    }
+    if (type.startsWith('g1-shapes')) {
+      _paintShapesAndPatterns(canvas, size);
+      return;
+    }
+
     final faint = Paint()
       ..color = accent.withValues(alpha: .16)
       ..style = PaintingStyle.stroke
@@ -84,7 +114,11 @@ class _LessonVisualPainter extends CustomPainter {
         );
         canvas.restore();
       }
-      canvas.drawCircle(Offset(center.dx + 72, center.dy), 7, Paint()..color = Colors.white);
+      canvas.drawCircle(
+        Offset(center.dx + 72, center.dy),
+        7,
+        Paint()..color = Colors.white,
+      );
       return;
     }
 
@@ -114,9 +148,19 @@ class _LessonVisualPainter extends CustomPainter {
     if (type == 'language') {
       final left = Rect.fromLTWH(size.width * .18, 38, size.width * .28, 105);
       final right = Rect.fromLTWH(size.width * .48, 38, size.width * .28, 105);
-      canvas.drawRRect(RRect.fromRectAndRadius(left, const Radius.circular(8)), fill);
-      canvas.drawRRect(RRect.fromRectAndRadius(right, const Radius.circular(8)), fill);
-      canvas.drawLine(Offset(size.width * .47, 45), Offset(size.width * .47, 142), strong);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(left, const Radius.circular(8)),
+        fill,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(right, const Radius.circular(8)),
+        fill,
+      );
+      canvas.drawLine(
+        Offset(size.width * .47, 45),
+        Offset(size.width * .47, 142),
+        strong,
+      );
       for (var i = 0; i < 4; i++) {
         canvas.drawLine(
           Offset(left.left + 15, left.top + 22 + i * 19),
@@ -142,6 +186,298 @@ class _LessonVisualPainter extends CustomPainter {
       canvas.drawCircle(p, 8, Paint()..color = accent.withValues(alpha: .7));
       canvas.drawLine(center, p, faint);
     }
+  }
+
+  void _paintCounting(Canvas canvas, Size size) {
+    final lineY = size.height * .57;
+    final left = size.width * .10;
+    final right = size.width * .90;
+    final line = Paint()
+      ..color = accent.withValues(alpha: .65)
+      ..strokeWidth = 3;
+
+    canvas.drawLine(Offset(left, lineY), Offset(right, lineY), line);
+
+    for (var i = 0; i <= 10; i++) {
+      final x = left + ((right - left) * i / 10);
+      canvas.drawLine(
+        Offset(x, lineY - 8),
+        Offset(x, lineY + 8),
+        line,
+      );
+      _text(
+        canvas,
+        '$i',
+        Offset(x, lineY + 18),
+        size: 10,
+        center: true,
+      );
+    }
+
+    for (var i = 0; i < 8; i++) {
+      final row = i ~/ 4;
+      final col = i % 4;
+      canvas.drawCircle(
+        Offset(
+          size.width * .37 + col * 28,
+          size.height * .20 + row * 27,
+        ),
+        8,
+        Paint()..color = accent.withValues(alpha: .82),
+      );
+    }
+    _text(canvas, '8 counters', Offset(size.width * .62, size.height * .26));
+  }
+
+  void _paintPlaceValue(Canvas canvas, Size size) {
+    final baseY = size.height * .74;
+    final startX = size.width * .18;
+    final unit = math.min(10.0, size.height * .055);
+    final fill = Paint()..color = accent.withValues(alpha: .72);
+    final stroke = Paint()
+      ..color = Colors.white.withValues(alpha: .75)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    for (var ten = 0; ten < 3; ten++) {
+      final x = startX + ten * 18;
+      final rect = Rect.fromLTWH(x, baseY - unit * 10, 12, unit * 10);
+      canvas.drawRect(rect, fill);
+      canvas.drawRect(rect, stroke);
+      for (var j = 1; j < 10; j++) {
+        canvas.drawLine(
+          Offset(x, baseY - unit * j),
+          Offset(x + 12, baseY - unit * j),
+          stroke,
+        );
+      }
+    }
+
+    for (var one = 0; one < 4; one++) {
+      final x = size.width * .62 + (one % 2) * 20;
+      final y = baseY - 25 - (one ~/ 2) * 20;
+      final rect = Rect.fromLTWH(x, y, 13, 13);
+      canvas.drawRect(rect, fill);
+      canvas.drawRect(rect, stroke);
+    }
+    _text(canvas, '3 tens', Offset(size.width * .18, baseY + 8));
+    _text(canvas, '4 ones', Offset(size.width * .59, baseY + 8));
+    _text(
+      canvas,
+      '34',
+      Offset(size.width * .47, size.height * .16),
+      size: 25,
+      weight: FontWeight.w900,
+    );
+  }
+
+  void _paintAddition(Canvas canvas, Size size) {
+    final y = size.height * .44;
+    _counterGroup(canvas, Offset(size.width * .24, y), 3);
+    _text(
+      canvas,
+      '+',
+      Offset(size.width * .43, y - 15),
+      size: 26,
+      weight: FontWeight.w900,
+    );
+    _counterGroup(canvas, Offset(size.width * .54, y), 2);
+    _text(
+      canvas,
+      '=',
+      Offset(size.width * .69, y - 15),
+      size: 26,
+      weight: FontWeight.w900,
+    );
+    _text(
+      canvas,
+      '5',
+      Offset(size.width * .81, y - 17),
+      size: 30,
+      weight: FontWeight.w900,
+    );
+    _text(
+      canvas,
+      '3 objects joined with 2 objects makes 5.',
+      Offset(size.width * .19, size.height * .72),
+      size: 11,
+    );
+  }
+
+  void _paintSubtraction(Canvas canvas, Size size) {
+    final y = size.height * .42;
+    final startX = size.width * .24;
+    for (var i = 0; i < 7; i++) {
+      final center = Offset(startX + (i % 4) * 34, y + (i ~/ 4) * 38);
+      canvas.drawCircle(
+        center,
+        11,
+        Paint()..color = accent.withValues(alpha: i >= 5 ? .25 : .82),
+      );
+      if (i >= 5) {
+        final slash = Paint()
+          ..color = Colors.white
+          ..strokeWidth = 2.5;
+        canvas.drawLine(center.translate(-10, -10), center.translate(10, 10), slash);
+      }
+    }
+    _text(
+      canvas,
+      '7 − 2 = 5',
+      Offset(size.width * .61, size.height * .37),
+      size: 24,
+      weight: FontWeight.w900,
+    );
+    _text(
+      canvas,
+      'Start with 7. Take away 2. Count the 5 left.',
+      Offset(size.width * .20, size.height * .77),
+      size: 11,
+    );
+  }
+
+  void _paintBasicShapes(Canvas canvas, Size size) {
+    final y = size.height * .40;
+    final fill = Paint()..color = accent.withValues(alpha: .78);
+    final outline = Paint()
+      ..color = Colors.white.withValues(alpha: .88)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final circle = Offset(size.width * .16, y);
+    canvas.drawCircle(circle, 19, fill);
+    canvas.drawCircle(circle, 19, outline);
+    _text(canvas, 'circle', circle.translate(-18, 29), size: 9);
+
+    final triangleCenter = Offset(size.width * .37, y);
+    final triangle = Path()
+      ..moveTo(triangleCenter.dx, triangleCenter.dy - 22)
+      ..lineTo(triangleCenter.dx - 23, triangleCenter.dy + 19)
+      ..lineTo(triangleCenter.dx + 23, triangleCenter.dy + 19)
+      ..close();
+    canvas.drawPath(triangle, fill);
+    canvas.drawPath(triangle, outline);
+    _text(
+      canvas,
+      'triangle',
+      triangleCenter.translate(-22, 29),
+      size: 9,
+    );
+
+    final square = Rect.fromCenter(
+      center: Offset(size.width * .59, y),
+      width: 40,
+      height: 40,
+    );
+    canvas.drawRect(square, fill);
+    canvas.drawRect(square, outline);
+    _text(
+      canvas,
+      'square',
+      Offset(square.left + 1, square.bottom + 10),
+      size: 9,
+    );
+
+    final rectangle = Rect.fromCenter(
+      center: Offset(size.width * .81, y),
+      width: 54,
+      height: 34,
+    );
+    canvas.drawRect(rectangle, fill);
+    canvas.drawRect(rectangle, outline);
+    _text(
+      canvas,
+      'rectangle',
+      Offset(rectangle.left, rectangle.bottom + 13),
+      size: 9,
+    );
+
+    _text(
+      canvas,
+      'Count sides and corners—not color or direction.',
+      Offset(size.width * .19, size.height * .76),
+      size: 10,
+    );
+  }
+
+  void _paintShapesAndPatterns(Canvas canvas, Size size) {
+    final y = size.height * .34;
+    final centers = [
+      Offset(size.width * .18, y),
+      Offset(size.width * .35, y),
+      Offset(size.width * .52, y),
+      Offset(size.width * .69, y),
+      Offset(size.width * .86, y),
+    ];
+
+    for (var i = 0; i < centers.length; i++) {
+      if (i.isEven) {
+        canvas.drawCircle(
+          centers[i],
+          16,
+          Paint()..color = accent.withValues(alpha: .78),
+        );
+      } else {
+        final rect = Rect.fromCenter(
+          center: centers[i],
+          width: 31,
+          height: 31,
+        );
+        canvas.drawRect(
+          rect,
+          Paint()..color = Colors.white.withValues(alpha: .72),
+        );
+      }
+    }
+
+    _text(
+      canvas,
+      'circle, square, circle, square, ...',
+      Offset(size.width * .20, size.height * .59),
+      size: 11,
+    );
+    _text(
+      canvas,
+      'What comes next?',
+      Offset(size.width * .34, size.height * .73),
+      size: 15,
+      weight: FontWeight.w900,
+    );
+  }
+
+  void _counterGroup(Canvas canvas, Offset origin, int count) {
+    for (var i = 0; i < count; i++) {
+      canvas.drawCircle(
+        origin.translate(i * 27.0, 0),
+        10,
+        Paint()..color = accent.withValues(alpha: .82),
+      );
+    }
+  }
+
+  void _text(
+    Canvas canvas,
+    String value,
+    Offset offset, {
+    double size = 12,
+    FontWeight weight = FontWeight.w700,
+    bool center = false,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: value,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: .92),
+          fontSize: size,
+          fontWeight: weight,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(
+      canvas,
+      center ? offset.translate(-painter.width / 2, 0) : offset,
+    );
   }
 
   @override
