@@ -44,7 +44,7 @@ class NorieGradeLessonsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 const Text(
-                  'Five pre-generated foundation lessons. Complete them in order for the recommended path, or open any lesson to review.',
+                  'Five guided lessons with readable tutorials, visual models, worked examples, practice, and mastery checks. Complete them in order for the recommended path, or open any lesson to review.',
                   style: TextStyle(
                     color: NorieColors.textSecondary,
                     height: 1.4,
