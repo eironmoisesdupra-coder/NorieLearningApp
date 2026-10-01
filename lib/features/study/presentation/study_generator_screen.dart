@@ -253,6 +253,11 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
               children: [
                 const _GeneratorHero(),
+                const SizedBox(height: 10),
+                const Text(
+                  'AI quiz generation needs internet and a signed-in account. After generation, saved quizzes can be studied offline.',
+                  style: TextStyle(color: NorieColors.textSecondary, fontSize: 12),
+                ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _titleController,

@@ -7,7 +7,7 @@ import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
 import '../../account/presentation/account_screen.dart';
-import '../../account/presentation/private_demo_gate.dart';
+import '../../account/presentation/learning_entry.dart';
 import '../../navigation/presentation/main_shell.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -49,7 +49,7 @@ class _SplashScreenState extends State<SplashScreen>
         transitionDuration: const Duration(milliseconds: 450),
         pageBuilder: (_, animation, __) => FadeTransition(
           opacity: animation,
-          child: const PrivateDemoGate(),
+          child: const NorieLearningEntry(),
         ),
       ),
     );

@@ -73,6 +73,13 @@ class NorieAccountService extends ChangeNotifier {
       }
 
       notifyListeners();
+    }, onError: (Object error, StackTrace stack) {
+      // A failed token refresh must not discard locally restored learning.
+      _status = _user == null
+          ? NorieAccountStatus.localOnly
+          : NorieAccountStatus.signedIn;
+      _message = 'Cloud connection unavailable. Continue learning offline.';
+      notifyListeners();
     });
 
     notifyListeners();
@@ -240,8 +247,7 @@ class NorieAccountService extends ChangeNotifier {
         target,
         redirectTo: NorieSupabase.appUrl,
       );
-      _message =
-          'Password reset email sent. Open the link to return to Norie.';
+      _message = 'Password reset email sent. Open the link to return to Norie.';
       notifyListeners();
       return null;
     } on AuthException catch (error) {
@@ -330,15 +336,15 @@ class NorieAccountService extends ChangeNotifier {
           .from('profiles')
           .select('display_name')
           .eq('id', currentUser.id)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(const Duration(seconds: 5));
 
       final value = row?['display_name'] as String?;
       _displayName = value?.trim().isNotEmpty == true
           ? value!.trim()
           : (currentUser.userMetadata?['display_name'] as String?);
     } catch (_) {
-      _displayName =
-          currentUser.userMetadata?['display_name'] as String?;
+      _displayName = currentUser.userMetadata?['display_name'] as String?;
     }
   }
 

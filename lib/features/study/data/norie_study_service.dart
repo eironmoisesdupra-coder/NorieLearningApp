@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -5,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/cloud/supabase_config.dart';
 import '../domain/norie_study_models.dart';
+import 'norie_study_offline_store.dart';
 
 class NorieStudyService {
   NorieStudyService._();
@@ -12,15 +14,22 @@ class NorieStudyService {
   static final NorieStudyService instance = NorieStudyService._();
 
   static const _bucket = 'study-sources';
+  static const _setProjection =
+      'id,user_id,title,source_type,source_name,generation_mode,requested_count,status,topic_tag,ai_model,created_at,study_questions(id,position,kind,prompt,options,correct_values,explanation,source_excerpt,topic_tag,difficulty,ordered_items),study_attempts(xp_awarded)';
 
   SupabaseClient? get _client => NorieSupabase.client;
+  bool _syncInProgress = false;
+  NorieStudyOfflineStore get _offlineStore =>
+      NorieStudyOfflineStore(_client?.auth.currentUser?.id ?? 'local');
 
   Future<NorieAiQuota?> getAiQuota() async {
     final client = _client;
     if (client == null || client.auth.currentUser == null) return null;
 
     try {
-      final raw = await client.rpc('get_my_ai_quota');
+      final raw = await client
+          .rpc('get_my_ai_quota')
+          .timeout(const Duration(seconds: 5));
       if (raw is Map) {
         return NorieAiQuota.fromMap(Map<String, dynamic>.from(raw));
       }
@@ -30,87 +39,102 @@ class NorieStudyService {
     return null;
   }
 
-  Future<List<NorieStudySet>> listStudySets() async {
+  Future<List<NorieStudySet>> listStudySets({bool refresh = false}) async {
+    final store = _offlineStore;
+    final cached = await store.listSets();
+    unawaited(syncPendingAttempts());
+    if (cached.isNotEmpty && !refresh) {
+      unawaited(_fetchStudySets(store));
+      return cached;
+    }
+    return _fetchStudySets(store);
+  }
+
+  Future<List<NorieStudySet>> _fetchStudySets(
+      NorieStudyOfflineStore store) async {
     final client = _client;
     final user = client?.auth.currentUser;
-    if (client == null || user == null) return const [];
+    if (client == null || user == null || user.id != store.userId) {
+      return store.listSets();
+    }
 
     try {
       final rows = await client
           .from('study_sets')
-          .select(
-            'id,title,source_type,source_name,generation_mode,requested_count,status,topic_tag,ai_model,created_at',
-          )
+          .select(_setProjection)
           .eq('user_id', user.id)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 8));
 
       final sets = <NorieStudySet>[];
       for (final raw in rows) {
-        final map = Map<String, dynamic>.from(raw);
-        final countRows = await client
-            .from('study_questions')
-            .select('id')
-            .eq('study_set_id', map['id']);
-        final placeholders = <NorieStudyQuestion>[
-          for (var i = 0; i < countRows.length; i++)
-            NorieStudyQuestion(
-              id: 'placeholder-$i',
-              position: i,
-              kind: NorieStudyQuestionKind.singleSelect,
-              prompt: '',
-              options: const [],
-              correctValues: const [],
-              explanation: '',
-              sourceExcerpt: '',
-              difficulty: 'foundation',
-            ),
-        ];
-        sets.add(NorieStudySet.fromMap(map, questions: placeholders));
+        final set =
+            await _cacheRemoteSet(Map<String, dynamic>.from(raw), store);
+        if (set.questions.isNotEmpty) sets.add(set);
+      }
+      final remoteIds = rows.map((row) => row['id'].toString()).toSet();
+      for (final cached in await store.listSets()) {
+        if (!remoteIds.contains(cached.id)) await store.removeSet(cached.id);
       }
       return sets;
     } catch (_) {
-      return const [];
+      return store.listSets();
     }
   }
 
+  Future<NorieStudySet> _cacheRemoteSet(
+      Map<String, dynamic> map, NorieStudyOfflineStore store) async {
+    final questions = (map['study_questions'] as List? ?? [])
+        .map((row) => NorieStudyQuestion.fromMap(
+              Map<String, dynamic>.from(row as Map),
+            ))
+        .toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
+    final set = NorieStudySet.fromMap(map, questions: questions);
+    final attempts = map['study_attempts'] as List? ?? [];
+    if (attempts
+        .any((row) => row is Map && (row['xp_awarded'] as num? ?? 0) > 0)) {
+      await store.markRewarded(set.id);
+    }
+    await store.saveSet(set);
+    return set;
+  }
+
   Future<NorieStudySet?> getStudySet(String id) async {
+    final store = _offlineStore;
+    final cached = await store.getSet(id);
+    if (cached != null) {
+      unawaited(_fetchStudySet(id, store));
+      return cached;
+    }
+    return _fetchStudySet(id, store);
+  }
+
+  Future<NorieStudySet?> _fetchStudySet(
+      String id, NorieStudyOfflineStore store) async {
     final client = _client;
     final user = client?.auth.currentUser;
-    if (client == null || user == null) return null;
+    if (client == null || user == null || user.id != store.userId) {
+      return store.getSet(id);
+    }
 
     try {
       final setRow = await client
           .from('study_sets')
-          .select(
-            'id,title,source_type,source_name,generation_mode,requested_count,status,topic_tag,ai_model,created_at',
-          )
+          .select(_setProjection)
           .eq('id', id)
           .eq('user_id', user.id)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(const Duration(seconds: 8));
 
-      if (setRow == null) return null;
+      if (setRow == null) {
+        await store.removeSet(id);
+        return null;
+      }
 
-      final questionRows = await client
-          .from('study_questions')
-          .select(
-            'id,position,kind,prompt,options,correct_values,explanation,source_excerpt,topic_tag,difficulty,ordered_items',
-          )
-          .eq('study_set_id', id)
-          .order('position');
-
-      final questions = [
-        for (final raw in questionRows)
-          NorieStudyQuestion.fromMap(
-            Map<String, dynamic>.from(raw),
-          ),
-      ];
-
-      return NorieStudySet.fromMap(
-        Map<String, dynamic>.from(setRow),
-        questions: questions,
-      );
+      return await _cacheRemoteSet(Map<String, dynamic>.from(setRow), store);
     } catch (_) {
-      return null;
+      return store.getSet(id);
     }
   }
 
@@ -122,7 +146,8 @@ class NorieStudyService {
     final client = _client;
     final user = client?.auth.currentUser;
     if (client == null || user == null) {
-      throw StateError('Sign in before uploading study material.');
+      throw StateError(
+          'Connect to the internet and sign in to upload AI study material.');
     }
     if (bytes.isEmpty) {
       throw StateError('The selected file is empty.');
@@ -137,14 +162,22 @@ class NorieStudyService {
     final path =
         '${user.id}/${DateTime.now().microsecondsSinceEpoch}_$safeName';
 
-    await client.storage.from(_bucket).uploadBinary(
-          path,
-          bytes,
-          fileOptions: FileOptions(
-            contentType: contentType,
-            upsert: false,
-          ),
-        );
+    try {
+      await client.storage
+          .from(_bucket)
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+              contentType: contentType,
+              upsert: false,
+            ),
+          )
+          .timeout(const Duration(seconds: 30));
+    } catch (_) {
+      throw StateError(
+          'Uploading AI study material needs an internet connection. Try again when connected.');
+    }
 
     return path;
   }
@@ -162,7 +195,8 @@ class NorieStudyService {
   }) async {
     final client = _client;
     if (client == null || client.auth.currentUser == null) {
-      throw StateError('Sign in before generating a study set.');
+      throw StateError(
+          'Connect to the internet and sign in to generate an AI quiz. Built-in quizzes work offline.');
     }
 
     final quota = await getAiQuota();
@@ -178,9 +212,8 @@ class NorieStudyService {
         body: {
           'action': 'generate_study_set',
           'payload': {
-            'title': title.trim().isEmpty
-                ? 'Generated Study Set'
-                : title.trim(),
+            'title':
+                title.trim().isEmpty ? 'Generated Study Set' : title.trim(),
             'source_type': sourceType,
             'source_text': sourceText,
             'source_path': sourcePath,
@@ -191,7 +224,7 @@ class NorieStudyService {
             'topic_tag': topicTag.trim(),
           },
         },
-      );
+      ).timeout(const Duration(seconds: 90));
 
       final data = response.data;
       if (data is! Map) {
@@ -222,7 +255,7 @@ class NorieStudyService {
       }
       if (error is StateError) rethrow;
       throw StateError(
-        'Norie could not generate this study set right now.',
+        'Norie could not generate this AI quiz. Check your internet connection and try again.',
       );
     }
   }
@@ -233,7 +266,7 @@ class NorieStudyService {
   }) async {
     final client = _client;
     if (client == null || client.auth.currentUser == null) {
-      throw StateError('Sign in before using source Q&A.');
+      throw StateError('Connect to the internet and sign in to use Ask Norie.');
     }
 
     final quota = await getAiQuota();
@@ -253,7 +286,7 @@ class NorieStudyService {
             'question': question.trim(),
           },
         },
-      );
+      ).timeout(const Duration(seconds: 45));
       final data = response.data;
       if (data is Map && data['answer'] != null) {
         return data['answer'].toString();
@@ -267,7 +300,8 @@ class NorieStudyService {
       throw StateError('Norie could not answer from this source.');
     } catch (error) {
       if (error is StateError) rethrow;
-      throw StateError('Norie could not answer from this source right now.');
+      throw StateError(
+          'Ask Norie needs an internet connection. Check your connection and try again.');
     }
   }
 
@@ -275,82 +309,91 @@ class NorieStudyService {
     required NorieStudySet studySet,
     required List<NorieStudyAnswer> answers,
   }) async {
-    final client = _client;
-    final user = client?.auth.currentUser;
-    if (client == null || user == null) {
-      throw StateError('Sign in before saving a study attempt.');
+    final store = _offlineStore;
+    if (studySet.ownerId != null && studySet.ownerId != store.userId) {
+      throw StateError(
+          'Sign back in to the account that owns this saved quiz to save your results.');
     }
-
-    final total = answers.length;
-    final correct = answers.where((answer) => answer.correct).length;
-
-    final existing = await client
-        .from('study_attempts')
-        .select('id,xp_awarded')
-        .eq('user_id', user.id)
-        .eq('study_set_id', studySet.id)
-        .gt('xp_awarded', 0)
-        .limit(1);
-
-    final firstRewarded = existing.isEmpty;
-    final xpAwarded = firstRewarded
-        ? (20 + (correct * 5)).clamp(0, 100).toInt()
-        : 0;
-
-    final answerMap = <String, dynamic>{
-      for (final answer in answers)
-        answer.question.id: {
-          'response': answer.response,
-          'correct': answer.correct,
-        },
-    };
-
-    await client.from('study_attempts').insert({
-      'user_id': user.id,
-      'study_set_id': studySet.id,
-      'correct_count': correct,
-      'total_count': total,
-      'answers': answerMap,
-      'xp_awarded': xpAwarded,
-    });
+    final result = await store.recordAttempt(
+      studySet: studySet,
+      answers: answers,
+    );
 
     NorieProgression.instance.recordGeneratedStudyAttempt(
-      correct: correct,
-      total: total,
-      xpAwarded: xpAwarded,
+      correct: result.correct,
+      total: result.total,
+      xpAwarded: result.xpAwarded,
       topic: studySet.topicTag ?? studySet.title,
     );
 
-    return NorieStudyAttemptResult(
-      correct: correct,
-      total: total,
-      xpAwarded: xpAwarded,
-      firstRewardedCompletion: firstRewarded,
-    );
+    unawaited(syncPendingAttempts());
+    return result;
+  }
+
+  Future<void> syncPendingAttempts() async {
+    if (_syncInProgress) return;
+    final client = _client;
+    final user = client?.auth.currentUser;
+    if (client == null || user == null) return;
+    final store = NorieStudyOfflineStore(user.id);
+    _syncInProgress = true;
+    try {
+      for (final attempt in await store.pendingAttempts()) {
+        if (client.auth.currentUser?.id != user.id) return;
+        // Stable IDs make retries safe even if a response is lost after insert.
+        try {
+          await client
+              .from('study_attempts')
+              .upsert(
+                attempt,
+                onConflict: 'id',
+                ignoreDuplicates: true,
+              )
+              .timeout(const Duration(seconds: 8));
+        } on PostgrestException catch (error) {
+          // A quiz removed on another device cannot accept new attempts.
+          // Acknowledge this permanent failure so later results can upload.
+          if (error.code != '23503') rethrow;
+        }
+        await store.acknowledgeAttempt(attempt['id'] as String);
+      }
+    } catch (_) {
+      // Preserve the queue and local results for the next online visit.
+    } finally {
+      _syncInProgress = false;
+    }
   }
 
   Future<void> deleteStudySet(NorieStudySet studySet) async {
     final client = _client;
     final user = client?.auth.currentUser;
-    if (client == null || user == null) return;
+    if (client == null || user == null) {
+      throw StateError(
+          'Connect to the internet and sign in to delete this study set.');
+    }
 
     final setRow = await client
         .from('study_sets')
         .select('source_path')
         .eq('id', studySet.id)
         .eq('user_id', user.id)
-        .maybeSingle();
+        .maybeSingle()
+        .timeout(const Duration(seconds: 8));
 
     final path = setRow?['source_path']?.toString();
     await client
         .from('study_sets')
         .delete()
         .eq('id', studySet.id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .timeout(const Duration(seconds: 8));
+    await NorieStudyOfflineStore(user.id).removeSet(studySet.id);
 
     if (path != null && path.isNotEmpty) {
       try {
-        await client.storage.from(_bucket).remove([path]);
+        await client.storage
+            .from(_bucket)
+            .remove([path]).timeout(const Duration(seconds: 8));
       } catch (_) {
         // The database record is already deleted; storage cleanup is best effort.
       }
@@ -365,8 +408,7 @@ class NorieStudyService {
         'The Norie AI provider is not configured on the server yet.',
       'source_too_short' =>
         'Add more source material before generating questions.',
-      'source_too_long' =>
-        'The pasted source is too long for this generator.',
+      'source_too_long' => 'The pasted source is too long for this generator.',
       'no_supported_questions' =>
         'The source did not contain enough supported material for a study set.',
       'source_download_failed' =>

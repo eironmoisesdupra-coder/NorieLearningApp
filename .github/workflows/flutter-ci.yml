@@ -68,6 +68,9 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Test offline web cache
+        run: node --test test/norie_service_worker_test.mjs
+
       - name: Verify Android launcher branding
         run: |
           grep -q 'android:label="NorieLearning"' android/app/src/main/AndroidManifest.xml
@@ -103,5 +106,6 @@ jobs:
         run: |
           test -f build/web/norie-sw.js
           test -f build/web/assets/assets/anatomy/overview-skeleton.glb
+          test -f build/web/assets/assets/anatomy/anatomy-organs.glb
           test -f build/web/assets/packages/model_viewer_plus/assets/model-viewer.min.js
           test -d build/web/canvaskit

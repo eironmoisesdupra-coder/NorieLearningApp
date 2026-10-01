@@ -85,7 +85,10 @@ class _StudyHubScreenState extends State<StudyHubScreen> {
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    setState(_reload);
+                    setState(() {
+                      _setsFuture = NorieStudyService.instance
+                          .listStudySets(refresh: true);
+                    });
                     await _setsFuture;
                   },
                   child: ListView(
@@ -160,7 +163,7 @@ class _StudyLabHero extends StatelessWidget {
           ),
           SizedBox(height: 7),
           Text(
-            'Paste notes or upload supported documents and images. Norie keeps generated questions grounded in the source and saves your study history.',
+            'Generate quizzes from your notes online. Quizzes saved on this device can be studied offline, with your answers and progress saved locally.',
             style: TextStyle(
               color: NorieColors.textSecondary,
               height: 1.45,

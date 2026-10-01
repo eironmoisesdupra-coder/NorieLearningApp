@@ -69,6 +69,20 @@ class NorieStudyQuestion {
   final String? topicTag;
   final List<String> orderedItems;
 
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'position': position,
+        'kind': kind.wireValue,
+        'prompt': prompt,
+        'options': options,
+        'correct_values': correctValues,
+        'explanation': explanation,
+        'source_excerpt': sourceExcerpt,
+        'difficulty': difficulty,
+        'topic_tag': topicTag,
+        'ordered_items': orderedItems,
+      };
+
   factory NorieStudyQuestion.fromMap(Map<String, dynamic> map) {
     return NorieStudyQuestion(
       id: map['id'].toString(),
@@ -103,6 +117,7 @@ class NorieStudySet {
     required this.questions,
     this.topicTag,
     this.aiModel,
+    this.ownerId,
   });
 
   final String id;
@@ -114,10 +129,26 @@ class NorieStudySet {
   final String status;
   final String? topicTag;
   final String? aiModel;
+  final String? ownerId;
   final DateTime createdAt;
   final List<NorieStudyQuestion> questions;
 
   int get itemCount => questions.length;
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'title': title,
+        'source_type': sourceType,
+        'source_name': sourceName,
+        'generation_mode': mode.wireValue,
+        'requested_count': requestedCount,
+        'status': status,
+        'topic_tag': topicTag,
+        'ai_model': aiModel,
+        'user_id': ownerId,
+        'created_at': createdAt.toIso8601String(),
+        'questions': questions.map((question) => question.toMap()).toList(),
+      };
 
   factory NorieStudySet.fromMap(
     Map<String, dynamic> map, {
@@ -135,6 +166,7 @@ class NorieStudySet {
       status: map['status']?.toString() ?? 'draft',
       topicTag: map['topic_tag']?.toString(),
       aiModel: map['ai_model']?.toString(),
+      ownerId: map['user_id']?.toString(),
       createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       questions: questions,
@@ -170,7 +202,6 @@ class NorieStudyAnswer {
   final bool correct;
 }
 
-
 class NorieAiQuota {
   const NorieAiQuota({
     required this.plan,
@@ -196,7 +227,8 @@ class NorieAiQuota {
   bool get canAskNorie => qaRemaining > 0;
 
   factory NorieAiQuota.fromMap(Map<String, dynamic> map) {
-    int readInt(String key) => (map[key] as num?)?.toInt() ??
+    int readInt(String key) =>
+        (map[key] as num?)?.toInt() ??
         int.tryParse(map[key]?.toString() ?? '') ??
         0;
 

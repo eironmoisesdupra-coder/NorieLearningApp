@@ -86,6 +86,7 @@ jobs:
               build / "main.dart.js",
               build / "norie-sw.js",
               build / "assets/assets/anatomy/overview-skeleton.glb",
+              build / "assets/assets/anatomy/anatomy-organs.glb",
               build / "assets/packages/model_viewer_plus/assets/model-viewer.min.js",
           ]
           missing = [str(path) for path in required if not path.exists()]
@@ -95,9 +96,7 @@ jobs:
           extra = []
           patterns = [
               "canvaskit/**/*",
-              "assets/fonts/**/*",
-              "assets/packages/cupertino_icons/assets/**/*",
-              "assets/shaders/**/*",
+              "assets/**/*",
           ]
           for pattern in patterns:
               for path in build.glob(pattern):

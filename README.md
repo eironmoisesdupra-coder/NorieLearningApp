@@ -48,3 +48,23 @@ Build the first complete learning loop:
 **Home → Subject → Lesson → Quiz → Challenge → Results → XP**
 
 Status: foundation phase.
+
+## Offline learning
+
+Home, built-in Mathematics/Science/English lessons, practice, challenges,
+progress, and mascot tutorials open without signing in. Local learning starts
+before optional account and cloud services connect. Downloaded curriculum is
+read locally while updates happen in the background.
+
+AI quiz generation, source uploads, and Ask Norie require internet and an account.
+Generated quizzes loaded on this device are saved with their questions and
+explanations for offline replay. Quiz results are saved locally immediately;
+account-owned attempts are queued for upload with stable IDs when cloud access
+returns. Each learner's study cache is separate, and completion XP is awarded
+once per saved set on this device.
+
+On Android, learning assets are bundled at installation. The web app needs an
+initial online visit long enough to finish downloading its offline cache,
+including anatomy models and learning assets. Keep the browser's site storage
+to retain offline access and progress. Sign-in and cloud synchronization still
+require a connection.
