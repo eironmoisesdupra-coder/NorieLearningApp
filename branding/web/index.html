@@ -13,27 +13,78 @@
   <link rel="manifest" href="manifest.json">
   <script type="module" src="./assets/packages/model_viewer_plus/assets/model-viewer.min.js" defer></script>
   <title>NorieLearning</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #071126;
+      color: #eef4ff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    #norie-bootstrap {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: #071126;
+      z-index: 999999;
+    }
+    #norie-bootstrap-card {
+      width: min(86vw, 340px);
+      text-align: center;
+      line-height: 1.45;
+      color: #b9c7df;
+    }
+    #norie-bootstrap-title {
+      color: #eef4ff;
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    #norie-bootstrap-note {
+      font-size: 12px;
+    }
+  </style>
 </head>
 <body>
+  <div id="norie-bootstrap" aria-live="polite">
+    <div id="norie-bootstrap-card">
+      <div id="norie-bootstrap-title">Opening NorieLearning…</div>
+      <div id="norie-bootstrap-note">
+        Preparing offline access while the app loads.
+      </div>
+    </div>
+  </div>
+
   <script>
     (() => {
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', async () => {
-          try {
-            const registration = await navigator.serviceWorker.register(
-              'norie-sw.js?v=__NORIE_BUILD_SHA__',
-              { scope: './' },
-            );
-            await registration.update();
-          } catch (error) {
-            console.warn('Norie offline cache registration warning:', error);
-          }
+      const startOfflineCache = () => {
+        if (!('serviceWorker' in navigator)) return;
+
+        navigator.serviceWorker.register(
+          'norie-sw.js?v=__NORIE_BUILD_SHA__',
+          { scope: './' },
+        ).then((registration) => {
+          registration.update().catch(() => {});
+        }).catch((error) => {
+          console.warn('Norie offline cache registration warning:', error);
         });
-      }
+      };
+
+      // Start offline setup as soon as the HTML shell arrives. Do not wait for
+      // Flutter to finish loading first.
+      startOfflineCache();
 
       const script = document.createElement('script');
       script.src = 'flutter_bootstrap.js?v=__NORIE_BUILD_SHA__';
       script.async = true;
+      script.onload = () => {
+        const splash = document.getElementById('norie-bootstrap');
+        if (splash) {
+          setTimeout(() => splash.remove(), 1200);
+        }
+      };
       document.body.appendChild(script);
     })();
   </script>
