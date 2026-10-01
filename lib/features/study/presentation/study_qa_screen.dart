@@ -107,7 +107,7 @@ class _StudyQaScreenState extends State<StudyQaScreen> {
                               ),
                               SizedBox(height: 12),
                               Text(
-                                'Ask about a confusing point, an answer, or a concept in your source.',
+                                'Ask about your source while connected to the internet. Your saved quiz remains available offline.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: NorieColors.textSecondary,

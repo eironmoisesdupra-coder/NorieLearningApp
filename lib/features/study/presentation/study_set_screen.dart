@@ -29,7 +29,7 @@ class _StudySetScreenState extends State<StudySetScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete study set?'),
         content: const Text(
-          'This will remove the generated questions and its uploaded source from Norie.',
+          'This will remove the generated questions and its uploaded source from Norie. An internet connection is required.',
         ),
         actions: [
           TextButton(
@@ -47,9 +47,18 @@ class _StudySetScreenState extends State<StudySetScreen> {
     if (confirmed != true || !mounted) return;
 
     setState(() => _deleting = true);
-    await NorieStudyService.instance.deleteStudySet(widget.studySet);
-    if (!mounted) return;
-    Navigator.of(context).pop();
+    try {
+      await NorieStudyService.instance.deleteStudySet(widget.studySet);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text(
+            'Could not delete this study set. Connect to the internet and try again.'),
+      ));
+    }
   }
 
   @override

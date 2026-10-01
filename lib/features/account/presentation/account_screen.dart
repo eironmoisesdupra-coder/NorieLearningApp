@@ -74,8 +74,8 @@ class _AccountScreenState extends State<AccountScreen> {
       if (!mounted) return;
       _show(
         _createAccount
-            ? 'Account connected. Norie is verifying private-demo access.'
-            : 'Signed in. Norie is restoring your private-demo progress.',
+            ? 'Account connected. Learning remains available offline.'
+            : 'Signed in. Learning remains available offline.',
       );
       return;
     }

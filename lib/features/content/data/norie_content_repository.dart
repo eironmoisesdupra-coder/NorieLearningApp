@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,11 +17,94 @@ class NorieContentRepositoryService {
   NorieContentRepositoryService._();
 
   static final NorieContentRepository instance =
-      CloudFirstNorieContentRepository();
+      LocalFirstNorieContentRepository();
 }
 
-class CloudFirstNorieContentRepository
-    implements NorieContentRepository {
+/// Serve playable local content immediately, then refresh it in the background.
+class LocalFirstNorieContentRepository implements NorieContentRepository {
+  LocalFirstNorieContentRepository({NorieContentRepository? remote})
+      : _remote = remote ?? CloudFirstNorieContentRepository();
+
+  final NorieContentRepository _remote;
+  final Set<String> _refreshing = {};
+  static const _subjectsKey = 'norie.content.subjects';
+
+  Future<void> _refresh(String key, Future<void> Function() update) async {
+    if (!_refreshing.add(key)) return;
+    try {
+      await update().timeout(const Duration(seconds: 8));
+    } catch (_) {
+      // Local content remains available when the cloud cannot be reached.
+    } finally {
+      _refreshing.remove(key);
+    }
+  }
+
+  @override
+  Future<List<NorieSubjectContent>> getSubjects() async {
+    final preferences = await SharedPreferences.getInstance();
+    unawaited(_refresh('subjects', () async {
+      final subjects = await _remote.getSubjects();
+      if (subjects.isNotEmpty) {
+        await preferences.setString(_subjectsKey,
+            jsonEncode(subjects.map((subject) => subject.toJson()).toList()));
+      }
+    }));
+    try {
+      final cached =
+          jsonDecode(preferences.getString(_subjectsKey) ?? '[]') as List;
+      if (cached.isNotEmpty) {
+        return cached
+            .map((row) => NorieSubjectContent.fromJson(
+                  Map<String, dynamic>.from(row as Map),
+                ))
+            .toList();
+      }
+    } catch (_) {
+      // Use the bundled catalogue when a downloaded cache is invalid.
+    }
+    return NorieContentCatalog.subjects;
+  }
+
+  @override
+  Future<List<NorieTopicContent>> getTopicsForCategory(
+      String categoryId) async {
+    final preferences = await SharedPreferences.getInstance();
+    final key = 'norie.content.category.$categoryId';
+    unawaited(_refresh(key, () async {
+      final topics = await _remote.getTopicsForCategory(categoryId);
+      if (topics.isNotEmpty) {
+        await preferences.setString(
+            key, jsonEncode(topics.map((topic) => topic.toJson()).toList()));
+      }
+    }));
+    final cached = CloudFirstNorieContentRepository._readTopicList(
+      preferences.getString(key),
+    );
+    if (cached.isNotEmpty) return cached;
+    return NorieContentCatalog.topicsForCategory(categoryId)
+        .where((topic) => topic.available)
+        .toList();
+  }
+
+  @override
+  Future<NorieTopicContent?> getTopic(String id) async {
+    final preferences = await SharedPreferences.getInstance();
+    final key = 'norie.content.topic.$id';
+    unawaited(_refresh(key, () async {
+      final topic = await _remote.getTopic(id);
+      if (topic != null) {
+        await preferences.setString(key, jsonEncode(topic.toJson()));
+      }
+    }));
+    final cached = CloudFirstNorieContentRepository._parseTopic(
+      CloudFirstNorieContentRepository._decodeJson(preferences.getString(key)),
+    );
+    return cached ?? NorieContentCatalog.topicById(id);
+  }
+}
+
+class CloudFirstNorieContentRepository implements NorieContentRepository {
   CloudFirstNorieContentRepository();
 
   static const _topicCachePrefix = 'norie.content.topic.';
@@ -77,9 +161,7 @@ class CloudFirstNorieContentRepository
         );
       }
 
-      return subjects.isEmpty
-          ? NorieContentCatalog.subjects
-          : subjects;
+      return subjects.isEmpty ? NorieContentCatalog.subjects : subjects;
     } catch (_) {
       return NorieContentCatalog.subjects;
     }
@@ -104,8 +186,7 @@ class CloudFirstNorieContentRepository
 
         final topics = <NorieTopicContent>[
           for (final raw in rows)
-            if (_parseTopic(raw['payload']) case final topic?)
-              topic,
+            if (_parseTopic(raw['payload']) case final topic?) topic,
         ]..sort((a, b) => a.order.compareTo(b.order));
 
         if (topics.isNotEmpty) {
@@ -225,8 +306,7 @@ class CloudFirstNorieContentRepository
   }
 }
 
-class BundledNorieContentRepository
-    implements NorieContentRepository {
+class BundledNorieContentRepository implements NorieContentRepository {
   const BundledNorieContentRepository();
 
   @override

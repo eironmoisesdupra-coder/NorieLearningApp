@@ -8,6 +8,7 @@ const REQUIRED_ASSETS = [
   './manifest.json',
   './norie-logo.svg',
   './assets/assets/anatomy/overview-skeleton.glb',
+  './assets/assets/anatomy/anatomy-organs.glb',
   './assets/packages/model_viewer_plus/assets/model-viewer.min.js',
 ];
 
@@ -73,18 +74,17 @@ function normalizedRequest(request) {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return request;
   url.search = '';
-  return new Request(url.toString(), {
-    method: 'GET',
-    headers: request.headers,
-    mode: request.mode,
-    credentials: request.credentials,
-    redirect: request.redirect,
-  });
+  // Cache keys only need the URL. Reconstructing a browser navigation request
+  // with mode 'navigate' throws and prevents offline page reloads.
+  return url.toString();
 }
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
+  // Cloud accounts and AI responses are private and must never be stored in
+  // the public app-shell cache. Their local storage is owned by the app.
+  if (new URL(request.url).origin !== self.location.origin) return;
 
   event.respondWith(
     (async () => {
