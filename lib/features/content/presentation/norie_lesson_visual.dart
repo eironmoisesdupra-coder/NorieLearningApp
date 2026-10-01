@@ -82,6 +82,10 @@ class _LessonVisualPainter extends CustomPainter {
       _paintSubtraction(canvas, size);
       return;
     }
+    if (type == 'g1-shapes-basic') {
+      _paintBasicShapes(canvas, size);
+      return;
+    }
     if (type.startsWith('g1-shapes')) {
       _paintShapesAndPatterns(canvas, size);
       return;
@@ -329,6 +333,70 @@ class _LessonVisualPainter extends CustomPainter {
       'Start with 7. Take away 2. Count the 5 left.',
       Offset(size.width * .20, size.height * .77),
       size: 11,
+    );
+  }
+
+  void _paintBasicShapes(Canvas canvas, Size size) {
+    final y = size.height * .40;
+    final fill = Paint()..color = accent.withValues(alpha: .78);
+    final outline = Paint()
+      ..color = Colors.white.withValues(alpha: .88)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final circle = Offset(size.width * .16, y);
+    canvas.drawCircle(circle, 19, fill);
+    canvas.drawCircle(circle, 19, outline);
+    _text(canvas, 'circle', circle.translate(-18, 29), size: 9);
+
+    final triangleCenter = Offset(size.width * .37, y);
+    final triangle = Path()
+      ..moveTo(triangleCenter.dx, triangleCenter.dy - 22)
+      ..lineTo(triangleCenter.dx - 23, triangleCenter.dy + 19)
+      ..lineTo(triangleCenter.dx + 23, triangleCenter.dy + 19)
+      ..close();
+    canvas.drawPath(triangle, fill);
+    canvas.drawPath(triangle, outline);
+    _text(
+      canvas,
+      'triangle',
+      triangleCenter.translate(-22, 29),
+      size: 9,
+    );
+
+    final square = Rect.fromCenter(
+      center: Offset(size.width * .59, y),
+      width: 40,
+      height: 40,
+    );
+    canvas.drawRect(square, fill);
+    canvas.drawRect(square, outline);
+    _text(
+      canvas,
+      'square',
+      Offset(square.left + 1, square.bottom + 10),
+      size: 9,
+    );
+
+    final rectangle = Rect.fromCenter(
+      center: Offset(size.width * .81, y),
+      width: 54,
+      height: 34,
+    );
+    canvas.drawRect(rectangle, fill);
+    canvas.drawRect(rectangle, outline);
+    _text(
+      canvas,
+      'rectangle',
+      Offset(rectangle.left, rectangle.bottom + 13),
+      size: 9,
+    );
+
+    _text(
+      canvas,
+      'Count sides and corners—not color or direction.',
+      Offset(size.width * .19, size.height * .76),
+      size: 10,
     );
   }
 
