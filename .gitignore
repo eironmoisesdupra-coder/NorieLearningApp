@@ -107,6 +107,9 @@ unlinked_spec.ds
 # Coverage
 coverage/
 
+# Desktop build dependencies (release packages stay under build/).
+desktop/node_modules/
+
 # Symbols
 app.*.symbols
 
