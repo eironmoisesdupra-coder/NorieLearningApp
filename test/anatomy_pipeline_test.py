@@ -34,6 +34,13 @@ class CatalogValidationTest(unittest.TestCase):
     def test_rectus_femoris_is_a_thigh_muscle_not_an_eye_structure(self):
         self.assertEqual(body.named_system('FJ1433', 'Right rectus femoris'), 'muscular')
 
+    def test_endocrine_organ_overlap_excludes_exocrine_ducts(self):
+        self.assertEqual(body.organ_systems('endocrine', 'Pancreatic duct tree'), ['digestive'])
+        self.assertEqual(body.organ_systems('endocrine', 'Pancreas'), ['endocrine', 'digestive'])
+        self.assertEqual(body.organ_systems('nervous', 'Pineal body'), ['nervous', 'endocrine'])
+        self.assertEqual(body.organ_systems('reproductive', 'Left testis'), ['reproductive', 'endocrine'])
+        self.assertEqual(body.organ_systems('arterial', 'Left testicular artery'), ['arterial'])
+
     def test_obj_coordinates_and_independent_normals_preserve_orientation(self):
         text = 'v 1000 0 0\nv 0 1000 0\nv 0 0 1000\nvn 0 0 1\nf 1//1 2//1 3//1\n'
         positions, normals, indices, bounds = body.parse_obj(text)

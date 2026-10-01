@@ -30,6 +30,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
         'female' => {'reproductive'},
         'lymphatic' => {'lymphatic'},
         'ear' => {'sensory'},
+        'joints' => {'articular', 'skeletal'},
+        'glands' => {'endocrine'},
         _ => {'skeletal'},
       };
       _opacity = 1;
@@ -98,6 +100,35 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
     if (mounted && result != null) _select(result);
   }
 
+  Future<void> _chooseReference(AnatomyAtlasCatalog catalog) async {
+    final result = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (context) => SafeArea(
+            child: SizedBox(
+                height: MediaQuery.sizeOf(context).height * .72,
+                child: Column(children: [
+                  const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text('Choose an anatomy reference',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold))),
+                  Expanded(
+                      child: ListView(children: [
+                    for (final reference in catalog.references)
+                      ListTile(
+                          title: Text(reference.label),
+                          subtitle: Text(reference.description),
+                          trailing: reference.id == _reference
+                              ? const Icon(Icons.check_circle_outline)
+                              : const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.pop(context, reference.id)),
+                  ])),
+                ]))));
+    if (mounted && result != null) _changeReference(result);
+  }
+
   String _systemLabel(String id) =>
       AnatomyCatalog.systems.firstWhere((s) => s.id.name == id).label;
 
@@ -117,7 +148,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                           'Human Reference Atlas · Visible Human Female, united reference v1.10. CC BY 4.0. Source anatomy and individual organ credits are included in the package.'),
                       const SizedBox(height: 12),
                       const Text(
-                          'Lymphatic detail: BodyParts3D - The Database Center for Life Science - CC-BY-SA 2.1 Japan; Z-Anatomy - The open source atlas of anatomy - CC-BY-SA 4.0. Export: nqwrc/3d-anatomy. Adapted model remains CC BY-SA 4.0.'),
+                          'Joint, gland and lymphatic detail: BodyParts3D - The Database Center for Life Science - CC-BY-SA 2.1 Japan; Z-Anatomy - The open source atlas of anatomy - CC-BY-SA 4.0. Export: nqwrc/3d-anatomy. Adapted models remain CC BY-SA 4.0.'),
                       const SizedBox(height: 12),
                       const Text(
                           'Inner and middle ear: Sonke Bartling, Marianna Jakab and Ron Kikinis, DKFZ / Surgical Planning Laboratory. Adapted from the SPL Inner Ear Atlas, February 2018, under the 3D Slicer license. Full terms are included in the app assets.'),
@@ -199,25 +230,29 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   final count = catalog.search(_reference, _systems, '').length;
+                  final detailLinks = [
+                    ('articular', 'joints', 'Joint capsules & ligaments'),
+                    ('endocrine', 'glands', 'Thyroid & other glands'),
+                    ('lymphatic', 'lymphatic', 'Lymph nodes & organs'),
+                    ('sensory', 'ear', 'Inner & middle ear'),
+                  ]
+                      .where((link) =>
+                          _systems.contains(link.$1) && _reference != link.$2)
+                      .toList();
                   return Column(children: [
                     Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Row(children: [
                           Expanded(
-                              child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: _reference,
-                                  items: catalog.references
-                                      .map((r) => DropdownMenuItem(
-                                          value: r.id,
-                                          child: Text(r.label,
-                                              overflow: TextOverflow.ellipsis)))
-                                      .toList(),
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      _changeReference(value);
-                                    }
-                                  })),
+                              child: TextButton.icon(
+                                  onPressed: () => _chooseReference(catalog),
+                                  icon: const Icon(Icons.unfold_more),
+                                  label: Text(
+                                      catalog.references
+                                          .firstWhere((r) => r.id == _reference)
+                                          .label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis))),
                           IconButton(
                               tooltip: 'Sources and coverage',
                               onPressed: () => _credits(catalog),
@@ -231,17 +266,30 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                               style: TextStyle(
                                   fontSize: 12,
                                   color: NorieColors.textSecondary))),
-                    if (_systems.contains('lymphatic') &&
-                        _reference != 'lymphatic')
-                      TextButton(
-                          onPressed: () => _changeReference('lymphatic'),
-                          child: const Text(
-                              'Explore lymph nodes and organs in detail')),
-                    if (_systems.contains('sensory') && _reference != 'ear')
-                      TextButton(
-                          onPressed: () => _changeReference('ear'),
-                          child: const Text(
-                              'Explore the inner and middle ear in detail')),
+                    if (detailLinks.isNotEmpty)
+                      SizedBox(
+                          height: 48,
+                          child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              children: [
+                                for (final link in detailLinks)
+                                  TextButton(
+                                      onPressed: () =>
+                                          _changeReference(link.$2),
+                                      child: Text(link.$3)),
+                              ])),
+                    if (_reference == 'joints' || _reference == 'glands')
+                      Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                              _reference == 'joints'
+                                  ? 'Toggle Skeletal for bone context. Search to focus on a small ligament.'
+                                  : 'Search to focus on small glands. Gonads are in the male and female references.',
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: NorieColors.textSecondary))),
                     SizedBox(
                         height: 49,
                         child: ListView(
@@ -345,29 +393,31 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                         .join(' · '),
                                     style: const TextStyle(
                                         color: NorieColors.textSecondary)),
-                                Wrap(spacing: 8, children: [
-                                  TextButton(
-                                      onPressed: () => _controller
-                                          .send('focus', {'id': selected.id}),
-                                      child: const Text('Focus')),
-                                  TextButton(
-                                      onPressed: () => _controller
-                                          .send('isolate', {'id': selected.id}),
-                                      child: const Text('Isolate')),
-                                  TextButton(
-                                      onPressed: () {
-                                        _controller
-                                            .send('hide', {'id': selected.id});
-                                        setState(() => _selected = null);
-                                      },
-                                      child: const Text('Hide')),
-                                  TextButton(
-                                      onPressed: () {
-                                        _controller.send('restore');
-                                        setState(() => _opacity = 1);
-                                      },
-                                      child: const Text('Restore')),
-                                ]),
+                                SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(children: [
+                                      TextButton(
+                                          onPressed: () => _controller.send(
+                                              'focus', {'id': selected.id}),
+                                          child: const Text('Focus')),
+                                      TextButton(
+                                          onPressed: () => _controller.send(
+                                              'isolate', {'id': selected.id}),
+                                          child: const Text('Isolate')),
+                                      TextButton(
+                                          onPressed: () {
+                                            _controller.send(
+                                                'hide', {'id': selected.id});
+                                            setState(() => _selected = null);
+                                          },
+                                          child: const Text('Hide')),
+                                      TextButton(
+                                          onPressed: () {
+                                            _controller.send('restore');
+                                            setState(() => _opacity = 1);
+                                          },
+                                          child: const Text('Restore')),
+                                    ])),
                               ])),
                     Row(children: [
                       const SizedBox(width: 16),
