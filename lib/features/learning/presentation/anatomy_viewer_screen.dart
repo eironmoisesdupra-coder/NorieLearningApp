@@ -331,6 +331,13 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                           bottom: 10,
                           child: _StructureInfoCard(
                             structure: _selectedStructure!,
+                            sourceNode: _useRealSkeleton
+                                ? AnatomyHotspotCatalog
+                                    .hotspotForStructureId(
+                                      _selectedStructure!.id,
+                                    )
+                                    ?.sourceNode
+                                : null,
                             onClose: () => setState(
                               () => _selectedStructure = null,
                             ),
@@ -942,9 +949,11 @@ class _StructureInfoCard extends StatelessWidget {
   const _StructureInfoCard({
     required this.structure,
     required this.onClose,
+    this.sourceNode,
   });
 
   final AnatomyStructure structure;
+  final String? sourceNode;
   final VoidCallback onClose;
 
   @override
@@ -981,6 +990,17 @@ class _StructureInfoCard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
+                if (sourceNode != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    AnatomyHotspotCatalog.displaySourceNode(sourceNode!),
+                    style: const TextStyle(
+                      color: NorieColors.cyan,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 2),
                 Text(
                   system.label.toUpperCase(),
