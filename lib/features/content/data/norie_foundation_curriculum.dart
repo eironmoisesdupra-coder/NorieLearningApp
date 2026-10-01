@@ -1,4 +1,5 @@
 import '../domain/norie_content_models.dart';
+import 'norie_grade1_math_curriculum.dart';
 
 class NorieGradeLevel {
   const NorieGradeLevel(this.id, this.label, this.shortLabel);
@@ -82,6 +83,10 @@ abstract final class NorieFoundationCurriculum {
   }
 
   static List<NorieTopicContent> topicsFor(String subject, String gradeId) {
+    if (subject.toLowerCase() == 'mathematics' && gradeId == 'g1') {
+      return NorieGrade1MathCurriculum.topics;
+    }
+
     final level = gradeLevels.firstWhere((item) => item.id == gradeId);
     final titles = lessonTitles(subject, gradeId);
     return [
