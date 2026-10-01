@@ -99,10 +99,13 @@ async function main() {
       await page.waitForTimeout(500);
       const detailSize = await canvas.boundingBox();
       assert.ok(detailSize.height > 150, `${label} retains usable phone model space`);
-      await atlasFrame.evaluate(() => { window.atlasEvents = []; });
+      // Reference-specific controls can remount the platform view. Resolve its
+      // current frame after switching rather than retaining the previous one.
+      const detailFrame = page.frames().find(frame => frame.url().includes('atlas-viewer.html'));
+      await detailFrame.evaluate(() => { window.atlasEvents = []; });
       await canvas.click({ position: { x: detailSize.width / 2, y: detailSize.height / 2 } });
       const target = catalog.structures.find(s => s.name === name);
-      await atlasFrame.waitForFunction(id => window.atlasEvents.some(e => e.type === 'selected' && e.payload.id === id), target.id);
+      await detailFrame.waitForFunction(id => window.atlasEvents.some(e => e.type === 'selected' && e.payload.id === id), target.id);
       await page.screenshot({ path: path.resolve(__dirname, `../../build/windows-offline-${target.reference}-phone.png`) });
       console.log(`PASS: ${label} searched, focused and picked offline at phone size`);
     }
