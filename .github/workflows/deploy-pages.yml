@@ -114,9 +114,10 @@ jobs:
           sw = build / "norie-sw.js"
           sw_text = sw.read_text()
           sw_text = sw_text.replace("__NORIE_BUILD_SHA__", sha)
+          injected_assets = ",\n  ".join(json.dumps(path) for path in extra)
           sw_text = sw_text.replace(
-              "__NORIE_EXTRA_ASSETS__",
-              json.dumps(extra, separators=(",", ":")),
+              "/*__NORIE_EXTRA_ASSETS__*/",
+              injected_assets,
           )
           sw.write_text(sw_text)
 
