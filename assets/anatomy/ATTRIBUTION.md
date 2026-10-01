@@ -23,6 +23,8 @@ NorieLearning does not claim ownership of this anatomy mesh. Any redistributed a
 
 The skeletal GLB used for hotspot calibration is pinned to `yamz8/human-body-simulator` commit `e4d76fbb424d15e1364963528a082a78fa359161`. Pinning prevents hotspot anchor coordinates from silently drifting if the upstream model changes.
 
+The source asset contains right-side-only nodes for most paired bones. NorieLearning's build pipeline creates corresponding left-side instances by mirroring only mesh nodes whose source names end in `.r` or `.r.`, matching the upstream project's bilateral rendering approach. These generated left-side instances are derivative material and remain under the same CC BY-SA 4.0 terms.
+
 ## Internal organ atlas model
 
 **Asset:** `anatomy-organs.glb`
