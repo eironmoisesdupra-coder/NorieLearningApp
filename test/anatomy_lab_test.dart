@@ -176,6 +176,18 @@ void main() {
       '253c47077e4ae11421c8ff3eae68c9414335ee2f0ad911eddf8ea0ea7dc0a6ce',
     );
     expect(
+      AnatomyHotspotCatalog.calibration.centerX,
+      closeTo(-.130685, 1e-6),
+    );
+    expect(
+      AnatomyHotspotCatalog.calibration.centerY,
+      closeTo(.857076, 1e-6),
+    );
+    expect(
+      AnatomyHotspotCatalog.calibration.centerZ,
+      closeTo(.009998, 1e-6),
+    );
+    expect(
       AnatomyHotspotCatalog.calibration.dimensionsX,
       closeTo(.409679, 1e-6),
     );
@@ -203,6 +215,10 @@ void main() {
     expect(
       script,
       contains('SKELETON_SOURCE='),
+    );
+    expect(
+      script,
+      contains('scripts/build_full_skeleton.py'),
     );
   });
 
