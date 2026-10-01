@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "file": "bp3d-complete.zip",
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/isa_BP3D_4.0_obj_99.zip",
+      "bytes": 142903898,
+      "sha256": "40665852c49f218326590e204db91064a1ecfc3c6f8cbd7bbbcaac62c7cd409e"
+    },
+    {
+      "file": "hra-female.glb",
+      "url": "https://cdn.humanatlas.io/digital-objects/ref-organ/united-female/v1.10/assets/3d-vh-f-united.glb",
+      "bytes": 374505632,
+      "sha256": "95f0c3d2f918582608692ca1139e8bdb18c147a16470e9ee9af8b276bd77c422"
+    },
+    {
+      "file": "isa_parts_list_e.txt",
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/isa_parts_list_e.txt",
+      "bytes": 128086,
+      "sha256": "ab7796deedd49205e77f3609a1cb8c53e2bbee14ecb5c9a6ca05227469780513"
+    },
+    {
+      "file": "isa_element_parts.txt",
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/isa_element_parts.txt",
+      "bytes": 1142159,
+      "sha256": "a3de74423f943b0d724ae8f59b3a817f87c423a544f8db98113b1980817cbeaf"
+    },
+    {
+      "file": "isa_inclusion_relation_list.txt",
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/isa_inclusion_relation_list.txt",
+      "bytes": 207664,
+      "sha256": "26e7d818e03a8c909fe09c561f38d0d513423c87681f9450a803bc38f5b07564"
+    },
+    {
+      "file": "partof_parts_list_e.txt",
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_parts_list_e.txt",
+      "bytes": 59351,
+      "sha256": "9224080557053e6f1322f1e13ab27f0ecde0db19bb3b505f0631afad230eeebd"
+    },
+    {
+      "file": "partof_element_parts.txt",
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_element_parts.txt",
+      "bytes": 651179,
+      "sha256": "3f5f6df1028eb122b30de77c711597b6bb8e5541658e5985859fd228adbf88ea"
+    },
+    {
+      "file": "partof_inclusion_relation_list.txt",
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_inclusion_relation_list.txt",
+      "bytes": 91241,
+      "sha256": "1b40738270931e3c1d955ce34e0fce0d8d10d8c5ad543463e40b4b4c0243007c"
+    },
+    {
+      "file": "z-lymphatic.glb",
+      "url": "https://raw.githubusercontent.com/nqwrc/3d-anatomy/8ca3b7421bcfbe88b85859eb1983d5cf79f21749/public/models/lymphatic.glb",
+      "bytes": 419488,
+      "sha256": "718cac2b26ad752224cc8a11b2d5bf733fb523b75d9614822a24af7d19202756"
+    },
+    {
+      "file": "ear-atlas.json",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/atlasStructure.json",
+      "bytes": 16254,
+      "sha256": "2f8b7efbc0adc23cc5436629bb17c4a7a42b80d29c11c2e02203039ce8bbf2e6"
+    },
+    {
+      "file": "ear-Model_9_Cochlear_Nerve.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_9_Cochlear_Nerve.vtk",
+      "bytes": 82295,
+      "sha256": "5b1b3cb3bb037ae544c1b27bea6e2ad821b3ece75551a8e7bda307ace706b543"
+    },
+    {
+      "file": "ear-Model_21_Internal_Jugular_Vein.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_21_Internal_Jugular_Vein.vtk",
+      "bytes": 1277091,
+      "sha256": "e2711fff874382653ddf71cc6af89d91d2fbacc2ad043723d95f8618366450cc"
+    },
+    {
+      "file": "ear-Model_17_Stapes_Bone.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_17_Stapes_Bone.vtk",
+      "bytes": 152781,
+      "sha256": "6b22ca62d3d6e2a1bab66b95020ee9129e4bbb9966c34fa09fab49fdcd542d95"
+    },
+    {
+      "file": "ear-Model_4_Tympanic_Membrane.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_4_Tympanic_Membrane.vtk",
+      "bytes": 136783,
+      "sha256": "6f2ca904e256cadc9e2172e0d7b6c13f1da7957c9604b483633f78e6b8b3080e"
+    },
+    {
+      "file": "ear-Model_10_Labyrinth.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_10_Labyrinth.vtk",
+      "bytes": 627586,
+      "sha256": "d0a5940d35d084263618cbf8f3ede048e2e93616e2f684b1ca54f6e132c6db5c"
+    },
+    {
+      "file": "ear-Model_14_Incus_Bone.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_14_Incus_Bone.vtk",
+      "bytes": 100943,
+      "sha256": "538b9692d27bf66457efc4efdcf75aec1781a2d92f82343f4dc43e12611832a9"
+    },
+    {
+      "file": "ear-Model_24_Internal_Carotid_Artery.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_24_Internal_Carotid_Artery.vtk",
+      "bytes": 435792,
+      "sha256": "836cc468b2c68ce57ee53d500353a26a8f0cf395846159561a61caa6ae94cdaa"
+    },
+    {
+      "file": "ear-Model_23_Osseous_Spiral_Lamina.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_23_Osseous_Spiral_Lamina.vtk",
+      "bytes": 158911,
+      "sha256": "63142c483b1f8ecfcd6b0e51c8cd3af4aff57044f5ef0bb7147d0adae241e635"
+    },
+    {
+      "file": "ear-Model_140_Malleus_Bone.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_140_Malleus_Bone.vtk",
+      "bytes": 119479,
+      "sha256": "09b0f86f72c5dd0da5719f26f2652758b13614bf6f361315b14f3827729f373f"
+    },
+    {
+      "file": "ear-Model_19_Tensor_Tympani_Muscle.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_19_Tensor_Tympani_Muscle.vtk",
+      "bytes": 99879,
+      "sha256": "6e8cb7745c168d44cf1836263264981dbb2d073f3deb46d976799cd731c427de"
+    },
+    {
+      "file": "ear-Model_25_Vestibular_Nerve.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_25_Vestibular_Nerve.vtk",
+      "bytes": 142647,
+      "sha256": "b10d1ea248c23498c6440479cf35326ec0da6d1df7238aae1810b4a0c557fafa"
+    },
+    {
+      "file": "ear-Model_5_Facial_Nerve.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_5_Facial_Nerve.vtk",
+      "bytes": 195831,
+      "sha256": "8ae918d1be3eccf6732a533941312ac93b65132687a4020ace55fc991bc405cd"
+    },
+    {
+      "file": "ear-Model_28_Stapedius_Muscle.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_28_Stapedius_Muscle.vtk",
+      "bytes": 48092,
+      "sha256": "663dd93ebe26b25cc9d3b815411a5431fed6814af96374553b0fd4bcb557e68c"
+    },
+    {
+      "file": "ear-Model_12_Fenestra_Rotunda.vtk",
+      "url": "https://www.openanatomy.org/atlases/nac/inner-ear-2018-02/models/Model_12_Fenestra_Rotunda.vtk",
+      "bytes": 41252,
+      "sha256": "c63124ee52ccdec37651fa66b0e4118f55a783606ac4351499e1d76c015ad456"
+    }
+  ]
+}

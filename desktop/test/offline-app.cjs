@@ -39,14 +39,48 @@ async function main() {
     await page.waitForTimeout(500);
     await lab.click({ position: { x: 40, y: 20 } });
     await page.getByRole('button', { name: /Open 3D Viewer/ }).click();
-    const viewer = page.locator('model-viewer');
-    await viewer.waitFor({ state: 'attached', timeout: 60000 });
-    for (let check = 0; check < 120 && !await viewer.evaluate(model => model.loaded); check++) {
-      await page.waitForTimeout(500);
-    }
-    assert.equal(await viewer.evaluate(model => model.loaded), true);
+    const viewer = page.frameLocator('iframe[title="NorieLearning interactive anatomy atlas"]');
+    await viewer.locator('canvas').waitFor({ state: 'visible', timeout: 60000 });
+    await viewer.locator('#status').waitFor({ state: 'hidden', timeout: 60000 });
+    await page.getByRole('button', { name: /Search \d+ parts/ }).click();
+    await page.getByRole('textbox').fill('Right femur');
+    await page.getByText(/^Right femur\s+Skeletal$/).click({ force: true });
+    await page.getByRole('button', { name: 'Isolate', exact: true }).click();
+    const canvas = viewer.locator('canvas');
+    await page.waitForTimeout(500);
+    const size = await canvas.boundingBox();
+    await canvas.click({ position: { x: size.width / 2, y: size.height / 2 } });
+    const atlasFrame = page.frames().find(frame => frame.url().includes('atlas-viewer.html'));
+    await atlasFrame.waitForFunction(() => window.atlasEvents.some(e => e.type === 'selected'));
     await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-anatomy.png') });
-    console.log('PASS: 3D skeleton viewer loaded offline');
+    console.log('PASS: detailed atlas loaded, searched, isolated and picked a real mesh offline');
+    // Exercise the same responsive UI at a small phone's CSS viewport width.
+    const originalSize = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(300);
+    assert.ok((await canvas.boundingBox()).height > 150, 'The model retains usable phone space');
+    await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-anatomy-phone.png') });
+    const catalog = JSON.parse(await fs.readFile(path.resolve(__dirname, '../../assets/anatomy/atlas-catalog.json')));
+    const beforeXp = await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp')));
+    await page.getByRole('button', { name: 'Quiz', exact: true }).click();
+    await page.getByText('Identify · 1/10', { exact: true }).waitFor();
+    const quizFrame = page.frames().filter(frame => frame.url().includes('atlas-viewer.html')).at(-1);
+    for (let item = 0; item < 10; item++) {
+      await page.getByText(`Identify · ${item + 1}/10`, { exact: true }).waitFor();
+      await quizFrame.waitForFunction(index => window.atlasCommands.filter(c => c.type === 'configure').length >= index + 1, item);
+      const target = await quizFrame.evaluate(() => window.atlasCommands.filter(c => c.type === 'configure').at(-1).payload.target);
+      const answer = catalog.structures.find(s => s.id === target).name;
+      await answerClick(page.getByRole('button', { name: answer, exact: true }));
+      await answerClick(page.getByRole('button', { name: 'Check answer', exact: true }));
+      await page.getByText(`Correct: ${answer}`, { exact: true }).waitFor();
+      await answerClick(page.getByRole('button', { name: item === 9 ? 'Finish quiz' : 'Next structure', exact: true }));
+    }
+    await page.getByText('Atlas quiz complete', { exact: true }).waitFor();
+    await page.waitForFunction(xp => Number(localStorage.getItem('flutter.norie.totalXp')) === xp + 100, beforeXp);
+    await page.getByRole('button', { name: 'Back to Anatomy Lab', exact: true }).click();
+    assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), beforeXp + 100);
+    console.log('PASS: phone-sized atlas quiz completed offline and awarded exactly 100 XP once');
+    await page.setViewportSize(originalSize);
     await page.reload();
     await enableAccessibility();
   }
@@ -73,6 +107,14 @@ async function main() {
     assert.equal(await page.getByText('Norie Account', { exact: true }).count(), 0);
     console.log('PASS: first launch with no internet or browser cache');
     await application.context().addInitScript(() => {
+      window.atlasEvents = [];
+      window.addEventListener('atlas-event', e => window.atlasEvents.push(e.detail));
+      window.atlasCommands = [];
+      window.addEventListener('message', e => {
+        try { const value = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+          if (value?.version === 1) window.atlasCommands.push(value);
+        } catch { /* Non-atlas messages are irrelevant to the test. */ }
+      });
       for (const id of ['home.v1', 'learn.v1', 'challenge.v1']) {
         localStorage.setItem(`flutter.norie.tutorial.${id}.complete`, 'true');
       }

@@ -9,6 +9,9 @@ const REQUIRED_ASSETS = [
   './norie-logo.svg',
   './assets/assets/anatomy/overview-skeleton.glb',
   './assets/assets/anatomy/anatomy-organs.glb',
+  './assets/assets/anatomy/atlas-viewer.html',
+  './assets/assets/anatomy/atlas-viewer.js',
+  './assets/assets/anatomy/atlas-catalog.json',
   './assets/packages/model_viewer_plus/assets/model-viewer.min.js',
 ];
 
@@ -28,12 +31,22 @@ async function cacheRequired(cache) {
     }
     await cache.put(path, response);
   }
+  const catalog = await (await cache.match('./assets/assets/anatomy/atlas-catalog.json')).json();
+  if (catalog.schemaVersion !== 1 || !Array.isArray(catalog.assets)) throw new Error('Invalid offline atlas catalog');
+  for (const asset of catalog.assets) {
+    if (!/^[\w-]+\.glb$/.test(asset.file)) throw new Error('Invalid offline atlas filename');
+    const path = './assets/assets/anatomy/' + asset.file;
+    const response = await fetch(path, { cache: 'reload' });
+    if (!response.ok) throw new Error('Offline prerequisite failed: ' + path);
+    await cache.put(path, response);
+  }
 }
 
 async function cacheOptional(cache) {
   await Promise.all(
     OPTIONAL_ASSETS.map(async (path) => {
       try {
+        if (await cache.match(path)) return;
         const response = await fetch(path, { cache: 'reload' });
         if (response.ok || response.type === 'opaque') {
           await cache.put(path, response);

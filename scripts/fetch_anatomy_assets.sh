@@ -53,3 +53,11 @@ fetch_asset \
   "https://github.com/yamz8/human-body-simulator/raw/refs/heads/main/public/models/anatomy-organs.glb" \
   "assets/anatomy/anatomy-organs.glb" \
   250000
+
+# Detailed atlas: all generated assets and decoder code are bundled locally.
+python3 scripts/anatomy/fetch_sources.py
+python3 scripts/anatomy/build_body.py build/anatomy-research build/anatomy-converted
+npm ci --prefix anatomy_viewer
+node anatomy_viewer/convert-models.mjs
+node anatomy_viewer/build.mjs
+python3 scripts/anatomy/catalog.py

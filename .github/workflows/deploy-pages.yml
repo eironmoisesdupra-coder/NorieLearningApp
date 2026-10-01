@@ -30,6 +30,17 @@ jobs:
       - name: Generate web platform scaffolding
         run: flutter create --platforms=web --project-name norie_learning .
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: anatomy_viewer/package-lock.json
+
+      - uses: actions/cache@v4
+        with:
+          path: build/anatomy-research
+          key: anatomy-sources-${{ hashFiles('scripts/anatomy/sources.json') }}
+
       - name: Apply Norie web branding
         run: |
           cp branding/web/index.html web/index.html

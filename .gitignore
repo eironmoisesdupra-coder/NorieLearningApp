@@ -109,6 +109,14 @@ coverage/
 
 # Desktop build dependencies (release packages stay under build/).
 desktop/node_modules/
+anatomy_viewer/node_modules/
+assets/anatomy/male-*.glb
+assets/anatomy/female-*.glb
+assets/anatomy/detail-*.glb
+assets/anatomy/atlas-catalog.json
+assets/anatomy/atlas-viewer.js
+assets/anatomy/atlas-viewer.html
+assets/anatomy/ATLAS_RENDERER_LICENSES.txt
 
 # Symbols
 app.*.symbols
