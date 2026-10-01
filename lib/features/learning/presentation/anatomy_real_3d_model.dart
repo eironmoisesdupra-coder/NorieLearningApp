@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
@@ -10,6 +11,23 @@ enum Anatomy3DAssetKind { skeleton, organs }
 abstract final class Anatomy3DAssets {
   static const skeleton = 'assets/anatomy/overview-skeleton.glb';
   static const organs = 'assets/anatomy/anatomy-organs.glb';
+
+  static const webSkeleton =
+      'assets/assets/anatomy/overview-skeleton.glb';
+  static const webOrgans =
+      'assets/assets/anatomy/anatomy-organs.glb';
+
+  static String sourceFor(
+    Anatomy3DAssetKind kind, {
+    required bool web,
+  }) {
+    return switch ((kind, web)) {
+      (Anatomy3DAssetKind.skeleton, true) => webSkeleton,
+      (Anatomy3DAssetKind.organs, true) => webOrgans,
+      (Anatomy3DAssetKind.skeleton, false) => skeleton,
+      (Anatomy3DAssetKind.organs, false) => organs,
+    };
+  }
 }
 
 class AnatomyReal3DModel extends StatelessWidget {
@@ -42,8 +60,10 @@ class AnatomyReal3DModel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final src =
-        _isOrgans ? Anatomy3DAssets.organs : Anatomy3DAssets.skeleton;
+    final src = Anatomy3DAssets.sourceFor(
+      kind,
+      web: kIsWeb,
+    );
     final effectiveHotspots =
         _isOrgans ? const <AnatomyHotspot>[] : hotspots;
     final effectiveMode =
