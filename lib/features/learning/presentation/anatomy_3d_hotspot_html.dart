@@ -137,4 +137,5 @@ abstract final class Anatomy3DHotspotHtml {
   viewer.addEventListener('load', positionHotspots, { once: true });
 })();
 ''';
-  }}
+  }
+}
