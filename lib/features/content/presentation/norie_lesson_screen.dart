@@ -50,6 +50,27 @@ class NorieLessonScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+                if (topic.lesson.estimatedMinutes != null) ...[
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 15,
+                        color: NorieColors.textSecondary,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'About ${topic.lesson.estimatedMinutes} minutes',
+                        style: const TextStyle(
+                          color: NorieColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 Text(
                   topic.lesson.introduction,
                   style: const TextStyle(
@@ -58,6 +79,13 @@ class NorieLessonScreen extends StatelessWidget {
                     fontSize: 15,
                   ),
                 ),
+                if (topic.lesson.objectives.isNotEmpty) ...[
+                  const SizedBox(height: 18),
+                  _ObjectivesCard(
+                    objectives: topic.lesson.objectives,
+                    accent: accent,
+                  ),
+                ],
                 if (topic.visualType != null) ...[
                   const SizedBox(height: 20),
                   NorieLessonVisual(
@@ -172,6 +200,68 @@ class _Badge extends StatelessWidget {
   }
 }
 
+class _ObjectivesCard extends StatelessWidget {
+  const _ObjectivesCard({
+    required this.objectives,
+    required this.accent,
+  });
+
+  final List<String> objectives;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: .30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.flag_rounded, size: 18, color: accent),
+              const SizedBox(width: 8),
+              const Text(
+                'By the end of this lesson, you can:',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (final objective in objectives)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline_rounded,
+                    size: 16,
+                    color: accent,
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      objective,
+                      style: const TextStyle(
+                        color: NorieColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ConceptCard extends StatelessWidget {
   const _ConceptCard({required this.section});
 
@@ -223,16 +313,25 @@ class _ConceptCard extends StatelessWidget {
                 const SizedBox(height: 7),
                 ...section.points.map(
                   (point) => Padding(
-                    padding: const EdgeInsets.only(bottom: 5),
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      '• $point',
+                      point,
                       style: const TextStyle(
                         color: NorieColors.textSecondary,
-                        height: 1.35,
+                        height: 1.5,
                       ),
                     ),
                   ),
                 ),
+                if (section.visualType != null) ...[
+                  const SizedBox(height: 10),
+                  NorieLessonVisual(
+                    type: section.visualType!,
+                    title: section.visualCaption ?? section.title,
+                    accent: color,
+                    compact: true,
+                  ),
+                ],
               ],
             ),
           ),
