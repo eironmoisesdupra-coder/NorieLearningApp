@@ -85,15 +85,10 @@ async function main() {
       ['Joints & ligaments · detail', 'Anterior cruciate ligament (left)', 626],
       ['Endocrine glands · detail', 'Inferior parathyroid gland (left)', 11],
     ]) {
-      await page.getByText(referenceLabel, { exact: true }).click();
-      // Flutter paints the dropdown route without DOM text nodes. Exercise its
-      // keyboard navigation, then assert the resulting visible structure count.
-      const currentIndex = catalog.references.findIndex(r => r.label === referenceLabel);
-      const nextIndex = catalog.references.findIndex(r => r.label === label);
-      for (let step = 0; step < Math.abs(nextIndex - currentIndex); step++) {
-        await page.keyboard.press(nextIndex < currentIndex ? 'ArrowUp' : 'ArrowDown');
-      }
-      await page.keyboard.press('Enter');
+      await page.getByRole('button', { name: referenceLabel, exact: true }).click();
+      await page.getByText('Choose an anatomy reference', { exact: true }).waitFor();
+      // Flutter merges each ListTile's title and coverage description.
+      await page.getByText(new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+')).click({ force: true });
       referenceLabel = label;
       await viewer.locator('#status').waitFor({ state: 'hidden', timeout: 60000 });
       const search = page.getByRole('button', { name: `Search ${count} parts`, exact: true });

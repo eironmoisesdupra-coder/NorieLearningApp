@@ -32,6 +32,19 @@ void main() {
     expect(find.text('Pituitary gland'), findsOneWidget);
     expect(tester.getSize(viewer).height, greaterThan(150));
     expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Adult male · BodyParts3D'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final glandChoice =
+        find.widgetWithText(ListTile, 'Endocrine glands · detail');
+    expect(glandChoice, findsOneWidget);
+    await tester.ensureVisible(glandChoice);
+    await tester.pump();
+    await tester.tap(glandChoice);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.widget<AnatomyAtlasModelView>(viewer).reference, 'glands');
+    expect(find.text('Search 11 parts'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

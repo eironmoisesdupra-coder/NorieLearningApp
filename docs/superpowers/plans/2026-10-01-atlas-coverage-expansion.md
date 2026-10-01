@@ -31,3 +31,5 @@ This is an extension of the already-approved atlas design. Implementation contin
 ## Verification ledger
 
 133 Flutter tests passed, including 320x568 layout with a selected gland; analysis clean. Seven Python tests, eleven Node atlas tests, nine cache/desktop boundary tests and catalog GLB validation passed. Offline browser rendered every system and picked ACL, thyroid and parathyroid. Review confirmed all 637 new mesh world bounds within 0.02 mm of source after compression. Review findings fixed: one horizontal detail-link row, horizontal selection actions and exact output-gland mesh whitelist. Final packaged desktop/CI release checks continue.
+
+Release-gate finding: the Flutter reference dropdown painted its menu but did not expose operable menu items with web semantics enabled; the packaged check and Windows CI reproduced it. Replaced it with a bounded, scrollable reference chooser using the proven search-sheet ListTile pattern, showing source coverage descriptions. The 320x568 widget test now scrolls to and selects glands, verifying the 11-part result.

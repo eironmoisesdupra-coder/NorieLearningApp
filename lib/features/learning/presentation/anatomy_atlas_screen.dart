@@ -100,6 +100,35 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
     if (mounted && result != null) _select(result);
   }
 
+  Future<void> _chooseReference(AnatomyAtlasCatalog catalog) async {
+    final result = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (context) => SafeArea(
+            child: SizedBox(
+                height: MediaQuery.sizeOf(context).height * .72,
+                child: Column(children: [
+                  const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text('Choose an anatomy reference',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold))),
+                  Expanded(
+                      child: ListView(children: [
+                    for (final reference in catalog.references)
+                      ListTile(
+                          title: Text(reference.label),
+                          subtitle: Text(reference.description),
+                          trailing: reference.id == _reference
+                              ? const Icon(Icons.check_circle_outline)
+                              : const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.pop(context, reference.id)),
+                  ])),
+                ]))));
+    if (mounted && result != null) _changeReference(result);
+  }
+
   String _systemLabel(String id) =>
       AnatomyCatalog.systems.firstWhere((s) => s.id.name == id).label;
 
@@ -215,20 +244,15 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Row(children: [
                           Expanded(
-                              child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: _reference,
-                                  items: catalog.references
-                                      .map((r) => DropdownMenuItem(
-                                          value: r.id,
-                                          child: Text(r.label,
-                                              overflow: TextOverflow.ellipsis)))
-                                      .toList(),
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      _changeReference(value);
-                                    }
-                                  })),
+                              child: TextButton.icon(
+                                  onPressed: () => _chooseReference(catalog),
+                                  icon: const Icon(Icons.unfold_more),
+                                  label: Text(
+                                      catalog.references
+                                          .firstWhere((r) => r.id == _reference)
+                                          .label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis))),
                           IconButton(
                               tooltip: 'Sources and coverage',
                               onPressed: () => _credits(catalog),
