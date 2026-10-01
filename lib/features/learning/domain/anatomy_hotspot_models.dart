@@ -272,56 +272,14 @@ abstract final class AnatomyHotspotCatalog {
   static String displaySourceNode(String sourceNode) {
     final trimmed = sourceNode.trim();
     return trimmed
-        .replaceFirst(RegExp(r'\.r\.?    if (!systems.contains(AnatomySystemId.skeletal)) return const [];
-    return skeletal.where((item) => item.enabled).toList(growable: false);
-  }
-
-  static List<AnatomyHotspot> renderable(
-    Iterable<AnatomyHotspot> hotspots, {
-    required AnatomyHotspotMode mode,
-  }) {
-    if (mode == AnatomyHotspotMode.clean) return const [];
-    return hotspots.where((item) => item.enabled).toList(growable: false);
-  }
-
-  static AnatomyStructure? resolveStructure(String structureId) =>
-      AnatomyCatalog.structureById(structureId);
-
-  static AnatomyHotspot? hotspotForStructureId(String structureId) {
-    for (final hotspot in skeletal) {
-      if (hotspot.enabled && hotspot.structureId == structureId) {
-        return hotspot;
-      }
-    }
-    return null;
-  }
-}
-, caseSensitive: false), ' — right')
-        .replaceFirst(RegExp(r'\.l    if (!systems.contains(AnatomySystemId.skeletal)) return const [];
-    return skeletal.where((item) => item.enabled).toList(growable: false);
-  }
-
-  static List<AnatomyHotspot> renderable(
-    Iterable<AnatomyHotspot> hotspots, {
-    required AnatomyHotspotMode mode,
-  }) {
-    if (mode == AnatomyHotspotMode.clean) return const [];
-    return hotspots.where((item) => item.enabled).toList(growable: false);
-  }
-
-  static AnatomyStructure? resolveStructure(String structureId) =>
-      AnatomyCatalog.structureById(structureId);
-
-  static AnatomyHotspot? hotspotForStructureId(String structureId) {
-    for (final hotspot in skeletal) {
-      if (hotspot.enabled && hotspot.structureId == structureId) {
-        return hotspot;
-      }
-    }
-    return null;
-  }
-}
-, caseSensitive: false), ' — left');
+        .replaceFirst(
+          RegExp(r'\.r\.?$', caseSensitive: false),
+          ' — right',
+        )
+        .replaceFirst(
+          RegExp(r'\.l$', caseSensitive: false),
+          ' — left',
+        );
   }
 
   static List<AnatomyHotspot> hotspotsFor(Set<AnatomySystemId> systems) {
