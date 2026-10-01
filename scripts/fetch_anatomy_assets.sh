@@ -24,22 +24,29 @@ fetch_asset() {
 
 SKELETON_COMMIT="e4d76fbb424d15e1364963528a082a78fa359161"
 SKELETON_SHA256="253c47077e4ae11421c8ff3eae68c9414335ee2f0ad911eddf8ea0ea7dc0a6ce"
+SKELETON_SOURCE_TARGET="assets/anatomy/overview-skeleton-source.glb"
 SKELETON_TARGET="assets/anatomy/overview-skeleton.glb"
 SKELETON_SOURCE="https://raw.githubusercontent.com/yamz8/human-body-simulator/${SKELETON_COMMIT}/public/models/overview-skeleton.glb"
 
 fetch_asset \
-  "Open3Dmodel skeleton" \
+  "Open3Dmodel source skeleton" \
   "$SKELETON_SOURCE" \
-  "$SKELETON_TARGET" \
+  "$SKELETON_SOURCE_TARGET" \
   1000000
 
-ACTUAL_SKELETON_SHA256=$(sha256sum "$SKELETON_TARGET" | awk '{print $1}')
+ACTUAL_SKELETON_SHA256=$(sha256sum "$SKELETON_SOURCE_TARGET" | awk '{print $1}')
 if [ "$ACTUAL_SKELETON_SHA256" != "$SKELETON_SHA256" ]; then
   echo "Anatomy skeleton checksum mismatch: $ACTUAL_SKELETON_SHA256" >&2
   exit 1
 fi
 
+python3 scripts/build_full_skeleton.py \
+  "$SKELETON_SOURCE_TARGET" \
+  "$SKELETON_TARGET"
+
 python3 scripts/inspect_glb_bounds.py "$SKELETON_TARGET"
+
+rm -f "$SKELETON_SOURCE_TARGET"
 
 fetch_asset \
   "BodyParts3D organ atlas" \

@@ -12,10 +12,13 @@ void main() {
     );
 
     expect(html, contains('slot="hotspot-skeletal-skull"'));
-    expect(html, contains('data-nx="${sample.first.x}"'));
+    expect(html, contains('data-x="'));
+    expect(html, contains('data-y="'));
+    expect(html, contains('data-z="'));
     expect(html, contains('data-structure-id="skull"'));
     expect(html, contains('aria-label="Skull"'));
     expect(html, contains('hotspot-card'));
+    expect(html, contains('Frontal bone'));
   });
 
   test('identification mode keeps names out of visible marker labels', () {
@@ -37,22 +40,23 @@ void main() {
     expect(html.trim(), isEmpty);
   });
 
-  test('hotspot JavaScript converts normalized coordinates to model space', () {
+  test('hotspot JavaScript uses stable pre-calibrated model positions', () {
     final js = Anatomy3DHotspotHtml.javascript(
       selectedHotspotId: 'skeletal-skull',
     );
 
-    expect(js, contains('getBoundingBoxCenter()'));
-    expect(js, contains('getDimensions()'));
+    expect(js, contains('dataset.x'));
+    expect(js, contains('dataset.y'));
+    expect(js, contains('dataset.z'));
     expect(js, contains('data-position'));
     expect(js, contains('AnatomyHotspot.postMessage'));
   });
 
-  test('hotspot CSS keeps a 44px hit target and focus detail fallback', () {
+  test('hotspot CSS keeps a large tap target and focus detail fallback', () {
     final css = Anatomy3DHotspotHtml.css;
 
-    expect(css, contains('width:44px'));
-    expect(css, contains('height:44px'));
+    expect(css, contains('width:54px'));
+    expect(css, contains('height:54px'));
     expect(css, contains(':focus'));
     expect(css, contains('.hotspot-card'));
   });
