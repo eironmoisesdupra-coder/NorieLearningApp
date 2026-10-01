@@ -180,7 +180,8 @@ export class AtlasScene {
     if (type === 'restore') { this.state.restore(); this.alpha = 1; }
     if (type === 'opacity' && Number.isFinite(payload.value)) this.alpha = THREE.MathUtils.clamp(payload.value, .15, 1);
     if (type === 'camera') {
-      const directions = { front: [0, 0, 1], back: [0, 0, -1], left: [-1, 0, 0], right: [1, 0, 0], top: [0, 1, .001] };
+      // Reference axes are +X patient-left, +Y superior, +Z anterior.
+      const directions = { front: [0, 0, 1], back: [0, 0, -1], left: [1, 0, 0], right: [-1, 0, 0], top: [0, 1, .001] };
       if (directions[payload.view]) this.frame(null, new THREE.Vector3(...directions[payload.view]).normalize());
       if (payload.view === 'reset') this.frame(null, new THREE.Vector3(0, 0, 1));
     }
