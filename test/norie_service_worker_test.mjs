@@ -7,7 +7,7 @@ const origin = 'https://example.test';
 const base = `${origin}/NorieLearningApp/`;
 const source = readFileSync(new URL('../branding/web/norie-sw.js', import.meta.url), 'utf8');
 
-function worker() {
+function worker({failAsset = ''} = {}) {
   const handlers = new Map();
   const entries = new Map();
   let online = true;
@@ -25,6 +25,8 @@ function worker() {
     caches: {open: async () => cache, keys: async () => [], delete: async () => {}},
     fetch: async request => {
       if (!online) throw new Error('offline');
+      if (key(request).endsWith(failAsset) && failAsset) return new Response('missing', {status: 404});
+      if (key(request).endsWith('atlas-catalog.json')) return new Response(JSON.stringify({schemaVersion: 1, assets: [{file: 'female-reproductive.glb'}]}));
       return new Response(`asset:${key(request)}`, {status: 200});
     },
   });
@@ -43,6 +45,16 @@ function worker() {
     },
   };
 }
+
+test('detailed atlas models are mandatory before offline installation succeeds', async () => {
+  const app = worker();
+  await app.install();
+  app.goOffline();
+  const response = await app.fetch(new Request(`${base}assets/assets/anatomy/female-reproductive.glb`));
+  assert.equal(response.status, 200);
+  const broken = worker({failAsset: 'female-reproductive.glb'});
+  await assert.rejects(broken.install(), /Offline prerequisite failed/);
+});
 
 test('organ atlas is cached before the learner opens Anatomy Lab', async () => {
   const app = worker();

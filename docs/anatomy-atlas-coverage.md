@@ -1,0 +1,42 @@
+# Anatomy Atlas coverage - NorieLearning 0.2.0
+
+The bundled catalog contains **3,312 selectable model parts** across two adult body references and two detail references. Model files total **99.0 MB** before installer compression. Counts include separately modeled segments and groups; they are not counts of unique whole organs.
+
+| System | Male reference | Female reference |
+|---|---:|---:|
+| Skeletal | 234 | 33 |
+| Articular | 65 | 90 |
+| Muscular | 406 | 4 |
+| Heart | 27 | 14 |
+| Arteries | 630 | 47 |
+| Veins | 393 | 49 |
+| Nervous | 147 | 312 |
+| Lymphatic | 3 | 13 |
+| Respiratory | 119 | 56 |
+| Digestive | 111 | 84 |
+| Urinary | 6 | 87 |
+| Reproductive | 12 | 38 |
+| Endocrine | 7 | 8 |
+| Integumentary | 4 | 20 |
+| Sense organs | 57 | 76 |
+
+The separate lymph-node/organ reference adds **158** selectable parts; the ear detail reference adds **14**. Detail references preserve their own coordinates and are not superimposed on either body.
+
+Some parts belong to more than one system, so column totals can exceed unique parts.
+
+## Dataset boundaries
+
+- The male library derives from BodyParts3D 4.0; 17 source meshes with no name or anatomical ID are excluded rather than guessed.
+- The female HRA reference supplies reproductive organs and additional organ detail, with partial musculoskeletal coverage. It is not a complete female whole-body atlas.
+- Lymphatic coverage includes the spleen, thymus, tonsillar anatomy and a detailed lymph-node reference; it does not model the complete distributed lymph-vessel network.
+- Sense-organ coverage emphasizes the eyes and external ear. The separate SPL detail scene adds 14 middle/inner-ear surfaces, including the combined labyrinth, three ossicles, tympanic membrane and related nerves/vessels. The labyrinth is a combined structure, not individually segmented cochlear microanatomy.
+- The reproductive references include the source-modeled internal structures. This is not an exhaustive atlas of external genital anatomy. Pregnancy-specific placenta and umbilical models are excluded.
+- The existing calibrated, mirrored skeleton remains accessible through Skeleton fundamentals.
+
+## Reproduce and verify
+
+Run `bash scripts/fetch_anatomy_assets.sh` from the repository root. This downloads checksum-pinned sources, builds the model library, bundles the offline renderer and validates every selectable mesh. Requires Python 3.11+ and Node 24. No download occurs at runtime in the packaged apps.
+
+Checks: `python -m unittest discover -s test -p anatomy_pipeline_test.py`, `python scripts/anatomy/catalog.py`, `node --test anatomy_viewer/test/*.test.mjs`, and `node anatomy_viewer/test/browser-smoke.mjs` (after desktop npm dependencies are installed).
+
+Source authors, licenses and conversion changes are recorded in [asset attribution](../assets/anatomy/ATTRIBUTION.md).

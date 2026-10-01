@@ -27,6 +27,17 @@ jobs:
       - name: Show Flutter version
         run: flutter --version
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: anatomy_viewer/package-lock.json
+
+      - uses: actions/cache@v4
+        with:
+          path: build/anatomy-research
+          key: anatomy-sources-${{ hashFiles('scripts/anatomy/sources.json') }}
+
       - name: Generate Android and web platform scaffolding
         run: flutter create --platforms=android,web --project-name norie_learning .
 
@@ -70,6 +81,12 @@ jobs:
 
       - name: Test offline web cache
         run: node --test test/norie_service_worker_test.mjs
+
+      - name: Verify detailed atlas
+        run: |
+          python -m unittest discover -s test -p anatomy_pipeline_test.py
+          node --test anatomy_viewer/test/*.test.mjs
+          python scripts/anatomy/catalog.py
 
       - name: Verify Android launcher branding
         run: |

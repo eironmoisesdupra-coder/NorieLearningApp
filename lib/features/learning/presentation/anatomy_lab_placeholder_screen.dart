@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
 import '../domain/anatomy_models.dart';
+import '../domain/anatomy_atlas_catalog.dart';
+import 'anatomy_atlas_quiz_screen.dart';
 import 'anatomy_animated_backdrop.dart';
 import 'anatomy_quiz_screen.dart';
-import 'anatomy_viewer_screen.dart';
+import 'anatomy_atlas_screen.dart';
 
 class AnatomyLabPlaceholderScreen extends StatefulWidget {
   const AnatomyLabPlaceholderScreen({super.key});
@@ -16,6 +18,14 @@ class AnatomyLabPlaceholderScreen extends StatefulWidget {
 
 class _AnatomyLabPlaceholderScreenState
     extends State<AnatomyLabPlaceholderScreen> {
+  AnatomyAtlasCatalog? _atlas;
+  @override
+  void initState() {
+    super.initState();
+    AnatomyAtlasCatalog.load().then((value) {
+      if (mounted) setState(() => _atlas = value);
+    }).catchError((Object _) { /* Viewer provides a retry for missing assets. */ });
+  }
   final Set<AnatomySystemId> _selected = {
     AnatomySystemId.skeletal,
   };
@@ -41,14 +51,25 @@ class _AnatomyLabPlaceholderScreenState
   void _openViewer() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AnatomyViewerScreen(
+        builder: (_) => AnatomyAtlasScreen(
           initialSystems: Set<AnatomySystemId>.from(_selected),
         ),
       ),
     );
   }
 
-  void _openQuiz() {
+  Future<void> _openQuiz() async {
+    try {
+      final catalog = _atlas ?? await AnatomyAtlasCatalog.load();
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AnatomyAtlasQuizScreen(
+        catalog: catalog, reference: 'male', systems: _selected.map((s) => s.name).toSet())));
+    } on Object catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('The bundled atlas could not be opened. Try the viewer to retry.')));
+    }
+  }
+
+  void _openFunctionPractice() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => AnatomyQuizScreen(
@@ -60,7 +81,7 @@ class _AnatomyLabPlaceholderScreenState
 
   @override
   Widget build(BuildContext context) {
-    final structures = AnatomyCatalog.structuresFor(_selected);
+    final structures = _atlas?.search('male', _selected.map((s) => s.name).toSet(), '') ?? [];
 
     return Scaffold(
       body: Stack(
@@ -81,6 +102,8 @@ class _AnatomyLabPlaceholderScreenState
                       onExplore: _openViewer,
                       onQuiz: _openQuiz,
                     ),
+                    TextButton.icon(onPressed: _openFunctionPractice, icon: const Icon(Icons.menu_book_outlined),
+                      label: const Text('Function & description practice')),
                     const SizedBox(height: 22),
                     const Text(
                       'Quick Layer Presets',

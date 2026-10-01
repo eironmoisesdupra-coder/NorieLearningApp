@@ -10,7 +10,7 @@ on:
 jobs:
   offline-windows:
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -28,6 +28,10 @@ jobs:
           flutter create --platforms=web --project-name norie_learning .
           Copy-Item branding/web/* web/ -Force
           Remove-Item test/widget_test.dart -ErrorAction SilentlyContinue
+      - uses: actions/cache@v4
+        with:
+          path: build/anatomy-research
+          key: anatomy-sources-${{ hashFiles('scripts/anatomy/sources.json') }}
       - name: Fetch licensed anatomy assets
         shell: bash
         run: bash scripts/fetch_anatomy_assets.sh
@@ -39,6 +43,8 @@ jobs:
       - name: Test desktop asset boundaries
         working-directory: desktop
         run: npm test
+      - name: Exercise every atlas system with networking blocked
+        run: node anatomy_viewer/test/browser-smoke.mjs
       - name: Package Windows app
         working-directory: desktop
         run: npm run package:windows
