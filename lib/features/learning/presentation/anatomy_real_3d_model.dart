@@ -31,6 +31,19 @@ abstract final class Anatomy3DAssets {
 }
 
 class AnatomyReal3DModel extends StatelessWidget {
+  static String viewerKey({
+    required Anatomy3DAssetKind kind,
+    required AnatomyHotspotMode hotspotMode,
+    required int hotspotCount,
+    required String cameraOrbit,
+    required String fieldOfView,
+    required bool enablePan,
+    required bool autoRotate,
+  }) =>
+      'anatomy-real-3d-${kind.name}-${hotspotMode.name}-'
+      '$hotspotCount-$cameraOrbit-$fieldOfView-'
+      '${enablePan ? 'pan' : 'orbit'}-${autoRotate ? 'auto' : 'manual'}';
+
   const AnatomyReal3DModel({
     required this.kind,
     required this.cameraOrbit,
@@ -90,7 +103,15 @@ class AnatomyReal3DModel extends StatelessWidget {
         Positioned.fill(
           child: ModelViewer(
             key: ValueKey(
-              'anatomy-real-3d-${kind.name}-${effectiveMode.name}-${effectiveHotspots.length}',
+              viewerKey(
+                kind: kind,
+                hotspotMode: effectiveMode,
+                hotspotCount: effectiveHotspots.length,
+                cameraOrbit: cameraOrbit,
+                fieldOfView: fieldOfView,
+                enablePan: enablePan,
+                autoRotate: autoRotate,
+              ),
             ),
             backgroundColor: Colors.transparent,
             src: src,
@@ -110,9 +131,10 @@ class AnatomyReal3DModel extends StatelessWidget {
             maxFieldOfView: '55deg',
             minHotspotOpacity: .16,
             maxHotspotOpacity: 1,
-            exposure: _isOrgans ? 1.1 : 1.05,
-            shadowIntensity: _isOrgans ? .78 : .72,
-            shadowSoftness: .85,
+            environmentImage: _isOrgans ? null : 'neutral',
+            exposure: _isOrgans ? 1.1 : .94,
+            shadowIntensity: _isOrgans ? .78 : 1.10,
+            shadowSoftness: _isOrgans ? .85 : .58,
             innerModelViewerHtml: innerHtml,
             relatedCss: Anatomy3DHotspotHtml.css,
             relatedJs: Anatomy3DHotspotHtml.javascript(
