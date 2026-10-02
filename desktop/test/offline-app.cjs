@@ -54,6 +54,24 @@ async function main() {
     await atlasFrame.waitForFunction(() => window.atlasEvents.some(e => e.type === 'selected'));
     await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-anatomy.png') });
     console.log('PASS: detailed atlas loaded, searched, isolated and picked a real mesh offline');
+    // The retained skeleton lesson must never fall back to painted body layers.
+    for (const exitLabel of ['Articular', 'Open full 3D atlas']) {
+      await page.getByRole('button', { name: 'Skeleton fundamentals', exact: true }).click();
+      await page.getByText('Calibrated skeleton study view', { exact: true }).waitFor();
+      await page.getByRole(exitLabel === 'Articular' ? 'checkbox' : 'button',
+        { name: exitLabel, exact: true }).click();
+      await page.getByText('Calibrated skeleton study view', { exact: true }).waitFor({ state: 'hidden' });
+      const activeViewer = page.frameLocator('iframe[title="NorieLearning interactive anatomy atlas"]:visible');
+      await activeViewer.locator('canvas').waitFor({ state: 'visible', timeout: 60000 });
+      await activeViewer.locator('#status').waitFor({ state: 'hidden', timeout: 60000 });
+      const systems = await activeViewer.locator('canvas').evaluate(canvas => canvas.ownerDocument.defaultView.atlasCommands.filter(c => c.type === 'configure').at(-1).payload.systems);
+      assert.deepEqual([...systems].sort(), exitLabel === 'Articular' ? ['articular', 'skeletal'] : ['skeletal']);
+      // The first Back is navigation; the other presets the rear camera view.
+      await page.getByRole('button', { name: 'Back', exact: true }).first().click();
+      await page.locator('iframe[title="NorieLearning interactive anatomy atlas"]').nth(1)
+        .waitFor({ state: 'detached' });
+    }
+    console.log('PASS: skeleton fundamentals category and full-atlas exits use real geometry offline');
     // Exercise the same responsive UI at a small phone's CSS viewport width.
     const originalSize = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
     await page.setViewportSize({ width: 390, height: 844 });
@@ -210,7 +228,7 @@ async function main() {
     assert.deepEqual(errors, []);
   } catch (error) {
     if (page) {
-      console.error(await page.locator('body').innerText());
+      console.error(await page.locator('body').first().innerText());
       await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-failure.png'), timeout: 5000 })
         .catch(screenshotError => console.error('Failure screenshot:', screenshotError.message));
     }
