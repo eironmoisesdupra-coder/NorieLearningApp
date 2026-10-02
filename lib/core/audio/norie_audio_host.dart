@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'norie_audio_manager.dart';
+import 'norie_audio_gestures.dart'
+    if (dart.library.js_interop) 'norie_audio_web_gestures.dart';
 
 class NorieAudioHost extends StatefulWidget {
   const NorieAudioHost({super.key, required this.child, this.manager});
@@ -15,11 +17,14 @@ class _NorieAudioHostState extends State<NorieAudioHost>
     with WidgetsBindingObserver {
   late final NorieAudioManager _audio =
       widget.manager ?? NorieAudioManager.instance;
+  late final void Function() _removeBrowserGestures;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     HardwareKeyboard.instance.addHandler(_key);
+    _removeBrowserGestures =
+        listenForBrowserAudioGestures(() => unawaited(_audio.unlock()));
     unawaited(_audio.load());
   }
 
@@ -37,6 +42,7 @@ class _NorieAudioHostState extends State<NorieAudioHost>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     HardwareKeyboard.instance.removeHandler(_key);
+    _removeBrowserGestures();
     super.dispose();
   }
 

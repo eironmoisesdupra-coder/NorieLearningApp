@@ -25,10 +25,19 @@ async function main() {
   let application = await launch();
   const errors = [];
   let page;
+  let foregroundPage;
   async function enableAccessibility() {
+    if (foregroundPage !== page) {
+      const browser = await application.context().newCDPSession(page);
+      await browser.send('Emulation.setFocusEmulationEnabled', { enabled: true });
+      await browser.send('Page.setWebLifecycleState', { state: 'active' });
+      foregroundPage = page;
+    }
     await page.waitForSelector('flt-semantics-placeholder', { state: 'attached', timeout: 60000 });
     await page.evaluate(() => document.querySelector('flt-semantics-placeholder').click());
     await page.getByRole('button', { name: 'Home Home', exact: true }).waitFor();
+    // The test window stays hidden; emulate the foreground learner session.
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   }
   async function checkAnatomy() {
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
@@ -93,9 +102,9 @@ async function main() {
       await page.getByText(`Correct: ${answer}`, { exact: true }).waitFor();
       await answerClick(page.getByRole('button', { name: item === 9 ? 'Finish quiz' : 'Next structure', exact: true }));
     }
-    await page.getByText('Atlas quiz complete', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Continue', exact: true }).waitFor();
     await page.waitForFunction(xp => Number(localStorage.getItem('flutter.norie.totalXp')) === xp + 100, beforeXp);
-    await page.getByRole('button', { name: 'Back to Anatomy Lab', exact: true }).click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), beforeXp + 100);
     console.log('PASS: phone-sized atlas quiz completed offline and awarded exactly 100 XP once');
     let referenceLabel = 'Adult male · BodyParts3D';
@@ -128,6 +137,11 @@ async function main() {
       console.log(`PASS: ${label} searched, focused and picked offline at phone size`);
     }
     await page.setViewportSize(originalSize);
+    const sounds = await page.evaluate(() => window.norieAudioEvents);
+    assert.ok(sounds.some(e => e.played && e.volume > 0 && e.source.endsWith('/correct.mp3')),
+      'Actual offline correct-answer audio must play after a gesture');
+    assert.ok(!sounds.some(e => e.error), 'No blocked or broken audio');
+    console.log(`PASS: bundled SFX decoded and played after a real user gesture offline (${sounds.length} playback events)`);
     await page.reload();
     await enableAccessibility();
   }
@@ -154,6 +168,19 @@ async function main() {
     assert.equal(await page.getByText('Norie Account', { exact: true }).count(), 0);
     console.log('PASS: first launch with no internet or browser cache');
     await application.context().addInitScript(() => {
+      window.norieAudioEvents = [];
+      const originalPlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function () {
+        const source = this.src;
+        const volume = this.volume;
+        return originalPlay.call(this).then(result => {
+          window.norieAudioEvents.push({ source, volume, played: true });
+          return result;
+        }, error => {
+          window.norieAudioEvents.push({ source, volume, error: error.name });
+          throw error;
+        });
+      };
       window.atlasEvents = [];
       window.addEventListener('atlas-event', e => window.atlasEvents.push(e.detail));
       window.atlasCommands = [];
@@ -191,6 +218,7 @@ async function main() {
       }));
       if ((item + 1) % 5 === 0) console.log(`Answered ${item + 1}/20 offline quiz items`);
     }
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     // Wait for Flutter's route transition before selecting the first challenge
     // answer; the outgoing quiz still exposes its Back button during animation.
     await page.getByRole('button', { name: 'Next round', exact: true }).waitFor();
@@ -201,6 +229,9 @@ async function main() {
       await page.getByRole('button', { name: round === 2 ? 'View results' : 'Next round', exact: true }).click();
     }
     await page.waitForFunction(() => Number(localStorage.getItem('flutter.norie.totalXp')) > 0);
+    await page.getByRole('button', { name: 'Continue', exact: true }).waitFor();
+    await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-quiz-outro.png') });
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
     const xp = await page.evaluate(() => JSON.parse(localStorage.getItem('flutter.norie.totalXp')));
     assert.ok(xp > 0);
     const assets = await page.evaluate(async () => Promise.all(

@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'norie_audio_backend_factory.dart'
-    if (dart.library.js_interop) 'norie_audio_web_backend.dart' as platform_backend;
+    if (dart.library.js_interop) 'norie_audio_web_backend.dart'
+    as platform_backend;
 
 NorieAudioBackend createNorieAudioBackend() => platform_backend.createBackend();
 

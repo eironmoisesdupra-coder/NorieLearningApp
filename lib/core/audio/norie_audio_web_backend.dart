@@ -54,7 +54,9 @@ class BrowserAudioBackend implements NorieAudioBackend, GestureAudioBackend {
         if (!_disposed) _primed.add(player);
       }).catchError((Object _) {
         // A subsequent pointer/key gesture will retry this element.
-      }).whenComplete(() => _priming.remove(player));
+      }).whenComplete(() {
+        _priming.remove(player);
+      });
       _priming[player] = future;
       pending.add(future);
     }
