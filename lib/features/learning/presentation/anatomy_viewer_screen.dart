@@ -8,6 +8,7 @@ import '../domain/anatomy_hotspot_viewer_policy.dart';
 import '../domain/anatomy_models.dart';
 import '../domain/anatomy_render_policy.dart';
 import 'anatomy_animated_backdrop.dart';
+import 'anatomy_atlas_screen.dart';
 import 'anatomy_body_model.dart';
 import 'anatomy_quiz_screen.dart';
 import 'anatomy_real_3d_model.dart';
@@ -17,6 +18,7 @@ enum _ViewerGestureMode { rotate, pan }
 class AnatomyViewerScreen extends StatefulWidget {
   const AnatomyViewerScreen({
     super.key,
+    this.skeletonFundamentals = false,
     this.initialSystems = const {
       AnatomySystemId.skeletal,
       AnatomySystemId.muscular,
@@ -24,6 +26,9 @@ class AnatomyViewerScreen extends StatefulWidget {
   });
 
   final Set<AnatomySystemId> initialSystems;
+
+  /// Explicit opt-in to the original calibrated skeleton lesson.
+  final bool skeletonFundamentals;
 
   @override
   State<AnatomyViewerScreen> createState() => _AnatomyViewerScreenState();
@@ -35,9 +40,10 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   late final AnimationController _autoRotateController = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 18),
-  )..repeat();
+  );
 
   late Set<AnatomySystemId> _selectedSystems;
+  late bool _showAtlas;
   AnatomyStructure? _selectedStructure;
   _ViewerGestureMode _gestureMode = _ViewerGestureMode.rotate;
   AnatomyHotspotMode _hotspotMode = AnatomyHotspotMode.explore;
@@ -69,8 +75,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   Anatomy3DAssetKind get _real3DKind =>
       _useRealOrgans ? Anatomy3DAssetKind.organs : Anatomy3DAssetKind.skeleton;
 
-  String get _realCameraOrbit =>
-      '${_realTheta.toStringAsFixed(1)}deg '
+  String get _realCameraOrbit => '${_realTheta.toStringAsFixed(1)}deg '
       '${_realPhi.toStringAsFixed(1)}deg auto';
 
   String get _realFieldOfViewValue =>
@@ -80,7 +85,11 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   void initState() {
     super.initState();
     _selectedSystems = Set<AnatomySystemId>.from(widget.initialSystems);
+    _showAtlas = !widget.skeletonFundamentals ||
+        _selectedSystems.length != 1 ||
+        !_selectedSystems.contains(AnatomySystemId.skeletal);
     _autoRotateController.addListener(_tickAutoRotate);
+    if (!_showAtlas) _autoRotateController.repeat();
   }
 
   @override
@@ -93,7 +102,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _tickAutoRotate() {
-    if (!_autoRotate || !mounted || _useReal3D) return;
+    if (_showAtlas || !_autoRotate || !mounted || _useReal3D) return;
     setState(() {
       _rotationY = (_autoRotateController.value * math.pi * 2) - math.pi;
     });
@@ -170,8 +179,7 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   void _adjustZoom(double factor) {
     if (_useReal3D) {
       setState(() {
-        _realFieldOfView =
-            (_realFieldOfView / factor).clamp(18.0, 52.0);
+        _realFieldOfView = (_realFieldOfView / factor).clamp(18.0, 52.0);
       });
       return;
     }
@@ -184,6 +192,11 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
   }
 
   void _toggleSystem(AnatomySystemId id) {
+    if (id != AnatomySystemId.skeletal) {
+      _selectedSystems.add(id);
+      _openAtlas();
+      return;
+    }
     setState(() {
       if (_selectedSystems.contains(id)) {
         if (_selectedSystems.length > 1) _selectedSystems.remove(id);
@@ -195,6 +208,11 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
         _selectedStructure = null;
       }
     });
+  }
+
+  void _openAtlas() {
+    _autoRotateController.stop();
+    setState(() => _showAtlas = true);
   }
 
   void _selectRealHotspot(String hotspotId) {
@@ -250,6 +268,9 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_showAtlas) {
+      return AnatomyAtlasScreen(initialSystems: _selectedSystems);
+    }
     final structures = AnatomyCatalog.structuresFor(_selectedSystems);
 
     return Scaffold(
@@ -278,6 +299,11 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                 _SystemLayerStrip(
                   selected: _selectedSystems,
                   onToggle: _toggleSystem,
+                ),
+                TextButton.icon(
+                  onPressed: _openAtlas,
+                  icon: const Icon(Icons.view_in_ar),
+                  label: const Text('Open full 3D atlas'),
                 ),
                 Expanded(
                   child: Stack(
@@ -332,11 +358,9 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                           child: _StructureInfoCard(
                             structure: _selectedStructure!,
                             sourceNode: _useRealSkeleton
-                                ? AnatomyHotspotCatalog
-                                    .hotspotForStructureId(
-                                      _selectedStructure!.id,
-                                    )
-                                    ?.sourceNode
+                                ? AnatomyHotspotCatalog.hotspotForStructureId(
+                                    _selectedStructure!.id,
+                                  )?.sourceNode
                                 : null,
                             onClose: () => setState(
                               () => _selectedStructure = null,
@@ -455,17 +479,15 @@ class _AnatomyViewerScreenState extends State<AnatomyViewerScreen>
                 hotspots: _useRealSkeleton
                     ? AnatomyHotspotCatalog.skeletal
                     : const <AnatomyHotspot>[],
-                hotspotMode: _useRealSkeleton
-                    ? _hotspotMode
-                    : AnatomyHotspotMode.clean,
-                selectedHotspotId: _useRealSkeleton &&
-                        _selectedStructure != null
-                    ? AnatomyHotspotCatalog
-                        .hotspotForStructureId(_selectedStructure!.id)
-                        ?.id
-                    : null,
-                onHotspotSelected:
-                    _useRealSkeleton ? _selectRealHotspot : null,
+                hotspotMode:
+                    _useRealSkeleton ? _hotspotMode : AnatomyHotspotMode.clean,
+                selectedHotspotId:
+                    _useRealSkeleton && _selectedStructure != null
+                        ? AnatomyHotspotCatalog.hotspotForStructureId(
+                                _selectedStructure!.id)
+                            ?.id
+                        : null,
+                onHotspotSelected: _useRealSkeleton ? _selectRealHotspot : null,
               ),
             ),
           ],
@@ -612,11 +634,11 @@ class _TopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Norie Anatomy Lab',
+                  'Skeleton fundamentals',
                   style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
                 ),
                 Text(
-                  'Interactive layered viewer',
+                  'Calibrated skeleton study view',
                   style: TextStyle(
                     color: NorieColors.textSecondary,
                     fontSize: 9,

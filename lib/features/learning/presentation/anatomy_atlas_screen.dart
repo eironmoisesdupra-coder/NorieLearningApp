@@ -207,6 +207,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                   context,
                   MaterialPageRoute<void>(
                       builder: (_) => const AnatomyViewerScreen(
+                          skeletonFundamentals: true,
                           initialSystems: {AnatomySystemId.skeletal})))),
         ]),
         body: SafeArea(

@@ -54,6 +54,19 @@ async function main() {
     await atlasFrame.waitForFunction(() => window.atlasEvents.some(e => e.type === 'selected'));
     await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-anatomy.png') });
     console.log('PASS: detailed atlas loaded, searched, isolated and picked a real mesh offline');
+    // The retained skeleton lesson must never fall back to painted body layers.
+    for (const exitLabel of ['Articular', 'Open full 3D atlas']) {
+      await page.getByRole('button', { name: 'Skeleton fundamentals', exact: true }).click();
+      await page.getByText('Calibrated skeleton study view', { exact: true }).waitFor();
+      await page.getByText(exitLabel, { exact: true }).click();
+      const activeViewer = page.frameLocator('iframe').last();
+      await activeViewer.locator('#status').waitFor({ state: 'hidden', timeout: 60000 });
+      const activeFrame = page.frames().filter(frame => frame.url().includes('atlas-viewer.html')).at(-1);
+      const systems = await activeFrame.evaluate(() => window.atlasCommands.filter(c => c.type === 'configure').at(-1).payload.systems);
+      assert.deepEqual([...systems].sort(), exitLabel === 'Articular' ? ['articular', 'skeletal'] : ['skeletal']);
+      await page.getByRole('button', { name: 'Back', exact: true }).click();
+    }
+    console.log('PASS: skeleton fundamentals category and full-atlas exits use real geometry offline');
     // Exercise the same responsive UI at a small phone's CSS viewport width.
     const originalSize = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
     await page.setViewportSize({ width: 390, height: 844 });
