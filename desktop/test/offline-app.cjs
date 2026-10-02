@@ -68,6 +68,8 @@ async function main() {
       assert.deepEqual([...systems].sort(), exitLabel === 'Articular' ? ['articular', 'skeletal'] : ['skeletal']);
       // The first Back is navigation; the other presets the rear camera view.
       await page.getByRole('button', { name: 'Back', exact: true }).first().click();
+      await page.locator('iframe[title="NorieLearning interactive anatomy atlas"]').nth(1)
+        .waitFor({ state: 'detached' });
     }
     console.log('PASS: skeleton fundamentals category and full-atlas exits use real geometry offline');
     // Exercise the same responsive UI at a small phone's CSS viewport width.
