@@ -1,3 +1,7 @@
+import 'package:uuid/uuid.dart';
+import '../../../core/audio/norie_audio_manager.dart';
+import '../../../core/quiz/quiz_result_summary.dart';
+import '../application/norie_quiz_adapter.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
@@ -10,11 +14,19 @@ class NorieChallengeScreen extends StatefulWidget {
   const NorieChallengeScreen({
     required this.topic,
     required this.quizScore,
+    this.quizAnswers = const [],
+    this.attemptId,
+    this.practiceMode = NorieActivityMode.multipleChoice,
+    this.practiceHistoryKey,
     super.key,
   });
 
   final NorieTopicContent topic;
   final int quizScore;
+  final List<QuizAnswerRecord> quizAnswers;
+  final String? attemptId;
+  final NorieActivityMode practiceMode;
+  final String? practiceHistoryKey;
 
   @override
   State<NorieChallengeScreen> createState() => _NorieChallengeScreenState();
@@ -23,6 +35,10 @@ class NorieChallengeScreen extends StatefulWidget {
 class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
   late final List<NorieRandomizedQuestion> _rounds;
 
+  late final _attemptId = widget.attemptId ?? const Uuid().v4();
+  final List<QuizAnswerRecord> _answers = [];
+  late final Object _audioToken;
+  bool _finishing = false;
   int _round = 0;
   int _challengeScore = 0;
   int? _selectedIndex;
@@ -31,12 +47,35 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
   @override
   void initState() {
     super.initState();
+    _audioToken =
+        NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
+    NorieAudioManager.instance.playChallengeStart();
     _rounds = NorieItemRandomizer.randomize(widget.topic.challenge.rounds);
+    if (_rounds.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) norieEmptyContentQuiz(context, widget.topic, 'challenge');
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    NorieAudioManager.instance.leaveContext(_audioToken);
+    super.dispose();
   }
 
   void _choose(int index) {
-    if (_locked) return;
+    if (_locked || _finishing) return;
     final current = _rounds[_round];
+    NorieAudioManager.instance.playQuizSelect();
+    final correct = index == current.correctIndex;
+    _answers.add(norieContentAnswer(current.source,
+        response: current.options[index], correct: correct));
+    if (correct) {
+      NorieAudioManager.instance.playCorrect();
+    } else {
+      NorieAudioManager.instance.playWrong();
+    }
 
     setState(() {
       _selectedIndex = index;
@@ -48,15 +87,20 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
   }
 
   void _next() {
-    if (!_locked) return;
+    if (!_locked || _finishing) return;
 
     if (_round == _rounds.length - 1) {
+      setState(() => _finishing = true);
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => NorieLearningResultsScreen(
             topic: widget.topic,
             quizScore: widget.quizScore,
             challengeScore: _challengeScore,
+            answers: List.unmodifiable([...widget.quizAnswers, ..._answers]),
+            attemptId: _attemptId,
+            practiceMode: widget.practiceMode,
+            practiceHistoryKey: widget.practiceHistoryKey,
           ),
         ),
       );
@@ -72,6 +116,10 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_rounds.isEmpty) {
+      return const Scaffold(
+          body: Center(child: Text('No questions available.')));
+    }
     final rounds = _rounds;
     final current = rounds[_round];
     final accent = norieContentAccent(widget.topic.accent);
@@ -144,9 +192,7 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
                   ),
                 ),
                 const SizedBox(height: 22),
-                for (var index = 0;
-                    index < current.options.length;
-                    index++)
+                for (var index = 0; index < current.options.length; index++)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 11),
                     child: _ChallengeChoice(
@@ -181,9 +227,7 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: Text(
-                    _round == rounds.length - 1
-                        ? 'View results'
-                        : 'Next round',
+                    _round == rounds.length - 1 ? 'View results' : 'Next round',
                   ),
                 ),
               ],

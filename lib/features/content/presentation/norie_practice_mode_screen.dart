@@ -17,7 +17,9 @@ class NoriePracticeModeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = norieContentAccent(topic.accent);
-    const modes = NorieActivityMode.values;
+    final modes = topic.gradeLevel == 'g1'
+        ? const [NorieActivityMode.multipleChoice]
+        : NorieActivityMode.values;
 
     return Scaffold(
       appBar: AppBar(
@@ -106,8 +108,7 @@ class _ModeCard extends StatelessWidget {
           'Pair prompts with the correct shuffled answers.',
         NorieActivityMode.dragAndDrop =>
           'Drag the correct answer into the target.',
-        NorieActivityMode.trueFalse =>
-          'Judge a randomized statement quickly.',
+        NorieActivityMode.trueFalse => 'Judge a randomized statement quickly.',
         NorieActivityMode.ordering =>
           'Arrange shuffled concepts into the expected order.',
         NorieActivityMode.flashcards =>

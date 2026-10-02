@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../core/audio/norie_audio_navigation.dart';
 
+import '../core/audio/norie_audio_host.dart';
 import '../core/mascot/help/norie_help_models.dart';
 import '../core/mascot/norie_mascot_host.dart';
 import '../core/theme/norie_theme.dart';
@@ -17,6 +19,7 @@ class NorieApp extends StatefulWidget {
 
 class _NorieAppState extends State<NorieApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  final _audioNavigation = NorieAudioNavigation();
 
   void _navigateFromHelp(NorieHelpDestination destination) {
     final navigator = _navigatorKey.currentState;
@@ -62,13 +65,15 @@ class _NorieAppState extends State<NorieApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: _navigatorKey,
+      navigatorObservers: [_audioNavigation],
       title: 'Norie Learning',
       debugShowCheckedModeBanner: false,
       theme: NorieTheme.dark,
-      builder: (context, child) => NorieMascotHost(
+      builder: (context, child) => NorieAudioHost(
+          child: NorieMascotHost(
         onNavigate: _navigateFromHelp,
         child: child ?? const SizedBox.shrink(),
-      ),
+      )),
       home: const SplashScreen(),
     );
   }

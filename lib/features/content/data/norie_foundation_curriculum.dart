@@ -1,4 +1,5 @@
 import '../domain/norie_content_models.dart';
+import 'norie_grade1_science_curriculum.dart';
 
 class NorieGradeLevel {
   const NorieGradeLevel(this.id, this.label, this.shortLabel);
@@ -96,6 +97,9 @@ abstract final class NorieFoundationCurriculum {
     String title,
     int order,
   ) {
+    if (subject.toLowerCase() == 'science' && level.id == 'g1' && order <= 4) {
+      return NorieGrade1ScienceCurriculum.topic(order);
+    }
     final slug = title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
     final subjectSlug = subject.toLowerCase();
     final accent = switch (subjectSlug) {

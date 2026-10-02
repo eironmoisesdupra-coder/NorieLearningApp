@@ -1,3 +1,7 @@
+import '../../../core/quiz/quiz_result_summary.dart';
+import '../../../core/quiz/norie_quiz_outro.dart';
+import 'package:uuid/uuid.dart';
+import '../../../core/audio/norie_audio_manager.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -22,6 +26,8 @@ class StudyQuizScreen extends StatefulWidget {
 }
 
 class _StudyQuizScreenState extends State<StudyQuizScreen> {
+  final _attemptId = const Uuid().v4();
+  late final Object _audioToken;
   final _textController = TextEditingController();
   final List<NorieStudyAnswer> _answers = [];
   final _random = Random.secure();
@@ -39,8 +45,27 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
   @override
   void initState() {
     super.initState();
+    _audioToken =
+        NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
     _questions = widget.studySet.questions.map(_randomizeQuestion).toList()
       ..shuffle(_random);
+    if (_questions.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await NorieQuizOutro.show(context,
+            summary: QuizResultSummary(
+                attemptId: _attemptId,
+                historyKey:
+                    quizHistoryKey('study:${widget.studySet.id}', const []),
+                title: widget.studySet.title,
+                correctCount: 0,
+                totalCount: 0,
+                xpEarned: 0,
+                answers: const []),
+            canRetry: false);
+        if (mounted) Navigator.of(context).maybePop();
+      });
+    }
   }
 
   NorieStudyQuestion _randomizeQuestion(NorieStudyQuestion source) {
@@ -63,6 +88,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
 
   @override
   void dispose() {
+    NorieAudioManager.instance.leaveContext(_audioToken);
     _textController.dispose();
     super.dispose();
   }
@@ -99,6 +125,11 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
     if (response.isEmpty) return;
 
     final correct = _isCorrect(response);
+    if (correct) {
+      NorieAudioManager.instance.playCorrect();
+    } else {
+      NorieAudioManager.instance.playWrong();
+    }
     setState(() {
       _checked = true;
       _correct = correct;
@@ -119,6 +150,12 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
 
   void _rateFlashcard(bool knewIt) {
     if (_checked) return;
+    NorieAudioManager.instance.playQuizSelect();
+    if (knewIt) {
+      NorieAudioManager.instance.playCorrect();
+    } else {
+      NorieAudioManager.instance.playWrong();
+    }
     setState(() {
       _checked = true;
       _correct = knewIt;
@@ -180,6 +217,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
         MaterialPageRoute<void>(
           builder: (_) => StudyResultsScreen(
             studySet: widget.studySet,
+            attemptId: _attemptId,
             answers: List.unmodifiable(_answers),
             result: result,
           ),
@@ -200,6 +238,10 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_questions.isEmpty) {
+      return const Scaffold(
+          body: Center(child: Text('No questions available.')));
+    }
     final total = _questions.length;
     final progress = total == 0 ? 0.0 : (_index + 1) / total;
 
@@ -251,8 +293,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                   ),
                 ),
                 const SizedBox(height: 22),
-                if (_question.kind ==
-                        NorieStudyQuestionKind.singleSelect ||
+                if (_question.kind == NorieStudyQuestionKind.singleSelect ||
                     _question.kind == NorieStudyQuestionKind.trueFalse ||
                     _question.kind == NorieStudyQuestionKind.matching ||
                     _question.kind == NorieStudyQuestionKind.dragAndDrop)
@@ -268,7 +309,10 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                         ),
                         onTap: _checked
                             ? null
-                            : () => setState(() => _selected = option),
+                            : () {
+                                NorieAudioManager.instance.playQuizSelect();
+                                setState(() => _selected = option);
+                              },
                       ),
                     )
                 else if (_question.kind ==
@@ -289,7 +333,10 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                     items: _question.orderedItems,
                     selected: _selected,
                     checked: _checked,
-                    onSelected: (value) => setState(() => _selected = value),
+                    onSelected: (value) {
+                      NorieAudioManager.instance.playQuizSelect();
+                      setState(() => _selected = value);
+                    },
                   )
                 else
                   _Flashcard(
@@ -298,8 +345,10 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                         : _question.correctValues.first,
                     revealed: _flashcardRevealed,
                     checked: _checked,
-                    onReveal: () =>
-                        setState(() => _flashcardRevealed = true),
+                    onReveal: () {
+                      NorieAudioManager.instance.playQuizSelect();
+                      setState(() => _flashcardRevealed = true);
+                    },
                     onRate: _rateFlashcard,
                   ),
                 if (_checked) ...[
@@ -327,9 +376,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                       _finishing
                           ? 'Saving…'
                           : _checked
-                              ? (_index == total - 1
-                                  ? 'View Results'
-                                  : 'Next')
+                              ? (_index == total - 1 ? 'View Results' : 'Next')
                               : 'Check Answer',
                     ),
                   )

@@ -1,3 +1,8 @@
+import 'package:uuid/uuid.dart';
+import '../../../core/audio/norie_audio_manager.dart';
+import '../../../core/quiz/quiz_result_summary.dart';
+import '../../../core/quiz/norie_quiz_outro.dart';
+import '../application/norie_quiz_adapter.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -28,6 +33,12 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
   late final List<NorieRandomizedQuestion> _items;
   late List<String> _ordered;
 
+  final _attemptId = const Uuid().v4();
+  final List<QuizAnswerRecord> _answers = [];
+  final Map<String, String> _answeredModes = {};
+  late final Object _audioToken;
+  late NorieActivityMode _activeMode;
+  bool _finishing = false;
   int _current = 0;
   int _score = 0;
   int? _selected;
@@ -41,27 +52,44 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
   String get expected => question.resolvedAcceptedAnswers.isNotEmpty
       ? question.resolvedAcceptedAnswers.first
       : '';
-  NorieActivityMode get mode => widget.requestedMode == NorieActivityMode.mixed
-      ? NorieItemRandomizer.randomMode(question: question, random: _random)
-      : widget.requestedMode;
+  NorieActivityMode get mode => _activeMode;
+  NorieActivityMode get _requestedMode =>
+      (norieQuizGrade(widget.topic) ?? 99) <= 2
+          ? NorieActivityMode.multipleChoice
+          : widget.requestedMode;
 
   @override
   void initState() {
     super.initState();
+    _audioToken =
+        NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
     _items = NorieItemRandomizer.randomize(
       widget.topic.quiz.questions,
       random: _random,
     );
-    _prepareOrder();
+    if (_items.isEmpty) {
+      _activeMode = _requestedMode;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          norieEmptyContentQuiz(context, widget.topic, _requestedMode.name);
+        }
+      });
+    } else {
+      _prepareOrder();
+    }
   }
 
   @override
   void dispose() {
+    NorieAudioManager.instance.leaveContext(_audioToken);
     _controller.dispose();
     super.dispose();
   }
 
   void _prepareOrder() {
+    _activeMode = _requestedMode == NorieActivityMode.mixed
+        ? NorieItemRandomizer.randomMode(question: question, random: _random)
+        : _requestedMode;
     _ordered = List<String>.from(question.orderedItems)..shuffle(_random);
   }
 
@@ -86,22 +114,87 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
     return true;
   }
 
+  String get _historyKey => quizHistoryKey(
+      'curriculum:${widget.topic.id}:${_requestedMode.name}',
+      widget.topic.quiz.questions.map((q) => norieQuestionSignature(
+          q, _answeredModes[q.id] ?? _requestedMode.name)));
+
   void _submit(bool correct) {
-    if (_checked) return;
+    if (_checked || _finishing) return;
+    _answeredModes[question.id] = mode == NorieActivityMode.trueFalse
+        ? '${mode.name}:${item.options[_selected ?? 0]}'
+        : mode.name;
+    final response = switch (mode) {
+      NorieActivityMode.identification ||
+      NorieActivityMode.fillInBlank =>
+        _controller.text.trim(),
+      NorieActivityMode.trueFalse => _truth == true ? 'True' : 'False',
+      NorieActivityMode.dragAndDrop => _dropped ?? '',
+      NorieActivityMode.ordering when question.orderedItems.isNotEmpty =>
+        _ordered.join(' → '),
+      NorieActivityMode.flashcards => correct ? 'Knew it' : 'Review again',
+      _ => _selected == null ? '' : item.options[_selected!],
+    };
+    final statement = item.options[_selected ?? 0];
+    _answers.add(norieContentAnswer(question,
+        response: response,
+        correct: correct,
+        prompt: mode == NorieActivityMode.trueFalse
+            ? '${question.prompt}\nStatement: $statement'
+            : null,
+        correctAnswer: mode == NorieActivityMode.trueFalse
+            ? (norieAnswerMatches(statement, expected) ? 'True' : 'False')
+            : mode == NorieActivityMode.ordering &&
+                    question.orderedItems.isNotEmpty
+                ? question.orderedItems.join(' → ')
+                : null,
+        selfRated: mode == NorieActivityMode.flashcards));
+    if (correct) {
+      NorieAudioManager.instance.playCorrect();
+    } else {
+      NorieAudioManager.instance.playWrong();
+    }
     setState(() {
       _checked = true;
       if (correct) _score++;
     });
   }
 
-  void _next() {
-    if (!_checked) return;
+  Future<void> _next() async {
+    if (!_checked || _finishing) return;
     if (_current == _items.length - 1) {
+      setState(() => _finishing = true);
+      final action = await NorieQuizOutro.show(context,
+          summary: QuizResultSummary(
+              attemptId: _attemptId,
+              historyKey: _historyKey,
+              title: widget.topic.title,
+              correctCount: _score,
+              totalCount: _items.length,
+              xpEarned: 0,
+              gradeLevel: norieQuizGrade(widget.topic),
+              answers: List.unmodifiable(_answers)),
+          canReviewLesson: true);
+      if (!mounted) return;
+      if (action == QuizOutroAction.reviewLesson) {
+        Navigator.of(context).pop();
+        return;
+      }
+      if (action == QuizOutroAction.retry) {
+        Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+            builder: (_) => NorieActivityScreen(
+                topic: widget.topic, requestedMode: _requestedMode)));
+        return;
+      }
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => NorieChallengeScreen(
             topic: widget.topic,
             quizScore: _score,
+            quizAnswers: List.unmodifiable(_answers),
+            attemptId: _attemptId,
+            practiceMode: _requestedMode,
+            practiceHistoryKey: _historyKey,
           ),
         ),
       );
@@ -121,6 +214,10 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_items.isEmpty) {
+      return const Scaffold(
+          body: Center(child: Text('No questions available.')));
+    }
     final accent = norieContentAccent(widget.topic.accent);
     final activeMode = mode;
     return Scaffold(
@@ -229,8 +326,12 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 9),
               child: OutlinedButton(
-                onPressed:
-                    _checked ? null : () => setState(() => _selected = i),
+                onPressed: _checked
+                    ? null
+                    : () {
+                        NorieAudioManager.instance.playQuizSelect();
+                        setState(() => _selected = i);
+                      },
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
                     color: _selected == i ? accent : NorieColors.border,
@@ -287,16 +388,24 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed:
-                    _checked ? null : () => setState(() => _truth = true),
+                onPressed: _checked
+                    ? null
+                    : () {
+                        NorieAudioManager.instance.playQuizSelect();
+                        setState(() => _truth = true);
+                      },
                 child: const Text('TRUE'),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton(
-                onPressed:
-                    _checked ? null : () => setState(() => _truth = false),
+                onPressed: _checked
+                    ? null
+                    : () {
+                        NorieAudioManager.instance.playQuizSelect();
+                        setState(() => _truth = false);
+                      },
                 child: const Text('FALSE'),
               ),
             ),
@@ -319,7 +428,10 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
           InkWell(
             onTap: _checked
                 ? null
-                : () => setState(() => _revealed = !_revealed),
+                : () {
+                    NorieAudioManager.instance.playQuizSelect();
+                    setState(() => _revealed = !_revealed);
+                  },
             child: Container(
               constraints: const BoxConstraints(minHeight: 180),
               padding: const EdgeInsets.all(24),
@@ -366,7 +478,10 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
           DragTarget<String>(
             onAcceptWithDetails: _checked
                 ? null
-                : (details) => setState(() => _dropped = details.data),
+                : (details) {
+                    NorieAudioManager.instance.playQuizSelect();
+                    setState(() => _dropped = details.data);
+                  },
             builder: (context, candidates, rejected) => Container(
               height: 86,
               alignment: Alignment.center,
@@ -420,8 +535,7 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
         children: [
           const Text(
             'No sequence is authored for this item yet. Using shuffled answer recall instead.',
-            style:
-                TextStyle(color: NorieColors.textSecondary, fontSize: 11),
+            style: TextStyle(color: NorieColors.textSecondary, fontSize: 11),
           ),
           const SizedBox(height: 10),
           _choices(accent, 'Choose the best answer.'),
@@ -437,6 +551,7 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
           onReorderItem: _checked
               ? (_, __) {}
               : (oldIndex, newIndex) {
+                  NorieAudioManager.instance.playQuizSelect();
                   setState(() {
                     final value = _ordered.removeAt(oldIndex);
                     _ordered.insert(newIndex, value);

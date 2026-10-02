@@ -49,6 +49,9 @@ jobs:
       - name: Package Windows app
         working-directory: desktop
         run: npm run package:windows
+      - name: Verify offline audio playback and persisted settings
+        working-directory: desktop
+        run: npm run test:audio
       - name: Run packaged app without internet
         working-directory: desktop
         run: npm run test:offline
@@ -65,4 +68,4 @@ jobs:
         if: failure()
         with:
           name: Windows-offline-test-screenshots
-          path: build/windows-offline-*.png
+          path: build/windows-*.png

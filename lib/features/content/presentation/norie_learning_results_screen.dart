@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/mascot/norie_mascot_scope.dart';
-import '../../../core/mascot/norie_quiz_reaction_policy.dart';
+import 'package:uuid/uuid.dart';
+import '../../../core/quiz/quiz_result_summary.dart';
+import '../../../core/quiz/norie_quiz_outro.dart';
+import '../application/norie_quiz_adapter.dart';
+import '../application/norie_activity_engine.dart';
+import 'norie_activity_screen.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_reward_feedback.dart';
@@ -13,12 +17,20 @@ class NorieLearningResultsScreen extends StatefulWidget {
     required this.topic,
     required this.quizScore,
     required this.challengeScore,
+    this.answers = const [],
+    this.attemptId,
+    this.practiceMode = NorieActivityMode.multipleChoice,
+    this.practiceHistoryKey,
     super.key,
   });
 
   final NorieTopicContent topic;
   final int quizScore;
   final int challengeScore;
+  final List<QuizAnswerRecord> answers;
+  final String? attemptId;
+  final NorieActivityMode practiceMode;
+  final String? practiceHistoryKey;
 
   @override
   State<NorieLearningResultsScreen> createState() =>
@@ -27,6 +39,9 @@ class NorieLearningResultsScreen extends StatefulWidget {
 
 class _NorieLearningResultsScreenState
     extends State<NorieLearningResultsScreen> {
+  // A route remount with the same completed attempt reuses its receipt.
+  static final _receipts = <String, _LessonRewardReceipt>{};
+  late final String _attemptId = widget.attemptId ?? const Uuid().v4();
   late final int _quizXp;
   late final int _challengeXp;
   late final int _completionXp;
@@ -40,56 +55,71 @@ class _NorieLearningResultsScreenState
     super.initState();
 
     _quizXp = widget.quizScore * widget.topic.quiz.xpPerCorrect;
-    _challengeXp =
-        widget.challengeScore * widget.topic.challenge.xpPerCorrect;
+    _challengeXp = widget.challengeScore * widget.topic.challenge.xpPerCorrect;
     _completionXp = widget.topic.lesson.completionXp;
     _totalXp = _quizXp + _challengeXp + _completionXp;
 
-    final progression = NorieProgression.instance;
-    final unlockedBefore = progression.achievements
-        .where((achievement) => achievement.unlocked)
-        .map((achievement) => achievement.id)
-        .toSet();
-
-    _lessonCompletion = progression.recordLessonCompletion(
-      quizScore: widget.quizScore,
-      challengeScore: widget.challengeScore,
-      category: widget.topic.category,
-      topic: widget.topic.title,
-      topicId: widget.topic.id,
-      quizAttempts: widget.topic.quiz.questions.length,
-      challengeAttempts: widget.topic.challenge.rounds.length,
-    );
-    _award = progression.addXp(_totalXp);
-
-    _newAchievements = progression.achievements
-        .where(
-          (achievement) =>
-              achievement.unlocked &&
-              !unlockedBefore.contains(achievement.id),
-        )
-        .toList();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final totalAttempts = widget.topic.quiz.questions.length +
-          widget.topic.challenge.rounds.length;
-      final totalCorrect = widget.quizScore + widget.challengeScore;
-      NorieMascotScope.maybeOf(context)?.controller.celebrate(
-            level: NorieQuizReactionPolicy.celebrationFor(
-              correct: totalCorrect,
-              total: totalAttempts,
-            ),
-          );
-      NorieRewardPopup.show(
-        context,
-        credits: _lessonCompletion.creditsAwarded,
-        xp: _totalXp,
-        title: _lessonCompletion.creditsAwarded > 0
-            ? 'Lesson rewards!'
-            : 'XP earned!',
-      );
+    final receipt = _receipts.putIfAbsent(_attemptId, () {
+      final progression = NorieProgression.instance;
+      final unlockedBefore = progression.achievements
+          .where((a) => a.unlocked)
+          .map((a) => a.id)
+          .toSet();
+      final completion = progression.recordLessonCompletion(
+          quizScore: widget.quizScore,
+          challengeScore: widget.challengeScore,
+          category: widget.topic.category,
+          topic: widget.topic.title,
+          topicId: widget.topic.id,
+          quizAttempts: widget.topic.quiz.questions.length,
+          challengeAttempts: widget.topic.challenge.rounds.length);
+      final award = progression.addXp(_totalXp);
+      return _LessonRewardReceipt(
+          award,
+          completion,
+          progression.achievements
+              .where((a) => a.unlocked && !unlockedBefore.contains(a.id))
+              .toList());
     });
+    _award = receipt.award;
+    _lessonCompletion = receipt.completion;
+    _newAchievements = receipt.achievements;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showOutro();
+    });
+  }
+
+  Future<void> _showOutro() async {
+    final action = await NorieQuizOutro.show(context,
+        canViewDetails: true,
+        summary: QuizResultSummary(
+            attemptId: '$_attemptId:lesson',
+            historyKey: norieContentHistoryKey(
+                widget.topic,
+                'lesson:${widget.practiceHistoryKey ?? widget.practiceMode.name}',
+                [
+                  ...widget.topic.quiz.questions,
+                  ...widget.topic.challenge.rounds
+                ]),
+            title: widget.topic.title,
+            correctCount: widget.quizScore + widget.challengeScore,
+            totalCount: widget.topic.quiz.questions.length +
+                widget.topic.challenge.rounds.length,
+            xpEarned: _totalXp,
+            gradeLevel: norieQuizGrade(widget.topic),
+            answers: widget.answers),
+        canReviewLesson: true);
+    if (!mounted || action == QuizOutroAction.viewDetails) return;
+    if (action == QuizOutroAction.retry) {
+      Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+          builder: (_) => NorieActivityScreen(
+              topic: widget.topic,
+              requestedMode: (norieQuizGrade(widget.topic) ?? 99) <= 2
+                  ? NorieActivityMode.multipleChoice
+                  : widget.practiceMode)));
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -292,10 +322,9 @@ class _NorieLearningResultsScreenState
                 ),
                 const SizedBox(height: 24),
                 FilledButton.icon(
-                  onPressed: () =>
-                      Navigator.of(context).popUntil((route) => route.isFirst),
+                  onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.home_rounded),
-                  label: const Text('Back to Home'),
+                  label: const Text('Back to Lesson'),
                   style: FilledButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: NorieColors.background,
@@ -393,4 +422,11 @@ class _ResultRow extends StatelessWidget {
       ],
     );
   }
+}
+
+class _LessonRewardReceipt {
+  const _LessonRewardReceipt(this.award, this.completion, this.achievements);
+  final NorieXpAward award;
+  final NorieLessonCompletion completion;
+  final List<NorieAchievement> achievements;
 }

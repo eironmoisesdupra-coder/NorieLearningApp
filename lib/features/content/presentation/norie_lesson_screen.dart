@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../core/audio/norie_audio_host.dart';
+import '../../../core/audio/norie_audio_manager.dart';
 
 import '../../../core/theme/norie_theme.dart';
 import '../domain/norie_content_models.dart';
 import 'norie_content_theme.dart';
 import 'norie_lesson_visual.dart';
+import 'norie_grade1_science_visual.dart';
 import 'norie_practice_mode_screen.dart';
 
 class NorieLessonScreen extends StatelessWidget {
@@ -18,130 +21,135 @@ class NorieLessonScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = norieContentAccent(topic.accent);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(topic.title),
-        backgroundColor: Colors.transparent,
-      ),
-      body: SafeArea(
-        top: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
-              children: [
-                Row(
+    return NorieAudioScope(
+        contextType: NorieAudioContext.lesson,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(topic.title),
+            backgroundColor: Colors.transparent,
+          ),
+          body: SafeArea(
+            top: false,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
                   children: [
-                    _Badge(text: topic.category, color: NorieColors.violet),
-                    const SizedBox(width: 8),
-                    _Badge(
-                      text: 'Lesson ${topic.order}',
-                      color: accent,
+                    Row(
+                      children: [
+                        _Badge(text: topic.category, color: NorieColors.violet),
+                        const SizedBox(width: 8),
+                        _Badge(
+                          text: 'Lesson ${topic.order}',
+                          color: accent,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      topic.lesson.heading,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      topic.lesson.introduction,
+                      style: const TextStyle(
+                        color: NorieColors.textSecondary,
+                        height: 1.55,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (topic.visualType != null &&
+                        topic.visualType != 'g1-science') ...[
+                      const SizedBox(height: 20),
+                      NorieLessonVisual(
+                        type: topic.visualType!,
+                        title: topic.title,
+                        accent: accent,
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    for (var index = 0;
+                        index < topic.lesson.sections.length;
+                        index++) ...[
+                      _ConceptCard(section: topic.lesson.sections[index]),
+                      if (index != topic.lesson.sections.length - 1)
+                        const SizedBox(height: 12),
+                    ],
+                    const SizedBox(height: 18),
+                    if (topic.lesson.keyConceptTitle.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF131A35),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: accent.withValues(alpha: .7),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'KEY CONCEPT',
+                              style: TextStyle(
+                                fontSize: 11,
+                                letterSpacing: 1.4,
+                                color: accent,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              topic.lesson.keyConceptTitle,
+                              style: const TextStyle(
+                                fontSize: 21,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              topic.lesson.keyConceptBody,
+                              style: const TextStyle(
+                                color: NorieColors.textSecondary,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: topic.quiz.questions.isEmpty
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      NoriePracticeModeScreen(topic: topic),
+                                ),
+                              );
+                            },
+                      icon: const Icon(Icons.extension_rounded),
+                      label: Text(
+                        'Choose practice mode · ${topic.quiz.questions.length} items',
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: NorieColors.background,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
-                Text(
-                  topic.lesson.heading,
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  topic.lesson.introduction,
-                  style: const TextStyle(
-                    color: NorieColors.textSecondary,
-                    height: 1.55,
-                    fontSize: 15,
-                  ),
-                ),
-                if (topic.visualType != null) ...[
-                  const SizedBox(height: 20),
-                  NorieLessonVisual(
-                    type: topic.visualType!,
-                    title: topic.title,
-                    accent: accent,
-                  ),
-                ],
-                const SizedBox(height: 24),
-                for (var index = 0;
-                    index < topic.lesson.sections.length;
-                    index++) ...[
-                  _ConceptCard(section: topic.lesson.sections[index]),
-                  if (index != topic.lesson.sections.length - 1)
-                    const SizedBox(height: 12),
-                ],
-                const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF131A35),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: accent.withValues(alpha: .7),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'KEY CONCEPT',
-                        style: TextStyle(
-                          fontSize: 11,
-                          letterSpacing: 1.4,
-                          color: accent,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        topic.lesson.keyConceptTitle,
-                        style: const TextStyle(
-                          fontSize: 21,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        topic.lesson.keyConceptBody,
-                        style: const TextStyle(
-                          color: NorieColors.textSecondary,
-                          height: 1.45,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: topic.quiz.questions.isEmpty
-                      ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => NoriePracticeModeScreen(topic: topic),
-                            ),
-                          );
-                        },
-                  icon: const Icon(Icons.extension_rounded),
-                  label: Text(
-                    'Choose practice mode · ${topic.quiz.questions.length} items',
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: NorieColors.background,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 }
 
@@ -180,6 +188,37 @@ class _ConceptCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = norieContentAccent(section.accent);
+
+    if (section.body != null || section.visualType != null) {
+      final prose = Text(section.body ?? '',
+          style: const TextStyle(
+              fontSize: 16, height: 1.6, color: NorieColors.textSecondary));
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+            color: NorieColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withValues(alpha: .35))),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(section.title,
+              style: const TextStyle(
+                  fontSize: 20, height: 1.35, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 12),
+          if (section.visualType != null)
+            NorieGrade1ScienceVisual(
+                type: section.visualType!,
+                caption: section.visualCaption ?? ''),
+          if (section.body != null)
+            if (section.reveal)
+              Material(
+                  type: MaterialType.transparency,
+                  child: _QuickCheckBody(body: section.body!))
+            else
+              prose,
+        ]),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -239,5 +278,48 @@ class _ConceptCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _QuickCheckBody extends StatelessWidget {
+  const _QuickCheckBody({required this.body});
+  final String body;
+  @override
+  Widget build(BuildContext context) {
+    final boundaries =
+        RegExp(r'^\d+\. ', multiLine: true).allMatches(body).toList();
+    final style = const TextStyle(
+        fontSize: 16, height: 1.6, color: NorieColors.textSecondary);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (boundaries.isNotEmpty && boundaries.first.start > 0)
+        Text(body.substring(0, boundaries.first.start).trim(), style: style),
+      for (var i = 0; i < boundaries.length; i++)
+        Builder(builder: (context) {
+          final block = body
+              .substring(
+                  boundaries[i].start,
+                  i + 1 < boundaries.length
+                      ? boundaries[i + 1].start
+                      : body.length)
+              .trim();
+          final marker = RegExp(r'(Answer:|Weather:)').firstMatch(block);
+          if (marker == null) return Text(block, style: style);
+          return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(block.substring(0, marker.start).trim(), style: style),
+                ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: const Text('Reveal answer'),
+                    children: [
+                      Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(block.substring(marker.start).trim(),
+                              style: style))
+                    ]),
+                const SizedBox(height: 10),
+              ]);
+        }),
+    ]);
   }
 }

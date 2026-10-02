@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/audio/norie_audio_manager.dart';
 
 import '../../../core/mascot/norie_app_context.dart';
 import '../../../core/mascot/norie_mascot_scope.dart';
@@ -44,6 +45,7 @@ class _MainShellState extends State<MainShell> {
   void _selectTab(int index) {
     final safeIndex = index.clamp(0, 4).toInt();
     if (_index == safeIndex) return;
+    NorieAudioManager.instance.playUiSelect();
     setState(() => _index = safeIndex);
     _reportContext(safeIndex);
   }
