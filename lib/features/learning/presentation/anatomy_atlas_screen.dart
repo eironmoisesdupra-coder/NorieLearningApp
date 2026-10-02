@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/audio/norie_audio_manager.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../domain/anatomy_atlas_catalog.dart';
 import '../domain/anatomy_models.dart';
@@ -22,7 +23,16 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   String _reference = 'male';
   AtlasStructure? _selected;
   double _opacity = 1;
+  late final Object _audioContext;
+  @override
+  void initState() {
+    super.initState();
+    _audioContext =
+        NorieAudioManager.instance.enterContext(NorieAudioContext.anatomy);
+  }
+
   void _changeReference(String value) {
+    NorieAudioManager.instance.playUiSelect();
     setState(() {
       _reference = value;
       _selected = null;
@@ -40,11 +50,13 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
 
   @override
   void dispose() {
+    NorieAudioManager.instance.leaveContext(_audioContext);
     _controller.dispose();
     super.dispose();
   }
 
   void _select(AtlasStructure structure) {
+    NorieAudioManager.instance.playUiSelect();
     setState(() => _selected = structure);
     _controller.send('select', {'id': structure.id});
     _controller.send('focus', {'id': structure.id});
@@ -314,6 +326,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                                       _systems.length == 1) {
                                                     return;
                                                   }
+                                                  NorieAudioManager.instance
+                                                      .playUiSelect();
                                                   _systems = {..._systems};
                                                   enabled
                                                       ? _systems
@@ -371,8 +385,11 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                 'reset'
                               ])
                                 TextButton(
-                                    onPressed: () => _controller
-                                        .send('camera', {'view': view}),
+                                    onPressed: () {
+                                      NorieAudioManager.instance.playUiTap();
+                                      _controller
+                                          .send('camera', {'view': view});
+                                    },
                                     child: Text(view[0].toUpperCase() +
                                         view.substring(1))),
                             ])),
@@ -398,15 +415,25 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                     scrollDirection: Axis.horizontal,
                                     child: Row(children: [
                                       TextButton(
-                                          onPressed: () => _controller.send(
-                                              'focus', {'id': selected.id}),
+                                          onPressed: () {
+                                            NorieAudioManager.instance
+                                                .playUiTap();
+                                            _controller.send(
+                                                'focus', {'id': selected.id});
+                                          },
                                           child: const Text('Focus')),
                                       TextButton(
-                                          onPressed: () => _controller.send(
-                                              'isolate', {'id': selected.id}),
+                                          onPressed: () {
+                                            NorieAudioManager.instance
+                                                .playUiSelect();
+                                            _controller.send(
+                                                'isolate', {'id': selected.id});
+                                          },
                                           child: const Text('Isolate')),
                                       TextButton(
                                           onPressed: () {
+                                            NorieAudioManager.instance
+                                                .playUiSelect();
                                             _controller.send(
                                                 'hide', {'id': selected.id});
                                             setState(() => _selected = null);
@@ -414,6 +441,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                           child: const Text('Hide')),
                                       TextButton(
                                           onPressed: () {
+                                            NorieAudioManager.instance
+                                                .playUiTap();
                                             _controller.send('restore');
                                             setState(() => _opacity = 1);
                                           },
@@ -439,6 +468,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                       .toList(),
                                   onChanged: (value) {
                                     if (value == null) return;
+                                    NorieAudioManager.instance.playUiSelect();
                                     setState(() => _opacity = value);
                                     _controller
                                         .send('opacity', {'value': value});
@@ -446,6 +476,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                       IconButton(
                           tooltip: 'Restore hidden structures',
                           onPressed: () {
+                            NorieAudioManager.instance.playUiTap();
                             _controller.send('restore');
                             setState(() => _opacity = 1);
                           },

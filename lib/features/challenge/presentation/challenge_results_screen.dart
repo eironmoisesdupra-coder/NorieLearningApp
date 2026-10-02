@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/assets/norie_assets.dart';
-import '../../../core/mascot/norie_mascot_scope.dart';
-import '../../../core/mascot/norie_quiz_reaction_policy.dart';
+import 'package:uuid/uuid.dart';
+import '../../../core/quiz/quiz_result_summary.dart';
+import '../../../core/quiz/norie_quiz_outro.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_reward_feedback.dart';
@@ -14,6 +15,9 @@ class ChallengeResultsScreen extends StatefulWidget {
     required this.correct,
     required this.total,
     this.secondsRemaining,
+    this.attemptId,
+    this.historyKey,
+    this.answers = const [],
     super.key,
   });
 
@@ -21,12 +25,17 @@ class ChallengeResultsScreen extends StatefulWidget {
   final int correct;
   final int total;
   final int? secondsRemaining;
+  final String? attemptId;
+  final String? historyKey;
+  final List<QuizAnswerRecord> answers;
 
   @override
   State<ChallengeResultsScreen> createState() => _ChallengeResultsScreenState();
 }
 
 class _ChallengeResultsScreenState extends State<ChallengeResultsScreen> {
+  static final _receipts = <String, _ChallengeRewardReceipt>{};
+  late final _attemptId = widget.attemptId ?? const Uuid().v4();
   late final NorieChallengeCompletion _completion;
   late final List<NorieAchievement> _newAchievements;
 
@@ -36,48 +45,53 @@ class _ChallengeResultsScreenState extends State<ChallengeResultsScreen> {
   void initState() {
     super.initState();
 
-    final progression = NorieProgression.instance;
-    final unlockedBefore = progression.achievements
-        .where((achievement) => achievement.unlocked)
-        .map((achievement) => achievement.id)
-        .toSet();
-
-    _completion = progression.recordChallengeCompletion(
-      mode: widget.mode,
-      correct: widget.correct,
-      total: widget.total,
-    );
-
-    _newAchievements = progression.achievements
-        .where(
-          (achievement) =>
-              achievement.unlocked &&
-              !unlockedBefore.contains(achievement.id),
-        )
-        .toList();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      NorieMascotScope.maybeOf(context)?.controller.celebrate(
-            level: NorieQuizReactionPolicy.celebrationFor(
-              correct: widget.correct,
-              total: widget.total,
-            ),
-          );
-      NorieRewardPopup.show(
-        context,
-        credits: _completion.creditsAwarded,
-        xp: _completion.totalXpAwarded,
-        title: _completion.creditsAwarded > 0
-            ? 'Challenge rewards!'
-            : 'Challenge complete!',
-      );
+    final receipt = _receipts.putIfAbsent(_attemptId, () {
+      final progression = NorieProgression.instance;
+      final unlockedBefore = progression.achievements
+          .where((a) => a.unlocked)
+          .map((a) => a.id)
+          .toSet();
+      final completion = progression.recordChallengeCompletion(
+          mode: widget.mode, correct: widget.correct, total: widget.total);
+      return _ChallengeRewardReceipt(
+          completion,
+          progression.achievements
+              .where((a) => a.unlocked && !unlockedBefore.contains(a.id))
+              .toList());
     });
+    _completion = receipt.completion;
+    _newAchievements = receipt.achievements;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showOutro();
+    });
+  }
+
+  Future<void> _showOutro() async {
+    final action = await NorieQuizOutro.show(context,
+        canViewDetails: true,
+        summary: QuizResultSummary(
+            attemptId: _attemptId,
+            historyKey: widget.historyKey ??
+                quizHistoryKey('challenge:${widget.mode.name}',
+                    widget.answers.map((a) => a.questionId)),
+            title: _isSpeed ? 'Speed Challenge' : 'Daily Challenge',
+            correctCount: widget.correct,
+            totalCount: widget.total,
+            xpEarned: _completion.totalXpAwarded,
+            answers: widget.answers));
+    if (!mounted || action == QuizOutroAction.viewDetails) return;
+    if (action == QuizOutroAction.retry) {
+      Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+          builder: (_) => ChallengeQuizScreen(mode: widget.mode)));
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final percent = ((widget.correct / widget.total) * 100).round();
+    final percent =
+        widget.total == 0 ? 0 : ((widget.correct / widget.total) * 100).round();
     final noXp = _completion.totalXpAwarded == 0;
 
     return Scaffold(
@@ -100,7 +114,9 @@ class _ChallengeResultsScreenState extends State<ChallengeResultsScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  _isSpeed ? 'Speed run complete!' : 'Daily challenge complete!',
+                  _isSpeed
+                      ? 'Speed run complete!'
+                      : 'Daily challenge complete!',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 30,
@@ -452,4 +468,10 @@ class _RewardNote extends StatelessWidget {
       ],
     );
   }
+}
+
+class _ChallengeRewardReceipt {
+  const _ChallengeRewardReceipt(this.completion, this.achievements);
+  final NorieChallengeCompletion completion;
+  final List<NorieAchievement> achievements;
 }

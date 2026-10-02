@@ -1,6 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../../core/audio/norie_audio_manager.dart';
+import '../../../core/quiz/quiz_result_summary.dart';
+import '../../../core/quiz/norie_quiz_outro.dart';
 
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
@@ -32,11 +37,22 @@ class _AnatomyQuizScreenState extends State<AnatomyQuizScreen> {
   int? _selectedIndex;
   bool _checked = false;
   bool _finished = false;
+  final _attemptId = const Uuid().v4();
+  final _answers = <QuizAnswerRecord>[];
+  late final Object _audioContext;
 
   @override
   void initState() {
     super.initState();
     _questions = _buildQuestions();
+    _audioContext =
+        NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
+  }
+
+  @override
+  void dispose() {
+    NorieAudioManager.instance.leaveContext(_audioContext);
+    super.dispose();
   }
 
   List<_AnatomyQuestion> _buildQuestions() {
@@ -52,8 +68,7 @@ class _AnatomyQuizScreenState extends State<AnatomyQuizScreen> {
     final targets = shuffled.take(min(12, shuffled.length)).toList();
 
     return [
-      for (var i = 0; i < targets.length; i++)
-        _makeQuestion(targets[i], i),
+      for (var i = 0; i < targets.length; i++) _makeQuestion(targets[i], i),
     ];
   }
 
@@ -80,7 +95,8 @@ class _AnatomyQuizScreenState extends State<AnatomyQuizScreen> {
       prompt: switch (mode) {
         0 => 'Identify the numbered structure.',
         1 => 'Which structure matches this function?\n${target.function}',
-        _ => 'Which structure belongs to the ${system.label} system and is described as: ${target.description}',
+        _ =>
+          'Which structure belongs to the ${system.label} system and is described as: ${target.description}',
       },
       options: names,
       correctIndex: names.indexOf(target.name),
@@ -89,9 +105,25 @@ class _AnatomyQuizScreenState extends State<AnatomyQuizScreen> {
   }
 
   void _check() {
-    if (_checked || _selectedIndex == null) return;
+    if (_finished || _checked || _selectedIndex == null) return;
     final correct = _selectedIndex == _questions[_index].correctIndex;
     if (correct) _score++;
+    final question = _questions[_index];
+    _answers.add(QuizAnswerRecord(
+        questionId: question.target.id,
+        prompt: question.prompt,
+        response: question.options[_selectedIndex!],
+        correctAnswer: question.target.name,
+        explanation:
+            '${question.target.description} ${question.target.function}',
+        correct: correct,
+        conceptId: question.system.id.name,
+        conceptLabel: question.system.label));
+    if (correct) {
+      NorieAudioManager.instance.playCorrect();
+    } else {
+      NorieAudioManager.instance.playWrong();
+    }
 
     NorieProgression.instance.recordTopicAnswer(
       category: 'Anatomy',
@@ -102,11 +134,39 @@ class _AnatomyQuizScreenState extends State<AnatomyQuizScreen> {
     setState(() => _checked = true);
   }
 
-  void _next() {
-    if (!_checked) return;
+  Future<void> _next() async {
+    if (_finished || !_checked) return;
     if (_index == _questions.length - 1) {
+      // Lock completion before applying the existing reward owner.
+      _finished = true;
       NorieProgression.instance.addXp(_score * 10);
       setState(() => _finished = true);
+      final action = await NorieQuizOutro.show(context,
+          summary: QuizResultSummary(
+              attemptId: _attemptId,
+              historyKey: quizHistoryKey('anatomy-fundamentals',
+                  _questions.map((q) => '${q.target.id}:${q.prompt}')),
+              title: 'Anatomy practice',
+              correctCount: _score,
+              totalCount: _questions.length,
+              xpEarned: _score * 10,
+              answers: _answers), reviewVisualBuilder: (_, answer) {
+        final question =
+            _questions.firstWhere((q) => q.target.id == answer.questionId);
+        return question.showVisual
+            ? _QuestionVisual(question: question)
+            : const SizedBox.shrink();
+      });
+      if (!mounted) return;
+      if (action == QuizOutroAction.retry) {
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute<void>(
+                builder: (_) => AnatomyQuizScreen(
+                    selectedSystems: widget.selectedSystems)));
+      } else {
+        Navigator.pop(context);
+      }
       return;
     }
     setState(() {
@@ -198,7 +258,10 @@ class _AnatomyQuizScreenState extends State<AnatomyQuizScreen> {
                 color: question.system.color,
                 onTap: _checked
                     ? null
-                    : () => setState(() => _selectedIndex = i),
+                    : () {
+                        NorieAudioManager.instance.playQuizSelect();
+                        setState(() => _selectedIndex = i);
+                      },
               ),
               const SizedBox(height: 9),
             ],
@@ -211,9 +274,8 @@ class _AnatomyQuizScreenState extends State<AnatomyQuizScreen> {
             ],
             const SizedBox(height: 18),
             FilledButton(
-              onPressed: _selectedIndex == null
-                  ? null
-                  : (_checked ? _next : _check),
+              onPressed:
+                  _selectedIndex == null ? null : (_checked ? _next : _check),
               style: FilledButton.styleFrom(
                 backgroundColor: question.system.color,
                 foregroundColor: NorieColors.background,
@@ -354,8 +416,7 @@ class _QuestionVisual extends StatelessWidget {
               autoRotate: false,
               enableTouch: true,
               enablePan: false,
-              hotspots:
-                  AnatomyHotspotQuizPolicy.quizHotspotsFor(realHotspot),
+              hotspots: AnatomyHotspotQuizPolicy.quizHotspotsFor(realHotspot),
               hotspotMode: AnatomyHotspotMode.quiz,
             )
           : LayoutBuilder(

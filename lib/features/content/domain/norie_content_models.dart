@@ -200,18 +200,30 @@ class NorieLessonSection {
     required this.symbol,
     required this.points,
     this.accent = 'cyan',
+    this.body,
+    this.visualType,
+    this.visualCaption,
+    this.reveal = false,
   });
 
   final String title;
   final String symbol;
   final List<String> points;
   final String accent;
+  final String? body;
+  final String? visualType;
+  final String? visualCaption;
+  final bool reveal;
 
   Map<String, dynamic> toJson() => {
         'title': title,
         'symbol': symbol,
         'points': points,
         'accent': accent,
+        if (body != null) 'body': body,
+        if (visualType != null) 'visual_type': visualType,
+        if (visualCaption != null) 'visual_caption': visualCaption,
+        'reveal': reveal,
       };
 
   factory NorieLessonSection.fromJson(Map<String, dynamic> json) {
@@ -220,6 +232,10 @@ class NorieLessonSection {
       symbol: json['symbol'] as String? ?? '',
       points: List<String>.from(json['points'] as List? ?? const []),
       accent: json['accent'] as String? ?? 'cyan',
+      body: json['body'] as String?,
+      visualType: json['visual_type'] as String?,
+      visualCaption: json['visual_caption'] as String?,
+      reveal: json['reveal'] as bool? ?? false,
     );
   }
 }
@@ -262,6 +278,8 @@ class NorieQuestionContent {
     this.difficulty = 'foundation',
     this.acceptedAnswers = const <String>[],
     this.orderedItems = const <String>[],
+    this.conceptId,
+    this.conceptLabel,
   });
 
   final String id;
@@ -272,6 +290,8 @@ class NorieQuestionContent {
   final String difficulty;
   final List<String> acceptedAnswers;
   final List<String> orderedItems;
+  final String? conceptId;
+  final String? conceptLabel;
 
   List<String> get resolvedAcceptedAnswers {
     if (acceptedAnswers.isNotEmpty) return acceptedAnswers;
@@ -291,6 +311,8 @@ class NorieQuestionContent {
         'difficulty': difficulty,
         'accepted_answers': acceptedAnswers,
         'ordered_items': orderedItems,
+        if (conceptId != null) 'concept_id': conceptId,
+        if (conceptLabel != null) 'concept_label': conceptLabel,
       };
 
   factory NorieQuestionContent.fromJson(Map<String, dynamic> json) {
@@ -305,6 +327,8 @@ class NorieQuestionContent {
           List<String>.from(json['accepted_answers'] as List? ?? const []),
       orderedItems:
           List<String>.from(json['ordered_items'] as List? ?? const []),
+      conceptId: json['concept_id'] as String?,
+      conceptLabel: json['concept_label'] as String?,
     );
   }
 }

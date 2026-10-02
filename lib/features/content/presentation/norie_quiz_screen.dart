@@ -1,3 +1,9 @@
+import 'package:uuid/uuid.dart';
+import '../../../core/audio/norie_audio_manager.dart';
+import '../../../core/quiz/quiz_result_summary.dart';
+import '../../../core/quiz/norie_quiz_outro.dart';
+import '../application/norie_quiz_adapter.dart';
+import '../application/norie_activity_engine.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/mascot/norie_mascot_scope.dart';
@@ -19,6 +25,32 @@ class NorieQuizScreen extends StatefulWidget {
 }
 
 class _NorieQuizScreenState extends State<NorieQuizScreen> {
+  final _attemptId = const Uuid().v4();
+  final List<QuizAnswerRecord> _answers = [];
+  late final _questions =
+      NorieItemRandomizer.randomize(widget.topic.quiz.questions);
+  late final _audioToken =
+      NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
+  bool _finishing = false;
+  @override
+  void initState() {
+    super.initState();
+    _audioToken;
+    if (_questions.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          norieEmptyContentQuiz(context, widget.topic, 'multipleChoice');
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    NorieAudioManager.instance.leaveContext(_audioToken);
+    super.dispose();
+  }
+
   int _current = 0;
   int? _selectedIndex;
   int _score = 0;
@@ -26,9 +58,16 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
 
   void _checkAnswer() {
     if (_selectedIndex == null || _checked) return;
-    final question = widget.topic.quiz.questions[_current];
+    final question = _questions[_current];
     final isCorrect = _selectedIndex == question.correctIndex;
 
+    _answers.add(norieContentAnswer(question.source,
+        response: question.options[_selectedIndex!], correct: isCorrect));
+    if (isCorrect) {
+      NorieAudioManager.instance.playCorrect();
+    } else {
+      NorieAudioManager.instance.playWrong();
+    }
     setState(() {
       _checked = true;
       if (isCorrect) {
@@ -41,15 +80,40 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
     }
   }
 
-  void _next() {
-    if (!_checked) return;
+  Future<void> _next() async {
+    if (!_checked || _finishing) return;
 
-    if (_current == widget.topic.quiz.questions.length - 1) {
+    if (_current == _questions.length - 1) {
+      setState(() => _finishing = true);
+      final action = await NorieQuizOutro.show(context,
+          summary: QuizResultSummary(
+              attemptId: _attemptId,
+              historyKey: norieContentHistoryKey(
+                  widget.topic, 'multipleChoice', widget.topic.quiz.questions),
+              title: widget.topic.title,
+              correctCount: _score,
+              totalCount: _questions.length,
+              xpEarned: 0,
+              gradeLevel: norieQuizGrade(widget.topic),
+              answers: List.unmodifiable(_answers)),
+          canReviewLesson: true);
+      if (!mounted) return;
+      if (action == QuizOutroAction.reviewLesson) {
+        Navigator.of(context).pop();
+        return;
+      }
+      if (action == QuizOutroAction.retry) {
+        Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+            builder: (_) => NorieQuizScreen(topic: widget.topic)));
+        return;
+      }
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => NorieChallengeScreen(
             topic: widget.topic,
             quizScore: _score,
+            quizAnswers: List.unmodifiable(_answers),
+            attemptId: _attemptId,
           ),
         ),
       );
@@ -65,7 +129,11 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final questions = widget.topic.quiz.questions;
+    if (_questions.isEmpty) {
+      return const Scaffold(
+          body: Center(child: Text('No questions available.')));
+    }
+    final questions = _questions;
     final question = questions[_current];
     final progress = (_current + 1) / questions.length;
     final accent = norieContentAccent(widget.topic.accent);
@@ -116,7 +184,7 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  question.prompt,
+                  question.source.prompt,
                   style: const TextStyle(
                     fontSize: 27,
                     height: 1.15,
@@ -136,7 +204,10 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
                       accent: accent,
                       onTap: _checked
                           ? null
-                          : () => setState(() => _selectedIndex = index),
+                          : () {
+                              NorieAudioManager.instance.playQuizSelect();
+                              setState(() => _selectedIndex = index);
+                            },
                     ),
                   ),
                 ),
@@ -156,7 +227,7 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
                       ),
                     ),
                     child: Text(
-                      question.explanation,
+                      question.source.explanation,
                       style: const TextStyle(
                         color: NorieColors.textSecondary,
                         height: 1.45,

@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 
-import '../../../core/mascot/norie_mascot_scope.dart';
-import '../../../core/mascot/norie_quiz_reaction_policy.dart';
+import 'package:uuid/uuid.dart';
+import '../../../core/quiz/quiz_result_summary.dart';
+import '../../../core/quiz/norie_quiz_outro.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../domain/norie_study_models.dart';
 import 'study_qa_screen.dart';
@@ -12,12 +14,14 @@ class StudyResultsScreen extends StatefulWidget {
     required this.studySet,
     required this.answers,
     required this.result,
+    this.attemptId,
     super.key,
   });
 
   final NorieStudySet studySet;
   final List<NorieStudyAnswer> answers;
   final NorieStudyAttemptResult result;
+  final String? attemptId;
 
   @override
   State<StudyResultsScreen> createState() => _StudyResultsScreenState();
@@ -28,14 +32,50 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      NorieMascotScope.maybeOf(context)?.controller.celebrate(
-            level: NorieQuizReactionPolicy.celebrationFor(
-              correct: widget.result.correct,
-              total: widget.result.total,
-            ),
-          );
+      if (mounted) _showOutro();
     });
+  }
+
+  Future<void> _showOutro() async {
+    final action = await NorieQuizOutro.show(context,
+        canViewDetails: true,
+        summary: QuizResultSummary(
+            attemptId: widget.attemptId ?? const Uuid().v4(),
+            historyKey: quizHistoryKey(
+                'study:${widget.studySet.ownerId ?? 'local'}:${widget.studySet.id}',
+                widget.studySet.questions.map((q) => jsonEncode([
+                      q.id,
+                      q.kind.name,
+                      q.prompt,
+                      q.correctValues,
+                      q.options.toList()..sort(),
+                      q.orderedItems
+                    ]))),
+            title: widget.studySet.title,
+            correctCount: widget.result.correct,
+            totalCount: widget.result.total,
+            xpEarned: widget.result.xpAwarded,
+            answers: [
+              for (final answer in widget.answers)
+                QuizAnswerRecord(
+                    questionId: answer.question.id,
+                    prompt: answer.question.prompt,
+                    response: answer.response,
+                    correctAnswer: answer.question.correctValues.join(' / '),
+                    explanation: answer.question.explanation,
+                    correct: answer.correct,
+                    conceptId: answer.question.topicTag,
+                    conceptLabel: answer.question.topicTag,
+                    selfRated: answer.question.kind ==
+                        NorieStudyQuestionKind.flashcard)
+            ]));
+    if (!mounted || action == QuizOutroAction.viewDetails) return;
+    if (action == QuizOutroAction.retry) {
+      Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+          builder: (_) => StudyQuizScreen(studySet: widget.studySet)));
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -101,7 +141,8 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
                     Expanded(
                       child: _ScoreCard(
                         label: 'Score',
-                        value: '${widget.result.correct} / ${widget.result.total}',
+                        value:
+                            '${widget.result.correct} / ${widget.result.total}',
                         color: NorieColors.cyan,
                       ),
                     ),
@@ -165,6 +206,7 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
                     onPressed: () {
                       final retrySet = NorieStudySet(
                         id: widget.studySet.id,
+                        ownerId: widget.studySet.ownerId,
                         title: '${widget.studySet.title} · Mistake Review',
                         sourceType: widget.studySet.sourceType,
                         sourceName: widget.studySet.sourceName,
@@ -224,7 +266,8 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => StudyQaScreen(studySet: widget.studySet),
+                        builder: (_) =>
+                            StudyQaScreen(studySet: widget.studySet),
                       ),
                     );
                   },
@@ -234,10 +277,10 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
                 const SizedBox(height: 10),
                 FilledButton.icon(
                   onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    Navigator.of(context).pop();
                   },
                   icon: const Icon(Icons.home_rounded),
-                  label: const Text('Back to Home'),
+                  label: const Text('Back to Study Set'),
                   style: FilledButton.styleFrom(
                     backgroundColor: NorieColors.cyan,
                     foregroundColor: NorieColors.background,

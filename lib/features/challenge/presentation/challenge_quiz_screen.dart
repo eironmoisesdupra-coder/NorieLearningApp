@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'package:uuid/uuid.dart';
+import '../../../core/audio/norie_audio_manager.dart';
+import '../../../core/quiz/quiz_result_summary.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -21,6 +25,9 @@ class ChallengeQuizScreen extends StatefulWidget {
 }
 
 class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
+  final _attemptId = const Uuid().v4();
+  final List<QuizAnswerRecord> _answers = [];
+  late final Object _audioToken;
   late final List<ChallengeQuestion> _questions;
   Timer? _timer;
 
@@ -36,6 +43,9 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
   @override
   void initState() {
     super.initState();
+    _audioToken =
+        NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
+    NorieAudioManager.instance.playChallengeStart();
     _questions = _isSpeed
         ? NorieChallengeBank.speedQuestions()
         : NorieChallengeBank.dailyQuestions();
@@ -59,11 +69,13 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    NorieAudioManager.instance.leaveContext(_audioToken);
     super.dispose();
   }
 
   void _select(int index) {
     if (_checked || _finished) return;
+    NorieAudioManager.instance.playQuizSelect();
     setState(() => _selectedIndex = index);
   }
 
@@ -72,6 +84,20 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
 
     final question = _questions[_current];
     final isCorrect = _selectedIndex == question.correctIndex;
+    _answers.add(QuizAnswerRecord(
+        questionId: question.id,
+        prompt: question.prompt,
+        response: question.options[_selectedIndex!],
+        correctAnswer: question.options[question.correctIndex],
+        explanation: question.explanation,
+        correct: isCorrect,
+        conceptId: '${question.category}:${question.topic}',
+        conceptLabel: question.topic));
+    if (isCorrect) {
+      NorieAudioManager.instance.playCorrect();
+    } else {
+      NorieAudioManager.instance.playWrong();
+    }
 
     NorieProgression.instance.recordTopicAnswer(
       category: question.category,
@@ -115,6 +141,30 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
       MaterialPageRoute<void>(
         builder: (_) => ChallengeResultsScreen(
           mode: widget.mode,
+          attemptId: _attemptId,
+          answers: List.unmodifiable([
+            ..._answers,
+            for (final question in _questions
+                .where((q) => !_answers.any((a) => a.questionId == q.id)))
+              QuizAnswerRecord(
+                  questionId: question.id,
+                  prompt: question.prompt,
+                  response: 'Not answered before time ended',
+                  correctAnswer: question.options[question.correctIndex],
+                  explanation: question.explanation,
+                  correct: false,
+                  unanswered: true,
+                  conceptId: '${question.category}:${question.topic}',
+                  conceptLabel: question.topic),
+          ]),
+          historyKey: quizHistoryKey(
+              'challenge:${widget.mode.name}',
+              _questions.map((q) => jsonEncode([
+                    q.id,
+                    q.prompt,
+                    q.options[q.correctIndex],
+                    q.options.toList()..sort()
+                  ]))),
           correct: _score,
           total: _questions.length,
           secondsRemaining: _isSpeed ? _remainingSeconds : null,
@@ -158,9 +208,8 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
                         value: progress,
                         minHeight: 7,
                         borderRadius: BorderRadius.circular(99),
-                        color: _isSpeed
-                            ? NorieColors.orange
-                            : NorieColors.magenta,
+                        color:
+                            _isSpeed ? NorieColors.orange : NorieColors.magenta,
                         backgroundColor: NorieColors.surfaceElevated,
                       ),
                     ),
@@ -201,9 +250,7 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
                   ),
                 ),
                 const SizedBox(height: 22),
-                for (var index = 0;
-                    index < question.options.length;
-                    index++)
+                for (var index = 0; index < question.options.length; index++)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 11),
                     child: _ChallengeAnswer(
@@ -224,9 +271,8 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
                           : NorieColors.magenta.withValues(alpha: .10),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: correct
-                            ? NorieColors.green
-                            : NorieColors.magenta,
+                        color:
+                            correct ? NorieColors.green : NorieColors.magenta,
                       ),
                     ),
                     child: Row(
@@ -236,9 +282,8 @@ class _ChallengeQuizScreenState extends State<ChallengeQuizScreen> {
                           correct
                               ? Icons.check_circle_rounded
                               : Icons.lightbulb_rounded,
-                          color: correct
-                              ? NorieColors.green
-                              : NorieColors.orange,
+                          color:
+                              correct ? NorieColors.green : NorieColors.orange,
                         ),
                         const SizedBox(width: 11),
                         Expanded(
@@ -430,9 +475,8 @@ class _ChallengeAnswer extends StatelessWidget {
                   selected
                       ? Icons.radio_button_checked_rounded
                       : Icons.radio_button_unchecked_rounded,
-                  color: selected
-                      ? NorieColors.cyan
-                      : NorieColors.textSecondary,
+                  color:
+                      selected ? NorieColors.cyan : NorieColors.textSecondary,
                 ),
             ],
           ),
