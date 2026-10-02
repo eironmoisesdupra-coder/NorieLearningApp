@@ -58,13 +58,16 @@ async function main() {
     for (const exitLabel of ['Articular', 'Open full 3D atlas']) {
       await page.getByRole('button', { name: 'Skeleton fundamentals', exact: true }).click();
       await page.getByText('Calibrated skeleton study view', { exact: true }).waitFor();
-      await page.getByText(exitLabel, { exact: true }).click();
-      const activeViewer = page.frameLocator('iframe').last();
+      await page.getByRole(exitLabel === 'Articular' ? 'checkbox' : 'button',
+        { name: exitLabel, exact: true }).click();
+      await page.getByText('Calibrated skeleton study view', { exact: true }).waitFor({ state: 'hidden' });
+      const activeViewer = page.frameLocator('iframe[title="NorieLearning interactive anatomy atlas"]:visible');
+      await activeViewer.locator('canvas').waitFor({ state: 'visible', timeout: 60000 });
       await activeViewer.locator('#status').waitFor({ state: 'hidden', timeout: 60000 });
-      const activeFrame = page.frames().filter(frame => frame.url().includes('atlas-viewer.html')).at(-1);
-      const systems = await activeFrame.evaluate(() => window.atlasCommands.filter(c => c.type === 'configure').at(-1).payload.systems);
+      const systems = await activeViewer.locator('canvas').evaluate(canvas => canvas.ownerDocument.defaultView.atlasCommands.filter(c => c.type === 'configure').at(-1).payload.systems);
       assert.deepEqual([...systems].sort(), exitLabel === 'Articular' ? ['articular', 'skeletal'] : ['skeletal']);
-      await page.getByRole('button', { name: 'Back', exact: true }).click();
+      // The first Back is navigation; the other presets the rear camera view.
+      await page.getByRole('button', { name: 'Back', exact: true }).first().click();
     }
     console.log('PASS: skeleton fundamentals category and full-atlas exits use real geometry offline');
     // Exercise the same responsive UI at a small phone's CSS viewport width.
@@ -223,7 +226,7 @@ async function main() {
     assert.deepEqual(errors, []);
   } catch (error) {
     if (page) {
-      console.error(await page.locator('body').innerText());
+      console.error(await page.locator('body').first().innerText());
       await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-failure.png'), timeout: 5000 })
         .catch(screenshotError => console.error('Failure screenshot:', screenshotError.message));
     }
