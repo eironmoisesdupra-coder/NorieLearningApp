@@ -21,6 +21,12 @@ operating-system emoji font. Copyright and OFL notices remain in the font.
 Upstream SHA-256:
 `de6c18832938afc99caf132b39d6a30a19bac7f2e812e28db2535b4608d27551`
 
-Bundled subset: 89,836 bytes. Rebuild using `tools/build_emoji_font.py` with
+Ordinary ASCII cmap mappings are removed from the fallback; digit and keycap
+shaping glyphs remain available to the font's shaping tables. This keeps normal
+numbers and punctuation in the app's primary text font.
+
+Bundled subset: 89,776 bytes. SHA-256:
+`202096b0e1bb71368875a8c400f924ab0882341af4649affde6524311463acf9`.
+Rebuild using `tools/build_emoji_font.py` with
 Python and `fonttools`; the script downloads and verifies the pinned source.
 Regenerate the subset when adding emoji content.

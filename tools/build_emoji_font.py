@@ -39,6 +39,17 @@ def main():
     sub = subset.Subsetter(options=options)
     sub.populate(unicodes=codepoints)
     sub.subset(font)
+    # Keep keycap shaping glyphs/GSUB closures, but do not let the emoji fallback
+    # claim ordinary ASCII digits or punctuation when the main family differs
+    # between platforms. Those characters belong to the primary text font.
+    for table in font["cmap"].tables:
+        if table.isUnicode():
+            table.cmap = {cp: glyph for cp, glyph in table.cmap.items() if cp >= 0x80}
+    cmap = font.getBestCmap()
+    assert not any(cp < 0x80 for cp in cmap), "Emoji fallback must not claim ASCII"
+    lesson_emoji = {ord(c) for p in (ROOT / "test/fixtures/grade1_science").glob("*.txt")
+                    for c in p.read_text(encoding="utf-8") if ord(c) >= 0x1F300}
+    assert lesson_emoji <= cmap.keys(), "Approved lesson emoji glyph is missing"
     names = {1: "Norie Emoji", 2: "Regular", 3: "NorieEmoji-Regular-subset",
              4: "Norie Emoji Regular", 6: "NorieEmoji-Regular", 16: "Norie Emoji", 17: "Regular"}
     for record in font["name"].names:
