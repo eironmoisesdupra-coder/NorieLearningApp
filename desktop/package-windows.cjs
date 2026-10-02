@@ -59,6 +59,7 @@ async function main() {
   for (const file of [
     'index.html', 'flutter_bootstrap.js', 'main.dart.js',
     'canvaskit/canvaskit.js', 'canvaskit/canvaskit.wasm',
+    'assets/assets/fonts/NorieEmoji.ttf',
     'assets/assets/anatomy/overview-skeleton.glb',
     'assets/assets/anatomy/anatomy-organs.glb',
     'assets/packages/model_viewer_plus/assets/model-viewer.min.js',

@@ -7,6 +7,7 @@ const REQUIRED_ASSETS = [
   './main.dart.js',
   './manifest.json',
   './norie-logo.svg',
+  './assets/assets/fonts/NorieEmoji.ttf',
   './assets/assets/anatomy/overview-skeleton.glb',
   './assets/assets/anatomy/anatomy-organs.glb',
   './assets/assets/anatomy/atlas-viewer.html',

@@ -26,7 +26,13 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: NorieEmoji
+      fonts:
+        - asset: assets/fonts/NorieEmoji.ttf
   assets:
+    - assets/fonts/NotoEmoji-OFL.txt
+    - assets/fonts/ATTRIBUTION.md
     - assets/mascot/
     - assets/achievements/
     - assets/ranking/
