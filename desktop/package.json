@@ -7,7 +7,7 @@
   "private": true,
   "main": "main.cjs",
   "scripts": {
-    "test": "node --test test/asset-policy.test.cjs",
+    "test": "node --test test/asset-policy.test.cjs test/audio-assets.test.cjs",
     "package:windows": "node package-windows.cjs",
     "test:offline": "node test/offline-app.cjs"
   },

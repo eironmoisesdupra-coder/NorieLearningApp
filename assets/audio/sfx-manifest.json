@@ -1,0 +1,74 @@
+[
+  {
+    "file": "achievement.mp3",
+    "seconds": 1.76,
+    "bytes": 29300,
+    "sha256": "6407c1145a2127dd3d0870d60ae1bdc17dfdeb43ed61769c3442b21124de0875"
+  },
+  {
+    "file": "challenge_start.mp3",
+    "seconds": 1.2,
+    "bytes": 20105,
+    "sha256": "c6b240960edc36b0563edbe14acd8b313765707bef28d2acc18843e4e3122522"
+  },
+  {
+    "file": "complete.mp3",
+    "seconds": 0.618,
+    "bytes": 10910,
+    "sha256": "e65292734efa4e0bd2e8a894e31e145cc2be2a8cdeb305c89c1f9c9695e0e446"
+  },
+  {
+    "file": "correct.mp3",
+    "seconds": 1.0,
+    "bytes": 17179,
+    "sha256": "db8c85bad3961db889096e4de67ede152a7d600aa932e0428e4710f4d2c6f903"
+  },
+  {
+    "file": "level_up.mp3",
+    "seconds": 0.77,
+    "bytes": 13417,
+    "sha256": "229faebbb648abc2180b60970d22721c3c868c163b910d45b2dd82afd16743dd"
+  },
+  {
+    "file": "perfect.mp3",
+    "seconds": 2.0,
+    "bytes": 33061,
+    "sha256": "5e367140edd99b7510c2063a108ebda250d23fbf0fc9883337104c2a26900861"
+  },
+  {
+    "file": "quiz_select.mp3",
+    "seconds": 0.309,
+    "bytes": 5894,
+    "sha256": "838bb5455f3345f7189b21e4d81b64e7684c691337f00ef58bbeedc458d98e6f"
+  },
+  {
+    "file": "ui_back.mp3",
+    "seconds": 0.6,
+    "bytes": 10492,
+    "sha256": "df9f460843dd7fa6a9c1b92e64aed27a7cb5ad1997fdc389c10fcd7b622035cb"
+  },
+  {
+    "file": "ui_open.mp3",
+    "seconds": 0.68,
+    "bytes": 12163,
+    "sha256": "81ef0d6d5394c59d65c8375406e3fad37c1f485332161ca2ed9ec4fb2373d86c"
+  },
+  {
+    "file": "ui_select.mp3",
+    "seconds": 0.448,
+    "bytes": 8402,
+    "sha256": "8607dafc45e3a2ec95c427202714edfeb9ba2e64d7cd9b9f7c598156f72a265f"
+  },
+  {
+    "file": "ui_tap.mp3",
+    "seconds": 0.196,
+    "bytes": 4222,
+    "sha256": "45bbf083e67549e8517057e6d26e87cef29ffec5869642b9a12a2134e708f27c"
+  },
+  {
+    "file": "wrong.mp3",
+    "seconds": 0.88,
+    "bytes": 15089,
+    "sha256": "bbe32190be7c5002b6090e5b9b337be4942b49a225d5f7eaab263ec4403534fd"
+  }
+]

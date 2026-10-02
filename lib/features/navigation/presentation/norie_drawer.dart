@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/account/norie_account_service.dart';
+import '../../../core/audio/norie_audio_settings_screen.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
@@ -208,13 +209,7 @@ class NorieDrawer extends StatelessWidget {
                   icon: Icons.settings_rounded,
                   label: 'Settings',
                   color: NorieColors.textSecondary,
-                  onTap: () => _openUpcoming(
-                    context,
-                    title: 'Settings',
-                    subtitle:
-                        'App settings, notifications, appearance, and account controls are coming soon.',
-                    icon: Icons.settings_rounded,
-                  ),
+                  onTap: () => _open(context, const NorieAudioSettingsScreen()),
                 ),
                 const Divider(
                   height: 28,
@@ -701,3 +696,4 @@ class _QuickAction extends StatelessWidget {
     );
   }
 }
+

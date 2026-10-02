@@ -31,3 +31,6 @@ flutter:
     - assets/achievements/
     - assets/ranking/
     - assets/anatomy/
+    - assets/audio/
+    - assets/audio/sfx/
+    - assets/audio/music/

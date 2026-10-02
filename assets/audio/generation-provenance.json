@@ -1,0 +1,86 @@
+[
+  {
+    "file": "sfx/correct.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "f0a9f39a-605e-47f1-9b04-e3bfd2a6ee40",
+    "prompt": "Original soft futuristic educational game correct-answer chime: two bright ascending synth notes with a tiny sparkling tail, friendly and satisfying, clean close dry sound, no speech, no background music, no harsh frequencies."
+  },
+  {
+    "file": "sfx/ui_tap.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "a6ba43dc-d2b5-4426-af19-445ffb8ff499",
+    "prompt": "Short soft digital UI tap, tiny warm click, gentle futuristic educational game interface, dry isolated sound, no music or voices."
+  },
+  {
+    "file": "sfx/ui_select.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "c4b64816-4533-4030-96b1-c191390effbe",
+    "prompt": "Short bright soft electronic selection tick, friendly educational game UI, slightly higher pitch than tap, no background, no music or voices."
+  },
+  {
+    "file": "sfx/ui_open.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "25f93e13-afaa-4547-8bcf-2c6905a7de46",
+    "prompt": "Subtle upward synth swoosh chime for opening an educational game lesson, airy cozy space UI, quiet clean dry sound, no background or voices."
+  },
+  {
+    "file": "sfx/ui_back.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "56b9b7f5-b605-46ae-8ac8-df015f655644",
+    "prompt": "Soft brief descending digital UI response for back navigation, warm muted synth, clean gentle isolated sound, no music or voices."
+  },
+  {
+    "file": "sfx/quiz_select.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "17237743-8e31-4279-94a5-f300d6d2c130",
+    "prompt": "Tactile short rounded pluck for selecting a quiz answer, soft futuristic educational interface, distinct gentle double tick, no music or voices."
+  },
+  {
+    "file": "sfx/wrong.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "f920f2d2-c3cf-4835-94f6-6fb4746bea22",
+    "prompt": "Neutral supportive wrong-answer feedback: two low soft descending digital notes, friendly educational game, clear but never harsh or punitive, no buzzer, no alarm, no music or voice."
+  },
+  {
+    "file": "sfx/challenge_start.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "b63adfa6-3a88-4c5b-9fa0-23a1f77d00a2",
+    "prompt": "Original short challenge-start cue for cozy futuristic educational game, three soft ascending synth pulses, curious optimistic gentle energy, no loud impact, no voices."
+  },
+  {
+    "file": "sfx/complete.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "5d8650f2-4390-44a5-86a3-8a4629dea9f7",
+    "prompt": "Original gentle learning-session completion chime, warm soft synth chord and two small sparkles, supportive calm educational game, suitable for every score, no fanfare or voices."
+  },
+  {
+    "file": "sfx/achievement.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "809bca21-c592-4f02-a5a6-ad4e93dfe660",
+    "prompt": "Original achievement-unlocked reward for cozy space learning game, bright warm arpeggiated synth chime with tiny sparkle tail, satisfying restrained celebration, no voices or harsh bass."
+  },
+  {
+    "file": "sfx/level_up.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "056c8305-6ecc-4ff9-9e0d-c169d14e25ef",
+    "prompt": "Original level-up reward for futuristic educational game, gentle rising bell synth steps resolving warmly, brief distinct positive flourish, no voices, no loud bass."
+  },
+  {
+    "file": "sfx/perfect.mp3",
+    "provider": "Runway sound effects",
+    "generatedAt": "2026-10-02",
+    "taskId": "36ab892b-f0bd-4df9-b6c4-996d6d6e8c6e",
+    "prompt": "Original special perfect-quiz celebration for friendly space learning game, joyful bright synth sparkle cascade and warm resolving chord, rare magical reward, clean short finish, no vocals, no copied melodies."
+  }
+]
