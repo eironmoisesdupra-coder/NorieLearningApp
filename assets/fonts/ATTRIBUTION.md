@@ -25,8 +25,8 @@ Ordinary ASCII cmap mappings are removed from the fallback; digit and keycap
 shaping glyphs remain available to the font's shaping tables. This keeps normal
 numbers and punctuation in the app's primary text font.
 
-Bundled subset: 103,628 bytes. SHA-256:
-`0f6d4e880f0d809f89769241570a73866163846718fc6648ac10d3ef173cd94f`.
+Bundled subset: 107,588 bytes. SHA-256:
+`c03848cb6dd6a41d3666f2df90287eacaa45c0beeee91bef11baebac113ce8db`.
 Rebuild using `tools/build_emoji_font.py` with
 Python and `fonttools`; the script downloads and verifies the pinned source.
 Regenerate the subset when adding emoji content.
