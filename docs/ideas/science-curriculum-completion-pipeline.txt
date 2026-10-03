@@ -1,0 +1,833 @@
+STATUS: Future guidance recorded 2026-10-03. The user asked to master this idea for future quiz progression, not to start the remaining grades in this turn. Current implementation scope remains the approved Grade 1 Science Lesson 5.
+
+REPOSITORY NOTES (planning only, 2026-10-03)
+The foundation Science map has five lessons per grade. Grade 2 through Grade 12 plus College contain 60 remaining starter lessons. Proposed order: Grade 2 through Grade 12, then College. Validate each lesson and then each five-lesson pack.
+The first future pack is Grade 2: Life Cycles; Habitats; States of Matter; Light & Sound; Earth & Sky.
+Existing runtime forces Grade 1–2 activities into multiple choice, but the practice-mode picker currently hides other modes only for Grade 1. Align Grade 2's picker when implementing this future pipeline.
+Identification currently accepts normalized phrases. The future pipeline needs one-word eligibility/validation and a multiple-choice fallback for multiword scientific terms.
+Current practice randomizes item order across the bank. Difficulty metadata is authored in 7/7/6 groups. Decide and test tier order during runtime separately when implementing the future pipeline; do not claim existing randomized sessions already enforce it.
+No Grade 2+ content or quiz-engine changes are made by recording this guidance.
+
+NORIELEARNING — SCIENCE CURRICULUM COMPLETION PIPELINE
+
+We are now accelerating completion of the remaining Science curriculum.
+
+You already have the NorieLearning repository and previous project/curriculum rules.
+
+Your task is to replace the remaining Science placeholder lessons with complete, individually authored production lessons.
+
+IMPORTANT:
+Work quickly through the curriculum, but DO NOT mass-generate shallow or duplicated content.
+
+Every lesson must be treated as its own educational product.
+
+==================================================
+1. SCOPE
+==================================================
+
+Grade 1 Science Lessons 1–5 are already being handled/approved separately:
+
+1. Living & Nonliving Things
+2. Plants & Animals
+3. Our Body & Senses
+4. Weather
+5. Materials Around Us
+
+Do NOT overwrite those with newly generated alternatives unless their implementation is still missing.
+
+For the REMAINING Science curriculum:
+
+- inspect the repository;
+- identify every Science lesson from Grade 2 through Grade 12 and College;
+- determine which lessons are still placeholders;
+- convert those placeholders into complete proper lessons.
+
+Use the existing curriculum titles when they are academically sensible.
+
+If a placeholder title is vague, duplicated, inappropriate for the grade, or poorly sequenced:
+you may improve the title/topic, but preserve the intended grade progression.
+
+==================================================
+2. DO NOT GENERATE EVERYTHING AS ONE GENERIC TEMPLATE
+==================================================
+
+Every lesson must have its own:
+
+- explanations;
+- examples;
+- diagrams;
+- vocabulary;
+- misconceptions;
+- practice questions;
+- challenge questions;
+- visuals;
+- difficulty level.
+
+Do NOT simply swap nouns into the same lesson text.
+
+Examples:
+
+A Grade 2 lesson about plants should not be a rewritten copy of Grade 1 Plants & Animals.
+
+A Grade 6 ecosystems lesson should contain more scientific relationships and vocabulary.
+
+A Grade 10 genetics lesson should be substantially deeper.
+
+A Grade 12 or College lesson should use appropriate formal scientific concepts.
+
+==================================================
+3. PROCESS LESSONS INDIVIDUALLY
+==================================================
+
+For EACH Science lesson, execute this pipeline:
+
+STEP 1 — Inspect
+- grade level;
+- lesson title;
+- prerequisite lessons;
+- nearby topics;
+- existing curriculum structure.
+
+STEP 2 — Define learning outcomes
+Write 3–5 measurable objectives.
+
+STEP 3 — Author the lesson proper
+Create actual study content.
+
+STEP 4 — Plan visuals
+Choose meaningful lesson-specific diagrams/images.
+
+STEP 5 — Create quiz
+Generate questions based ONLY on concepts actually taught.
+
+STEP 6 — Create mastery challenge
+Generate 3 appropriate challenge items.
+
+STEP 7 — Validate factual accuracy
+Check definitions, examples, units, terminology, and answer keys.
+
+STEP 8 — Validate grade appropriateness
+Check reading level and concept depth.
+
+STEP 9 — Run automated curriculum tests.
+
+STEP 10 — Only then proceed to the next lesson.
+
+Never write all lesson text first and "validate later."
+
+==================================================
+4. STANDARD LESSON STRUCTURE
+==================================================
+
+Every production Science lesson should normally contain:
+
+TITLE
+
+SUBTITLE
+
+ESTIMATED TIME
+
+LEARNING GOALS 🎯
+3–5 measurable objectives.
+
+OPENING / HOOK
+Introduce the topic using a familiar observation, question, situation, phenomenon, or problem.
+
+CORE SECTION 1
+
+CORE SECTION 2
+
+CORE SECTION 3
+
+Additional sections as needed.
+
+VISUALS / DIAGRAMS
+
+WORKED EXAMPLE or EXPLAINED EXAMPLE
+
+GUIDED EXAMPLE
+
+REAL-WORLD CONNECTION
+
+COMMON MISTAKES ⚠️
+
+ACTIVITY / THINK ABOUT IT
+
+QUICK CHECK 🧠
+
+KEY CONCEPT ⭐
+
+FINAL RECAP 🌟
+
+QUIZ
+
+MASTERY CHALLENGE
+
+Do not force an unnecessary section if it does not fit the science topic.
+
+==================================================
+5. DEPTH BY GRADE
+==================================================
+
+GRADE 1–2
+- very concrete;
+- short sentences;
+- familiar examples;
+- lots of pictures/diagrams;
+- minimal jargon;
+- simple cause/effect.
+
+GRADE 3–4
+- introduce scientific vocabulary;
+- classification;
+- observation;
+- simple processes;
+- simple diagrams and cycles.
+
+GRADE 5–6
+- more detailed systems;
+- relationships;
+- variables;
+- basic experimental reasoning;
+- more formal diagrams.
+
+GRADE 7–8
+- formal scientific terminology;
+- systems and interactions;
+- evidence;
+- calculations where appropriate;
+- graphs/tables;
+- multi-step explanations.
+
+GRADE 9–10
+- stronger abstraction;
+- scientific models;
+- equations where appropriate;
+- mechanisms;
+- data interpretation;
+- deeper reasoning.
+
+GRADE 11–12
+- rigorous academic content;
+- quantitative reasoning;
+- formal terminology;
+- scientific models;
+- experimental analysis;
+- appropriate equations and derivations.
+
+COLLEGE
+- introductory university-level treatment;
+- precise terminology;
+- more complex mechanisms;
+- quantitative treatment where appropriate;
+- stronger evidence/analysis;
+- no elementary-style oversimplification.
+
+==================================================
+6. QUIZ FORMAT RULES — MANDATORY
+==================================================
+
+GRADE 1:
+MULTIPLE CHOICE ONLY.
+
+GRADE 2:
+MULTIPLE CHOICE ONLY.
+
+GRADE 3 AND ABOVE:
+May use:
+- multiple choice;
+- identification;
+- other supported quiz modes where appropriate.
+
+IDENTIFICATION RULE:
+
+Every identification answer MUST be exactly ONE WORD.
+
+Examples:
+
+Photosynthesis
+Nucleus
+Gravity
+Evaporation
+Mitosis
+
+NOT allowed:
+
+"solar system"
+"cell membrane"
+"Newton's law"
+"water cycle"
+"chemical reaction"
+
+If the academically correct answer requires more than one word:
+do NOT use it as identification.
+
+Convert it to multiple choice instead.
+
+Programmatically validate identification answers:
+- not empty;
+- trimmed;
+- contains no spaces/whitespace;
+- not a phrase;
+- not a sentence.
+
+==================================================
+7. QUIZ COUNT
+==================================================
+
+Unless existing architecture requires otherwise:
+
+Each lesson gets:
+
+20 practice questions
+
+Difficulty progression:
+
+1–7:
+Foundation
+
+8–14:
+Intermediate
+
+15–20:
+Application / reasoning
+
+Plus:
+
+3 mastery challenge questions.
+
+GRADE 1–2:
+all 23 must be multiple choice.
+
+GRADE 3+:
+use identification only when academically appropriate.
+
+Do NOT force identification into every quiz.
+
+==================================================
+8. QUIZ DOMAIN RULE
+==================================================
+
+Every quiz item must test something actually taught in THAT lesson.
+
+Before accepting a question, ask:
+
+"Could a learner answer this question from this lesson?"
+
+If not:
+reject it.
+
+Never generate:
+
+"Which study strategy is useful?"
+
+"What is the best way to learn this topic?"
+
+"Why should students pay attention?"
+
+Those are not Science questions.
+
+==================================================
+9. SCIENCE QUESTION ACCURACY
+==================================================
+
+Every question must have:
+
+- exactly one defensible answer for single-answer MCQ;
+- plausible same-domain distractors;
+- useful answer explanation;
+- no trick wording;
+- no ambiguity.
+
+For calculations:
+independently calculate the correct result.
+
+For classifications:
+verify every option.
+
+For scientific terminology:
+use accepted terminology.
+
+For claims with exceptions:
+avoid inaccurate absolute wording such as:
+
+"always"
+"never"
+"all"
+
+unless scientifically justified.
+
+==================================================
+10. VISUALS — CODEX OWNS THIS TASK
+==================================================
+
+I should not have to specify images for every lesson.
+
+For EACH lesson, independently create a visual plan.
+
+Example:
+
+MAIN VISUAL
+Water Cycle diagram
+
+INLINE VISUAL 1
+Evaporation illustration
+
+INLINE VISUAL 2
+Condensation illustration
+
+INLINE VISUAL 3
+Cycle arrows
+
+Then decide the best implementation:
+
+1. Flutter CustomPainter
+2. local SVG
+3. local WebP/PNG
+4. generated educational illustration
+5. properly licensed external image only if needed
+
+Do NOT reuse a generic "Science" atom graphic for unrelated lessons.
+
+==================================================
+11. VISUAL QUALITY BY TOPIC
+==================================================
+
+Use appropriate scientific visuals.
+
+Examples:
+
+BIOLOGY
+- labeled structures;
+- life cycles;
+- body systems;
+- food webs;
+- cell diagrams.
+
+CHEMISTRY
+- particles;
+- atoms;
+- molecules;
+- reactions;
+- apparatus;
+- periodic relationships.
+
+PHYSICS
+- forces;
+- motion diagrams;
+- light rays;
+- circuits;
+- waves;
+- graphs.
+
+EARTH SCIENCE
+- rock cycle;
+- weather systems;
+- layers;
+- water cycle;
+- tectonics.
+
+ASTRONOMY
+- planetary arrangements;
+- phases;
+- orbits;
+- scale comparisons.
+
+ENVIRONMENTAL SCIENCE
+- ecosystems;
+- nutrient cycles;
+- energy flow;
+- human impacts.
+
+Make diagrams scientifically meaningful, not decorative.
+
+==================================================
+12. IMAGE GENERATION
+==================================================
+
+If the Codex environment has access to an appropriate image-generation capability:
+
+generate original educational artwork when that produces a better lesson.
+
+If image generation is unavailable:
+use programmatic diagrams or create explicit asset specifications.
+
+Do not stop the entire lesson because a decorative image is unavailable.
+
+Core educational diagrams should preferably be implementable locally.
+
+==================================================
+13. OFFLINE-FIRST
+==================================================
+
+Core Science lessons must remain usable offline.
+
+Lesson text:
+local.
+
+Questions:
+local.
+
+Diagrams:
+prefer local/programmatic.
+
+Images:
+bundle locally or include in the offline cache.
+
+Do not make essential learning depend on remote URLs.
+
+==================================================
+14. EMOJI RULES
+==================================================
+
+Use emojis meaningfully.
+
+Grades 1–3:
+frequent but controlled.
+
+Grades 4–6:
+moderate.
+
+Grades 7–12:
+lighter usage.
+
+College:
+minimal.
+
+Good uses:
+section headings;
+examples;
+tips;
+warnings;
+recaps.
+
+Do not put emojis in every sentence.
+
+==================================================
+15. SCIENCE SAFETY
+==================================================
+
+Any experiment/activity must be age-appropriate and safe.
+
+For younger learners:
+avoid hazardous experiments entirely.
+
+When appropriate:
+include trusted-adult supervision.
+
+Never instruct children to:
+- taste unknown substances;
+- smell unknown chemicals closely;
+- touch dangerous materials;
+- mix unknown chemicals;
+- interact unsafely with electricity/fire/heat.
+
+Prefer observation-based activities for younger grades.
+
+==================================================
+16. FACTUAL ACCURACY PASS
+==================================================
+
+Every lesson must receive an independent factual review BEFORE it is accepted.
+
+Check:
+
+- scientific definitions;
+- mechanisms;
+- diagrams;
+- terminology;
+- calculations;
+- examples;
+- answer keys;
+- quiz explanations.
+
+Do not trust the first generated draft automatically.
+
+Perform a second verification pass.
+
+If current public/scientific references are needed and browsing is available:
+use reliable educational/scientific sources.
+
+==================================================
+17. DUPLICATION DETECTION
+==================================================
+
+Create tests/checks where practical for:
+
+- duplicate question stems;
+- duplicate answer sets;
+- repeated generic lesson paragraphs;
+- identical common-mistake sections;
+- accidental reuse across different lessons.
+
+Related topics may naturally overlap, but lessons should not simply be duplicates.
+
+==================================================
+18. CURRICULUM PROGRESSION CHECK
+==================================================
+
+Before completing each grade, review all five Science lessons together.
+
+Check that:
+
+- difficulty rises appropriately;
+- topics are distinct;
+- prerequisites appear before dependent concepts;
+- unnecessary repetition is avoided;
+- vocabulary is consistent;
+- each lesson contributes something new.
+
+Then proceed to the next grade.
+
+==================================================
+19. WORK IN GRADE-SIZED BATCHES
+==================================================
+
+For speed, work one full grade at a time.
+
+Recommended loop:
+
+GRADE 2 SCIENCE
+Lesson 1
+Lesson 2
+Lesson 3
+Lesson 4
+Lesson 5
+→ validate entire Grade 2 pack
+→ tests
+→ commit
+
+Then:
+
+GRADE 3 SCIENCE
+Lessons 1–5
+→ validate
+→ tests
+→ commit
+
+Continue sequentially.
+
+Do NOT attempt all remaining grades in one giant unreviewed commit.
+
+==================================================
+20. COMMIT STRATEGY
+==================================================
+
+Prefer one commit per complete grade pack.
+
+Example:
+
+"Add proper Grade 2 Science lessons"
+
+Then:
+
+"Add proper Grade 3 Science lessons"
+
+This makes errors easier to review and revert.
+
+If a grade requires substantial architecture changes:
+separate architecture changes from lesson-content commits.
+
+==================================================
+21. AUTOMATED LESSON VALIDATION
+==================================================
+
+Expand curriculum tests so every proper Science lesson can be checked automatically.
+
+Validate at minimum:
+
+- non-empty title;
+- non-empty subtitle;
+- estimated time exists;
+- at least 3 learning objectives;
+- sufficient instructional sections;
+- key concept exists;
+- meaningful visual specification exists;
+- exactly 20 practice items;
+- exactly 3 mastery items;
+- every question has an answer;
+- every question has explanation/feedback;
+- no generic study-habit questions;
+- Grade 1–2 contain NO identification questions;
+- Grade 3+ identification answers contain exactly one word;
+- no obviously duplicate questions;
+- lesson ID/title mappings remain valid.
+
+==================================================
+22. CONTENT QUALITY GUARD
+==================================================
+
+Do not consider a lesson "proper" merely because it satisfies field counts.
+
+A lesson must genuinely teach the topic.
+
+Reject weak content such as:
+
+"Understand:
+Learn about gravity.
+
+Connect:
+Think about gravity in life.
+
+Apply:
+Use what you learned about gravity."
+
+That is placeholder content.
+
+A proper lesson must explain:
+- what the phenomenon is;
+- how it works;
+- examples;
+- relevant vocabulary;
+- diagrams/models;
+- reasoning;
+- misconceptions.
+
+==================================================
+23. SCIENCE CONTENT ARCHITECTURE
+==================================================
+
+Do not create one giant Dart file containing every Science lesson if that becomes difficult to maintain.
+
+Organize cleanly.
+
+A reasonable structure might eventually resemble:
+
+content/data/science/
+  grade_1_science.dart
+  grade_2_science.dart
+  grade_3_science.dart
+  ...
+  grade_12_science.dart
+  college_science.dart
+
+or another architecture appropriate to the existing project.
+
+Do not restructure unnecessarily if an existing maintainable pattern already exists.
+
+==================================================
+24. CHECKPOINT REPORT AFTER EACH GRADE
+==================================================
+
+After finishing a grade, briefly report:
+
+GRADE:
+Grade 4 Science
+
+LESSONS COMPLETED:
+5 / 5
+
+QUIZZES:
+100 practice questions
+15 mastery questions
+
+QUIZ FORMAT:
+appropriate for grade
+
+VISUALS:
+X diagrams/assets
+
+VALIDATION:
+flutter analyze
+flutter test
+curriculum tests
+
+ISSUES:
+none / describe any
+
+Then continue unless a serious problem requires my decision.
+
+Do NOT wait for my approval after every individual lesson.
+
+==================================================
+25. STOP CONDITIONS
+==================================================
+
+You may proceed autonomously through the Science curriculum.
+
+Stop and ask me only if:
+
+- an existing lesson title is fundamentally unclear;
+- curriculum requirements conflict;
+- major architecture migration is needed;
+- licensing blocks an essential asset;
+- a scientific topic is inappropriate for its grade and requires a curriculum decision;
+- tests reveal a serious pre-existing problem.
+
+Normal writing decisions do NOT require asking me.
+
+==================================================
+26. DO NOT SACRIFICE ACCURACY FOR SPEED
+==================================================
+
+The goal is:
+
+FAST PRODUCTION
++
+INDIVIDUAL LESSON QUALITY
++
+FACTUAL ACCURACY
++
+AUTOMATED VALIDATION
+
+Not:
+
+FAST COPY-PASTE GENERATION.
+
+Spend more reasoning effort on:
+- scientific explanations;
+- answer keys;
+- diagrams;
+- misconceptions;
+- older-grade calculations.
+
+==================================================
+27. IMPLEMENTATION ORDER
+==================================================
+
+Start by:
+
+1. inspecting the current Science curriculum;
+2. listing every remaining placeholder Science lesson from Grade 2 onward;
+3. checking existing titles and ordering;
+4. checking the lesson model and visual system;
+5. checking quiz constraints/tests;
+6. creating any reusable validation helpers needed.
+
+Then begin with:
+
+GRADE 2 SCIENCE
+
+Complete all five Grade 2 Science lessons individually.
+
+Validate the grade pack.
+
+Then continue Grade 3, Grade 4, etc.
+
+==================================================
+28. FINAL DEFINITION OF DONE
+==================================================
+
+The Science curriculum is complete only when every intended Science lesson has:
+
+- actual instructional content;
+- grade-appropriate depth;
+- learning objectives;
+- meaningful examples;
+- lesson-specific visuals;
+- worked/guided explanation where relevant;
+- common misconceptions;
+- recap;
+- 20 accurate practice questions;
+- 3 mastery questions;
+- correct grade-based quiz type;
+- accurate answers/explanations;
+- offline-capable core content;
+- automated validation;
+- green Flutter analysis/tests.
+
+Do not report the entire Science curriculum complete if some grades still use generated placeholder content.
+
+Start by showing me a concise inventory of the remaining Science curriculum and your proposed grade-by-grade processing order.
+
+Then begin implementation.
