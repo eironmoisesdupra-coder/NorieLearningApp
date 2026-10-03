@@ -51,6 +51,11 @@ class ScienceFigure {
           'g6-branches',
           'g6-plates',
           'g6-solar',
+          'g7-investigation',
+          'g7-microscope',
+          'g7-diffusion',
+          'g7-motion',
+          'g7-earth',
         ].contains(picture)) {
       throw ArgumentError('Unknown Science picture: $picture');
     }

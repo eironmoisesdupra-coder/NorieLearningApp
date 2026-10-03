@@ -118,7 +118,8 @@ void main() {
           expect(q.options.map((s) => s.trim().toLowerCase()).toSet(),
               hasLength(4));
           expect(q.hasValidAnswer, isTrue);
-          expect(q.explanation.length, greaterThan(20));
+          expect(q.explanation.length, greaterThan(20),
+              reason: '${q.id}: feedback should explain the answer');
           expect(q.conceptLabel, isNotEmpty);
           expect(
               q.difficulty,

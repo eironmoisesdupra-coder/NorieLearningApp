@@ -5,6 +5,7 @@ import 'grade_3_science.dart';
 import 'grade_4_science.dart';
 import 'grade_5_science.dart';
 import 'grade_6_science.dart';
+import 'grade_7_science.dart';
 
 /// Authored grade packs only. Grade 1 retains its approved standalone content.
 abstract final class ScienceCurriculum {
@@ -14,6 +15,7 @@ abstract final class ScienceCurriculum {
     'g4': grade4ScienceTopics,
     'g5': grade5ScienceTopics,
     'g6': grade6ScienceTopics,
+    'g7': grade7ScienceTopics,
   };
   static final Map<String, ScienceFigure> figures = {
     ...grade2ScienceFigures,
@@ -21,5 +23,6 @@ abstract final class ScienceCurriculum {
     ...grade4ScienceFigures,
     ...grade5ScienceFigures,
     ...grade6ScienceFigures,
+    ...grade7ScienceFigures,
   };
 }
