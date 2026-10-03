@@ -80,7 +80,7 @@ class Grade7SciencePicture extends StatelessWidget {
                 height: 300,
                 markers: const {
                   1: Offset(.39, .77),
-                  2: Offset(.39, .54),
+                  2: Offset(.33, .54),
                   3: Offset(.39, .43),
                   4: Offset(.39, .13),
                   5: Offset(.73, .57),
