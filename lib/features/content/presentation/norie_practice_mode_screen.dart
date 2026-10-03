@@ -44,7 +44,9 @@ class NoriePracticeModeScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   NorieSciencePracticePolicy.usesTiers(topic)
-                      ? 'Practice moves from foundation to application, with questions shuffled within each level. Answer positions also change. Identification uses one-word answers; other items use multiple choice.'
+                      ? topic.gradeLevel == 'g2'
+                          ? 'Start with simpler questions, then use what you learned. Choose one answer each time. Questions and answer choices can change order.'
+                          : 'Practice moves from foundation to application, with questions shuffled within each level. Answer positions also change. Identification uses one-word answers; other items use multiple choice.'
                       : 'Every new run randomizes item order. Choice-based modes also shuffle the answer positions.',
                   style: const TextStyle(
                     color: NorieColors.textSecondary,
