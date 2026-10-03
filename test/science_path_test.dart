@@ -7,6 +7,22 @@ import 'package:norie_learning/features/content/presentation/norie_lesson_screen
 import 'package:norie_learning/features/content/domain/norie_content_models.dart';
 
 void main() {
+  test('authored grades do not repeat question stems or substantial prose', () {
+    final stems = <String, String>{};
+    final paragraphs = <String, String>{};
+    for (final topic in ScienceCurriculum.grades.values.expand((pack) => pack)) {
+      for (final q in [...topic.quiz.questions, ...topic.challenge.rounds]) {
+        final key = q.prompt.trim().toLowerCase();
+        expect(stems[key], isNull, reason: '${q.id} repeats ${stems[key]}');
+        stems[key] = q.id;
+      }
+      for (final section in topic.lesson.sections.where((s) => (s.body?.length ?? 0) > 140 && !s.reveal)) {
+        final key = section.body!.trim().toLowerCase();
+        expect(paragraphs[key], isNull, reason: '${topic.id} repeats ${paragraphs[key]}');
+        paragraphs[key] = topic.id;
+      }
+    }
+  });
   testWidgets(
       'authored diagram captions and standalone reveal answers are accessible',
       (tester) async {

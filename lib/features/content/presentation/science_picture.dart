@@ -18,6 +18,10 @@ class SciencePicture extends StatelessWidget {
           'Light rays travel from a torch toward a wall. An opaque card blocks the middle rays, leaving a dark shadow on the wall.',
         'daynight' =>
           'The Sun lights the left side of Earth. The side facing the Sun has day; the side facing away has night. Earth rotates in place.',
+        'plant-parts' =>
+          'A flowering bean plant: branching roots below the soil, an upright stem, green leaves attached to the stem, a flower at the top, and a pod containing seeds. Roots anchor and absorb; the stem supports and transports; leaves make food; flowers and seed-filled fruits help reproduction.',
+        'forces' =>
+          'Two blocks with horizontal force arrows. Top: equal-length arrows point left and right, so the horizontal forces are balanced. Bottom: a longer right arrow and shorter left arrow show unbalanced forces toward the right. Arrow lengths compare force strength, not travel distance. Vertical forces are balanced and omitted.',
         _ => throw ArgumentError('Unknown Science picture: $picture'),
       };
 
@@ -51,6 +55,17 @@ class SciencePicture extends StatelessWidget {
       '3 · Night: facing away',
       '4 · Earth rotates'
     ],
+    'plant-parts': [
+      '1 · Roots: anchor and absorb water',
+      '2 · Stem: support and transport',
+      '3 · Leaves: make food using light',
+      '4 · Flower: helps produce seeds',
+      '5 · Fruit: pod containing seeds'
+    ],
+    'forces': [
+      '1 · Equal opposite forces: balanced',
+      '2 · Stronger right force: unbalanced'
+    ],
   };
 
   static const _markers = {
@@ -67,6 +82,14 @@ class SciencePicture extends StatelessWidget {
       Offset(.85, .22),
       Offset(.66, .87)
     ],
+    'plant-parts': [
+      Offset(.16, .86),
+      Offset(.17, .26),
+      Offset(.86, .18),
+      Offset(.38, .09),
+      Offset(.88, .67)
+    ],
+    'forces': [Offset(.09, .29), Offset(.09, .72)],
   };
 
   @override
@@ -136,6 +159,12 @@ class SciencePicture extends StatelessWidget {
           if (picture == 'daynight')
             const Text(
                 'Straight arrows show sunlight. The curved arrow shows Earth turning on its axis, not travelling around the Sun.'),
+          if (picture == 'plant-parts')
+            const Text(
+                'Roots are shown through the soil so their branches can be seen. The pod is shown with visible seeds as a cutaway model.'),
+          if (picture == 'forces')
+            const Text(
+                'Yellow arrows show forces on each block. Longer means stronger within this diagram. They do not show travel paths. Vertical forces are balanced and omitted.'),
         ]),
       );
 
@@ -231,6 +260,10 @@ class _SciencePainter extends CustomPainter {
         _shadow(canvas);
       case 'daynight':
         _daynight(canvas);
+      case 'plant-parts':
+        _plantParts(canvas);
+      case 'forces':
+        _forces(canvas);
     }
     canvas.restore();
   }
@@ -547,6 +580,77 @@ class _SciencePainter extends CustomPainter {
         const Color(0xffe5eef9), 2);
     _line(canvas, const Offset(211, 180), const Offset(212, 175),
         const Color(0xffe5eef9), 2);
+  }
+
+  void _plantParts(Canvas canvas) {
+    // A soil cutaway makes the roots visible without suggesting that roots
+    // usually sit on top of soil. Each callout joins a marker to a real part.
+    canvas.drawRect(
+        const Rect.fromLTWH(18, 153, 284, 55), _fill(const Color(0xff694e38)));
+    _line(canvas, const Offset(18, 153), const Offset(302, 153),
+        const Color(0xffb18b5c), 3);
+    final root = Path()
+      ..moveTo(160, 153)
+      ..quadraticBezierTo(155, 175, 160, 202);
+    canvas.drawPath(root, _stroke(const Color(0xffe6c494), 4));
+    for (final branch in const [
+      [Offset(158, 162), Offset(131, 185), Offset(112, 190)],
+      [Offset(158, 170), Offset(184, 186), Offset(201, 198)],
+      [Offset(159, 184), Offset(139, 200), Offset(130, 202)]
+    ]) {
+      _line(canvas, branch[0], branch[1], const Color(0xffe6c494), 3);
+      _line(canvas, branch[1], branch[2], const Color(0xffe6c494), 2);
+    }
+    _line(canvas, const Offset(160, 153), const Offset(160, 42), _green, 7);
+    _leaf(canvas, 160, 120, -61, -25);
+    _leaf(canvas, 160, 95, 67, -26);
+    _leaf(canvas, 160, 72, -42, -22);
+    _line(canvas, const Offset(160, 109), const Offset(224, 104), _green, 4);
+    canvas.drawOval(const Rect.fromLTWH(214, 103, 20, 44), _fill(_lightGreen));
+    canvas.drawOval(const Rect.fromLTWH(214, 103, 20, 44), _stroke(_green, 2));
+    for (var index = 0; index < 3; index++) {
+      canvas.drawCircle(
+          Offset(224, 113 + index * 12.0), 4, _fill(const Color(0xff277b4b)));
+    }
+    for (var petal = 0; petal < 5; petal++) {
+      final angle = petal * math.pi * 2 / 5;
+      canvas.drawCircle(
+          const Offset(160, 35) + Offset(math.cos(angle), math.sin(angle)) * 10,
+          9,
+          _fill(const Color(0xffdfb6f0)));
+    }
+    canvas.drawCircle(const Offset(160, 35), 6, _fill(_yellow));
+    const calloutColor = Color(0xffe5eef9);
+    _line(
+        canvas, const Offset(65, 189), const Offset(127, 184), calloutColor, 2);
+    _line(canvas, const Offset(67, 58), const Offset(157, 85), calloutColor, 2);
+    _line(
+        canvas, const Offset(261, 42), const Offset(216, 76), calloutColor, 2);
+    _line(
+        canvas, const Offset(131, 22), const Offset(151, 32), calloutColor, 2);
+    _line(canvas, const Offset(267, 145), const Offset(232, 129), calloutColor,
+        2);
+  }
+
+  void _forces(Canvas canvas) {
+    // Both rows use the same scale for force arrows. Top: 70 = 70.
+    // Bottom: 90 right > 32 left. No arrow measures distance travelled.
+    for (final y in [45.0, 140.0]) {
+      canvas.drawRRect(
+          RRect.fromRectAndRadius(
+              Rect.fromLTWH(140, y, 40, 38), const Radius.circular(5)),
+          _fill(_blue));
+      canvas.drawRRect(
+          RRect.fromRectAndRadius(
+              Rect.fromLTWH(140, y, 40, 38), const Radius.circular(5)),
+          _stroke(const Color(0xffc8eafa), 2));
+      _line(canvas, Offset(57, y + 41), Offset(289, y + 41),
+          const Color(0xff788b9f), 2);
+    }
+    _arrow(canvas, const Offset(140, 64), const Offset(70, 64), _yellow, 4);
+    _arrow(canvas, const Offset(180, 64), const Offset(250, 64), _yellow, 4);
+    _arrow(canvas, const Offset(140, 159), const Offset(108, 159), _yellow, 4);
+    _arrow(canvas, const Offset(180, 159), const Offset(270, 159), _yellow, 4);
   }
 
   @override

@@ -31,8 +31,15 @@ class ScienceFigure {
   /// Validate authored data separately so grade packs can use const figures.
   void validate() {
     if (picture.isNotEmpty &&
-        !const ['butterfly', 'bean', 'habitat', 'shadow', 'daynight']
-            .contains(picture)) {
+        !const [
+          'butterfly',
+          'bean',
+          'habitat',
+          'shadow',
+          'daynight',
+          'plant-parts',
+          'forces'
+        ].contains(picture)) {
       throw ArgumentError('Unknown Science picture: $picture');
     }
     if (labels.isEmpty || labels.length != details.length) {
