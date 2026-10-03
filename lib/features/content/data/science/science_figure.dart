@@ -38,7 +38,10 @@ class ScienceFigure {
           'shadow',
           'daynight',
           'plant-parts',
-          'forces'
+          'forces',
+          'g4-body',
+          'g4-rock',
+          'g4-moon',
         ].contains(picture)) {
       throw ArgumentError('Unknown Science picture: $picture');
     }
