@@ -433,7 +433,9 @@ class _Grade5Painter extends CustomPainter {
 
   void _arrow(Canvas canvas, Offset start, Offset end) {
     final paint = Paint()
-      ..color = const Color(0xff2b607b)
+      ..color = model == 'web' || model == 'g5-lever'
+          ? const Color(0xff77cde3)
+          : const Color(0xff2b607b)
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(start, end, paint);
