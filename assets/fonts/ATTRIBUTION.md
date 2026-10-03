@@ -14,6 +14,8 @@ https://raw.githubusercontent.com/google/fonts/b979dba422e445492b0eb9951ac52ee0b
 
 The upstream variable TrueType font is instantiated at weight 400 and subset
 to the Unicode symbols used by the Flutter UI and approved lesson fixtures.
+The generator includes literal symbols, Dart braced and four-digit Unicode
+escapes, and valid escaped UTF-16 surrogate pairs; invalid scalar values are skipped.
 The derived font has been renamed **Norie Emoji** (`NorieEmoji.ttf`). Its
 monochrome outline glyphs use the app text color and require no network or
 operating-system emoji font. Copyright and OFL notices remain in the font.
