@@ -1,5 +1,6 @@
 import '../domain/norie_content_models.dart';
 import 'norie_grade1_science_questions.dart';
+import 'norie_grade1_materials_lesson.dart';
 
 abstract final class NorieGrade1ScienceCurriculum {
   static NorieTopicContent topic(int order) => topics[order - 1];
@@ -926,5 +927,6 @@ abstract final class NorieGrade1ScienceCurriculum {
             title: "Weather ☀️🌧️ Mastery",
             description: "Use what you learned in three new situations.",
             rounds: scienceQuestions(4, mastery: true))),
+    norieGrade1MaterialsTopic,
   ];
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../../core/theme/norie_theme.dart';
+import 'norie_grade1_materials_visual.dart';
 
 /// Original local diagrams. Labels are Flutter text, so they remain readable
 /// and accessible when the phone is narrow or the learner enlarges text.
@@ -118,6 +119,7 @@ class NorieGrade1ScienceVisual extends StatelessWidget {
   };
 
   static const labels = <String, List<String>>{
+    ...NorieGrade1MaterialsVisual.labels,
     'science-1-1': [
       '🧒 Child · living',
       '🐕 Dog · living',
@@ -289,6 +291,9 @@ class NorieGrade1ScienceVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (NorieGrade1MaterialsVisual.labels.containsKey(type)) {
+      return NorieGrade1MaterialsVisual(type: type, caption: caption);
+    }
     final items = labels[type] ?? const <String>[];
     final panels = panelTypes.contains(type);
     return Container(
