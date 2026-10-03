@@ -42,6 +42,10 @@ class ScienceFigure {
           'g4-body',
           'g4-rock',
           'g4-moon',
+          'g5-cells',
+          'g5-food-web',
+          'g5-lever',
+          'g5-water-paths',
         ].contains(picture)) {
       throw ArgumentError('Unknown Science picture: $picture');
     }

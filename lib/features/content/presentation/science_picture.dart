@@ -2,32 +2,38 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'science_grade4_picture.dart';
+import 'science_grade5_picture.dart';
 
 /// Original offline vector models. Every label is a Flutter text widget.
 class SciencePicture extends StatelessWidget {
   const SciencePicture({required this.picture, super.key});
   final String picture;
 
-  static String descriptionFor(String picture) =>
-      Grade4SciencePicture.supports(picture)
-          ? Grade4SciencePicture.descriptions[picture]!
-          : switch (picture) {
-              'butterfly' =>
-                'Butterfly life cycle: eggs on a leaf, a caterpillar, a hanging pupa, and a winged adult. Adults lay eggs for the next generation.',
-              'bean' =>
-                'Bean life cycle: a seed, a first root emerging from a seed, a seedling with leaves, and a mature plant bearing pods containing new seeds.',
-              'habitat' =>
-                'A bird habitat has berries for food, a pond for water, a nest for shelter, and open space for movement.',
-              'shadow' =>
-                'Light rays travel from a torch toward a wall. An opaque card blocks the middle rays, leaving a dark shadow on the wall.',
-              'daynight' =>
-                'The Sun lights the left side of Earth. The side facing the Sun has day; the side facing away has night. Earth rotates in place.',
-              'plant-parts' =>
-                'A flowering bean plant: branching roots below the soil, an upright stem, green leaves attached to the stem, a flower at the top, and a pod containing seeds. Roots anchor and absorb; the stem supports and transports; leaves make food; flowers and seed-filled fruits help reproduction.',
-              'forces' =>
-                'Two blocks with horizontal force arrows. Top: equal-length arrows point left and right, so the horizontal forces are balanced. Bottom: a longer right arrow and shorter left arrow show unbalanced forces toward the right. Arrow lengths compare force strength, not travel distance. Vertical forces are balanced and omitted.',
-              _ => throw ArgumentError('Unknown Science picture: $picture'),
-            };
+  static String descriptionFor(String picture) {
+    if (Grade4SciencePicture.supports(picture)) {
+      return Grade4SciencePicture.descriptions[picture]!;
+    }
+    if (Grade5SciencePicture.supports(picture)) {
+      return Grade5SciencePicture.descriptions[picture]!;
+    }
+    return switch (picture) {
+      'butterfly' =>
+        'Butterfly life cycle: eggs on a leaf, a caterpillar, a hanging pupa, and a winged adult. Adults lay eggs for the next generation.',
+      'bean' =>
+        'Bean life cycle: a seed, a first root emerging from a seed, a seedling with leaves, and a mature plant bearing pods containing new seeds.',
+      'habitat' =>
+        'A bird habitat has berries for food, a pond for water, a nest for shelter, and open space for movement.',
+      'shadow' =>
+        'Light rays travel from a torch toward a wall. An opaque card blocks the middle rays, leaving a dark shadow on the wall.',
+      'daynight' =>
+        'The Sun lights the left side of Earth. The side facing the Sun has day; the side facing away has night. Earth rotates in place.',
+      'plant-parts' =>
+        'A flowering bean plant: branching roots below the soil, an upright stem, green leaves attached to the stem, a flower at the top, and a pod containing seeds. Roots anchor and absorb; the stem supports and transports; leaves make food; flowers and seed-filled fruits help reproduction.',
+      'forces' =>
+        'Two blocks with horizontal force arrows. Top: equal-length arrows point left and right, so the horizontal forces are balanced. Bottom: a longer right arrow and shorter left arrow show unbalanced forces toward the right. Arrow lengths compare force strength, not travel distance. Vertical forces are balanced and omitted.',
+      _ => throw ArgumentError('Unknown Science picture: $picture'),
+    };
+  }
 
   static const _labels = {
     'butterfly': [
@@ -97,83 +103,85 @@ class SciencePicture extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) => Grade4SciencePicture.supports(picture)
-      ? Grade4SciencePicture(picture: picture)
-      : Semantics(
-          container: true,
-          explicitChildNodes: true,
-          label: descriptionFor(picture),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            if (picture == 'butterfly' || picture == 'bean')
-              _stages()
-            else ...[
-              AspectRatio(
-                  aspectRatio: 320 / 220,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) => Stack(children: [
-                      Positioned.fill(
-                          child:
-                              CustomPaint(painter: _SciencePainter(picture))),
-                      for (var index = 0;
-                          index < _markers[picture]!.length;
-                          index++)
-                        Positioned(
-                          left: constraints.maxWidth *
-                                  _markers[picture]![index].dx -
+  Widget build(BuildContext context) {
+    if (Grade4SciencePicture.supports(picture)) {
+      return Grade4SciencePicture(picture: picture);
+    }
+    if (Grade5SciencePicture.supports(picture)) {
+      return Grade5SciencePicture(picture: picture);
+    }
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: descriptionFor(picture),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (picture == 'butterfly' || picture == 'bean')
+          _stages()
+        else ...[
+          AspectRatio(
+              aspectRatio: 320 / 220,
+              child: LayoutBuilder(
+                builder: (context, constraints) => Stack(children: [
+                  Positioned.fill(
+                      child: CustomPaint(painter: _SciencePainter(picture))),
+                  for (var index = 0;
+                      index < _markers[picture]!.length;
+                      index++)
+                    Positioned(
+                      left:
+                          constraints.maxWidth * _markers[picture]![index].dx -
                               13,
-                          top: constraints.maxHeight *
-                                  _markers[picture]![index].dy -
+                      top:
+                          constraints.maxHeight * _markers[picture]![index].dy -
                               13,
-                          child: ExcludeSemantics(
-                              child: Container(
-                            width: 26,
-                            height: 26,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                                color: const Color(0xfff8fafc),
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: const Color(0xff23344f))),
-                            child: Text('${index + 1}',
-                                style: const TextStyle(
-                                    color: Color(0xff132238),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold)),
-                          )),
-                        ),
-                    ]),
-                  )),
-              const SizedBox(height: 10),
-              for (final label in _labels[picture]!)
-                Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(label)),
-            ],
-            if (picture == 'butterfly')
-              const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Text(
-                      'Follow 1 → 2 → 3 → 4. Adults lay eggs to begin a new generation.')),
-            if (picture == 'bean')
-              const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Text(
-                      'Follow 1 → 2 → 3 → 4. Seeds in the pods can grow into new plants.')),
-            if (picture == 'shadow')
-              const Text(
-                  'Yellow arrows show light travelling. The card stops the middle rays; rays above and below it reach the wall.'),
-            if (picture == 'daynight')
-              const Text(
-                  'Straight arrows show sunlight. The curved arrow shows Earth turning on its axis, not travelling around the Sun.'),
-            if (picture == 'plant-parts')
-              const Text(
-                  'Roots are shown through the soil so their branches can be seen. The pod is shown with visible seeds as a cutaway model.'),
-            if (picture == 'forces')
-              const Text(
-                  'Yellow arrows show forces on each block. Longer means stronger within this diagram. They do not show travel paths. Vertical forces are balanced and omitted.'),
-          ]),
-        );
+                      child: ExcludeSemantics(
+                          child: Container(
+                        width: 26,
+                        height: 26,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                            color: const Color(0xfff8fafc),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xff23344f))),
+                        child: Text('${index + 1}',
+                            style: const TextStyle(
+                                color: Color(0xff132238),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
+                      )),
+                    ),
+                ]),
+              )),
+          const SizedBox(height: 10),
+          for (final label in _labels[picture]!)
+            Padding(
+                padding: const EdgeInsets.only(bottom: 6), child: Text(label)),
+        ],
+        if (picture == 'butterfly')
+          const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                  'Follow 1 → 2 → 3 → 4. Adults lay eggs to begin a new generation.')),
+        if (picture == 'bean')
+          const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                  'Follow 1 → 2 → 3 → 4. Seeds in the pods can grow into new plants.')),
+        if (picture == 'shadow')
+          const Text(
+              'Yellow arrows show light travelling. The card stops the middle rays; rays above and below it reach the wall.'),
+        if (picture == 'daynight')
+          const Text(
+              'Straight arrows show sunlight. The curved arrow shows Earth turning on its axis, not travelling around the Sun.'),
+        if (picture == 'plant-parts')
+          const Text(
+              'Roots are shown through the soil so their branches can be seen. The pod is shown with visible seeds as a cutaway model.'),
+        if (picture == 'forces')
+          const Text(
+              'Yellow arrows show forces on each block. Longer means stronger within this diagram. They do not show travel paths. Vertical forces are balanced and omitted.'),
+      ]),
+    );
+  }
 
   Widget _stages() => LayoutBuilder(builder: (context, constraints) {
         final columns = constraints.maxWidth < 200 ? 1 : 2;
