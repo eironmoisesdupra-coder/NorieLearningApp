@@ -66,6 +66,7 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
     _items = NorieItemRandomizer.randomize(
       widget.topic.quiz.questions,
       random: _random,
+      byDifficulty: NorieSciencePracticePolicy.usesTiers(widget.topic),
     );
     if (_items.isEmpty) {
       _activeMode = _requestedMode;
@@ -90,6 +91,9 @@ class _NorieActivityScreenState extends State<NorieActivityScreen> {
     _activeMode = _requestedMode == NorieActivityMode.mixed
         ? NorieItemRandomizer.randomMode(question: question, random: _random)
         : _requestedMode;
+    if (widget.topic.subject.toLowerCase() == 'science') {
+      _activeMode = NorieSciencePracticePolicy.resolve(_activeMode, question);
+    }
     _ordered = List<String>.from(question.orderedItems)..shuffle(_random);
   }
 
