@@ -49,6 +49,7 @@ abstract final class NorieItemRandomizer {
   static List<NorieRandomizedQuestion> randomize(
     List<NorieQuestionContent> questions, {
     Random? random,
+    bool byDifficulty = false,
   }) {
     final rng = random ?? Random.secure();
     final items = questions.map((question) {
@@ -70,6 +71,15 @@ abstract final class NorieItemRandomizer {
     }).toList()
       ..shuffle(rng);
 
+    if (byDifficulty) {
+      // Shuffle inside each tier while keeping the learning progression.
+      const tiers = ['foundation', 'intermediate', 'advanced'];
+      return [
+        for (final tier in tiers)
+          ...items.where((item) => item.source.difficulty == tier),
+        ...items.where((item) => !tiers.contains(item.source.difficulty)),
+      ];
+    }
     return items;
   }
 
@@ -87,6 +97,26 @@ abstract final class NorieItemRandomizer {
     ];
     return candidates[rng.nextInt(candidates.length)];
   }
+}
+
+/// Science content never turns a phrase or a numerical result into a
+/// one-word identification exercise. Other subject policies remain unchanged.
+abstract final class NorieSciencePracticePolicy {
+  static bool usesTiers(NorieTopicContent topic) =>
+      topic.subject.toLowerCase() == 'science' && topic.gradeLevel != 'g1';
+
+  static bool canIdentify(NorieQuestionContent question) {
+    final answers = question.resolvedAcceptedAnswers;
+    return answers.isNotEmpty &&
+        answers.every((answer) =>
+            answer == answer.trim() && RegExp(r'^[A-Za-z]+$').hasMatch(answer));
+  }
+
+  static NorieActivityMode resolve(
+          NorieActivityMode requested, NorieQuestionContent question) =>
+      requested == NorieActivityMode.identification && !canIdentify(question)
+          ? NorieActivityMode.multipleChoice
+          : requested;
 }
 
 String norieNormalizeAnswer(String value) => value

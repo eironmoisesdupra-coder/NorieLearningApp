@@ -27,12 +27,21 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   fonts:
+    - family: NorieScienceText
+      fonts:
+        - asset: assets/fonts/NorieScienceText.ttf
+    - family: NorieScienceSymbols
+      fonts:
+        - asset: assets/fonts/NorieScienceSymbols.ttf
     - family: NorieEmoji
       fonts:
         - asset: assets/fonts/NorieEmoji.ttf
   assets:
     - assets/fonts/NotoEmoji-OFL.txt
     - assets/fonts/ATTRIBUTION.md
+    - assets/fonts/notosans-Science-OFL.txt
+    - assets/fonts/notosansmath-Science-OFL.txt
+    - assets/fonts/Science-ATTRIBUTION.md
     - assets/mascot/
     - assets/achievements/
     - assets/ranking/

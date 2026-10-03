@@ -7,6 +7,8 @@ import '../domain/norie_content_models.dart';
 import 'norie_content_theme.dart';
 import 'norie_lesson_visual.dart';
 import 'norie_grade1_science_visual.dart';
+import '../data/science/science_curriculum.dart';
+import 'science_figure_view.dart';
 import 'norie_practice_mode_screen.dart';
 
 class NorieLessonScreen extends StatelessWidget {
@@ -64,7 +66,8 @@ class NorieLessonScreen extends StatelessWidget {
                       ),
                     ),
                     if (topic.visualType != null &&
-                        topic.visualType != 'g1-science') ...[
+                        topic.visualType != 'g1-science' &&
+                        topic.visualType != 'science-path') ...[
                       const SizedBox(height: 20),
                       NorieLessonVisual(
                         type: topic.visualType!,
@@ -206,9 +209,20 @@ class _ConceptCard extends StatelessWidget {
                   fontSize: 20, height: 1.35, fontWeight: FontWeight.w900)),
           const SizedBox(height: 12),
           if (section.visualType != null)
-            NorieGrade1ScienceVisual(
-                type: section.visualType!,
-                caption: section.visualCaption ?? ''),
+            if (ScienceCurriculum.figures.containsKey(section.visualType))
+              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                ScienceFigureView(
+                    figure: ScienceCurriculum.figures[section.visualType]!),
+                if (section.visualCaption?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 12),
+                  Text(section.visualCaption!,
+                      style: const TextStyle(height: 1.5)),
+                ],
+              ])
+            else
+              NorieGrade1ScienceVisual(
+                  type: section.visualType!,
+                  caption: section.visualCaption ?? ''),
           if (section.body != null)
             if (section.reveal)
               Material(
@@ -290,6 +304,16 @@ class _QuickCheckBody extends StatelessWidget {
         RegExp(r'^\d+\. ', multiLine: true).allMatches(body).toList();
     final style = const TextStyle(
         fontSize: 16, height: 1.6, color: NorieColors.textSecondary);
+    if (boundaries.isEmpty) {
+      return ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        title: const Text('Reveal answer'),
+        children: [
+          Align(
+              alignment: Alignment.centerLeft, child: Text(body, style: style))
+        ],
+      );
+    }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (boundaries.isNotEmpty && boundaries.first.start > 0)
         Text(body.substring(0, boundaries.first.start).trim(), style: style),

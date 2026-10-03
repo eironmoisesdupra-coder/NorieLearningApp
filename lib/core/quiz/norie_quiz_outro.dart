@@ -151,8 +151,13 @@ class _ResultDialogState extends State<_ResultDialog>
                                         : const Color(0xff63daf0),
                                     width: 1.5)),
                             child: DefaultTextStyle(
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 15),
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontFamilyFallback:
+                                        DefaultTextStyle.of(context)
+                                            .style
+                                            .fontFamilyFallback),
                                 child: SingleChildScrollView(
                                     padding: const EdgeInsets.all(20),
                                     child: Column(
@@ -350,10 +355,14 @@ class _ResultDialogState extends State<_ResultDialog>
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 18),
                                 child: DefaultTextStyle(
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
-                                        height: 1.5),
+                                        height: 1.5,
+                                        fontFamilyFallback:
+                                            DefaultTextStyle.of(context)
+                                                .style
+                                                .fontFamilyFallback),
                                     child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
