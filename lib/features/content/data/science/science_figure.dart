@@ -56,6 +56,11 @@ class ScienceFigure {
           'g7-diffusion',
           'g7-motion',
           'g7-earth',
+          'g8-inheritance',
+          'g8-reaction',
+          'g8-work',
+          'g8-wave',
+          'g8-greenhouse',
         ].contains(picture)) {
       throw ArgumentError('Unknown Science picture: $picture');
     }

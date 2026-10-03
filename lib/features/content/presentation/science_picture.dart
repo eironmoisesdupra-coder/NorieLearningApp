@@ -5,6 +5,7 @@ import 'science_grade4_picture.dart';
 import 'science_grade5_picture.dart';
 import 'science_grade6_picture.dart';
 import 'science_grade7_picture.dart';
+import 'science_grade8_picture.dart';
 
 /// Original offline vector models. Every label is a Flutter text widget.
 class SciencePicture extends StatelessWidget {
@@ -23,6 +24,9 @@ class SciencePicture extends StatelessWidget {
     }
     if (Grade7SciencePicture.supports(picture)) {
       return Grade7SciencePicture.descriptions[picture]!;
+    }
+    if (Grade8SciencePicture.supports(picture)) {
+      return Grade8SciencePicture.descriptions[picture]!;
     }
     return switch (picture) {
       'butterfly' =>
@@ -123,6 +127,9 @@ class SciencePicture extends StatelessWidget {
     }
     if (Grade7SciencePicture.supports(picture)) {
       return Grade7SciencePicture(picture: picture);
+    }
+    if (Grade8SciencePicture.supports(picture)) {
+      return Grade8SciencePicture(picture: picture);
     }
     return Semantics(
       container: true,
