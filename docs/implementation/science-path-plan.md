@@ -31,6 +31,8 @@ Author and validate lessons individually. Independently review each grade's scie
 
 Each grade lives in `lib/features/content/data/science/grade_<n>_science.dart` (college uses `grade_college_science.dart`) exporting `List<NorieTopicContent> gradeNScienceTopics` and `Map<String, ScienceFigure> gradeNScienceFigures` (college prefix `gradeCollege`). Shared assembly uses `science_lesson_builder.dart`, shared diagram data uses `science_figure.dart`, and a registry routes grades/figures. Grade files import those helpers and existing content models. No backend or AI generation dependency.
 
+From Grade 9 onward, a grade may import an independently authored lesson module to allow content and diagram work to proceed without editing the same files. The grade entry point still exports the complete five-topic sequence and figure map. Independent review and grade acceptance cover every imported lesson before the next grade is accepted.
+
 ## Review focus
 
 Stable IDs/prerequisites and Grade 1 fixture preservation; ambiguous MC options or untaught facts; numerical units/keys; repeated generic paragraphs; false simplification at younger grades; misleading diagram arrows/scales; small-phone overflow; typed multiword answers; repeat XP; accidental inclusion of unrelated local changes.
