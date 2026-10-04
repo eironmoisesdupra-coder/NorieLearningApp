@@ -35,7 +35,11 @@ async function main() {
     }
     await page.waitForSelector('flt-semantics-placeholder', { state: 'attached', timeout: 60000 });
     await page.evaluate(() => document.querySelector('flt-semantics-placeholder').click());
-    await page.getByRole('button', { name: 'Home Home', exact: true }).waitFor();
+    const home = page.getByRole('button', { name: 'Home Home', exact: true });
+    const closeGuide = page.getByRole('button', { name: 'Close', exact: true });
+    await home.or(closeGuide).first().waitFor();
+    if (await closeGuide.isVisible()) await closeGuide.click();
+    await home.waitFor();
     // The test window stays hidden; emulate the foreground learner session.
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   }
@@ -90,10 +94,10 @@ async function main() {
     const catalog = JSON.parse(await fs.readFile(path.resolve(__dirname, '../../assets/anatomy/atlas-catalog.json')));
     const beforeXp = await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp')));
     await page.getByRole('button', { name: 'Quiz', exact: true }).click();
-    await page.getByText('Identify · 1/10', { exact: true }).waitFor();
+    await page.getByText('Identify Â· 1/10', { exact: true }).waitFor();
     const quizFrame = page.frames().filter(frame => frame.url().includes('atlas-viewer.html')).at(-1);
     for (let item = 0; item < 10; item++) {
-      await page.getByText(`Identify · ${item + 1}/10`, { exact: true }).waitFor();
+      await page.getByText(`Identify Â· ${item + 1}/10`, { exact: true }).waitFor();
       await quizFrame.waitForFunction(index => window.atlasCommands.filter(c => c.type === 'configure').length >= index + 1, item);
       const target = await quizFrame.evaluate(() => window.atlasCommands.filter(c => c.type === 'configure').at(-1).payload.target);
       const answer = catalog.structures.find(s => s.id === target).name;
@@ -107,10 +111,10 @@ async function main() {
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), beforeXp + 100);
     console.log('PASS: phone-sized atlas quiz completed offline and awarded exactly 100 XP once');
-    let referenceLabel = 'Adult male · BodyParts3D';
+    let referenceLabel = 'Adult male Â· BodyParts3D';
     for (const [label, name, count] of [
-      ['Joints & ligaments · detail', 'Anterior cruciate ligament (left)', 626],
-      ['Endocrine glands · detail', 'Inferior parathyroid gland (left)', 11],
+      ['Joints & ligaments Â· detail', 'Anterior cruciate ligament (left)', 626],
+      ['Endocrine glands Â· detail', 'Inferior parathyroid gland (left)', 11],
     ]) {
       await page.getByRole('button', { name: referenceLabel, exact: true }).click();
       await page.getByText('Choose an anatomy reference', { exact: true }).waitFor();

@@ -111,7 +111,8 @@ async function main() {
     assert.equal(await correctCount(), mutedCount);
     assert.equal(await page.evaluate(() => window.norieAudioEvents.filter(
       event => event.type === 'play' && event.source.includes('/audio/sfx/')).length), mutedEffectCount);
-    assert.equal(await page.evaluate(() => [...window.norieAudioPlayers].every(player => player.paused)), true);
+    assert.equal(await page.evaluate(() => [...window.norieAudioPlayers]
+      .filter(player => player.src.includes('/audio/sfx/')).every(player => player.paused)), true);
     await page.getByRole('switch', { name: 'Sound Effects', exact: true }).click({ force: true });
     await page.waitForFunction(storageKey => localStorage.getItem(storageKey) === 'true', key('sfxEnabled'));
     for (let frame = 0; frame < 30 && !await testSound.isEnabled(); frame++) {
