@@ -321,13 +321,13 @@ class _FeedbackLoop extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 28),
                 child: Column(children: [
                   stage(
-                      '1 ? Stimulus: body temperature rises above its regulated range.'),
+                      '1. Stimulus: body temperature rises above its regulated range.'),
                   connector,
                   stage(
-                      '2 ? Response: sweating increases; evaporation transfers heat away.'),
+                      '2. Response: sweating increases; evaporation transfers heat away.'),
                   connector,
                   stage(
-                      '3 ? Effect: temperature moves back toward its regulated range.'),
+                      '3. Effect: temperature moves back toward its regulated range.'),
                 ])),
           ]),
           const SizedBox(height: 10),

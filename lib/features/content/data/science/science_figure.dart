@@ -68,6 +68,13 @@ class ScienceFigure {
           'g9-seafloor',
           'g9-subduction',
           'g9-gps',
+          'g10-selection',
+          'g10-periodic',
+          'g10-ph',
+          'g10-circuit',
+          'g10-population',
+          'g10-energy',
+          'g10-cascade',
         ].contains(picture)) {
       throw ArgumentError('Unknown Science picture: $picture');
     }
