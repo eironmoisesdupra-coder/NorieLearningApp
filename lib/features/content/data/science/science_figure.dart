@@ -75,6 +75,13 @@ class ScienceFigure {
           'g10-population',
           'g10-energy',
           'g10-cascade',
+          'g11-cell',
+          'g11-stoichiometry',
+          'g11-mechanics',
+          'g11-materials',
+          'g11-replicates',
+          'g11-slope',
+          'g11-uncertainty',
         ].contains(picture)) {
       throw ArgumentError('Unknown Science picture: $picture');
     }
