@@ -18,7 +18,7 @@ Font sizes and the Norie theme remain unchanged. The app loads these local asset
 Source: https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/notosans/NotoSans%5Bwdth,wght%5D.ttf
 Upstream SHA-256: `bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d`
 License: [notosans-Science-OFL.txt](notosans-Science-OFL.txt)
-Bundled subset: 203,352 bytes; SHA-256 `dc385dfd94a27b3e5a3d96b2fa11567fea851dc25d26ca3bf753c4d42be2bff7`.
+Bundled subset: 203,508 bytes; SHA-256 `38c41ed6451a5e79c6521f10873b29d68bf98f98bcb81903cb64497960b2026e`.
 
 ## NorieScienceSymbols
 

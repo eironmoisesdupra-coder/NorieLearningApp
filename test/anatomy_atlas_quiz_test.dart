@@ -48,4 +48,41 @@ void main() {
     expect(quiz.takeReward(), isNull);
     expect(quiz.answer(quiz.current.target.name), isNull);
   });
+  test('every-part scope includes each reference and system hints', () {
+    final quiz = AtlasQuizSession.generate(catalog, 'all', {'skeletal'},
+        random: Random(3));
+    expect(quiz.questions, hasLength(8));
+    expect(quiz.questions.map((question) => question.target.reference).toSet(),
+        {'male', 'female'});
+    expect(quiz.current.hint, contains('Bones, support'));
+    expect(quiz.current.hint, isNot(contains(quiz.current.target.name)));
+  });
+  test('a selected system supplies 20 distinct questions', () {
+    final largeCatalog = AnatomyAtlasCatalog.fromJson({
+      'schemaVersion': 1,
+      'references': [
+        {'id': 'male', 'label': 'Male', 'description': ''}
+      ],
+      'structures': [
+        for (var index = 0; index < 50; index++)
+          {
+            'id': 'part-$index',
+            'name': 'Part $index',
+            'reference': 'male',
+            'systems': [index < 25 ? 'skeletal' : 'muscular'],
+            'asset': 'parts',
+            'source': 'test',
+          }
+      ],
+    });
+    final quiz = AtlasQuizSession.generate(largeCatalog, 'male', {'skeletal'},
+        random: Random(2));
+    expect(quiz.questions, hasLength(20));
+    expect(quiz.questions.map((question) => question.target.id).toSet(),
+        hasLength(20));
+    expect(
+        quiz.questions
+            .every((question) => question.target.systems.contains('skeletal')),
+        isTrue);
+  });
 }

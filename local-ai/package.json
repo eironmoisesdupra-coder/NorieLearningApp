@@ -1,0 +1,11 @@
+{
+  "name": "norie-local-ai",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "p-queue": "^9.0.0"
+  }
+}

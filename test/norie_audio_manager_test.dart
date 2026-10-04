@@ -70,6 +70,14 @@ class RecordingBackend implements NorieAudioBackend, GestureAudioBackend {
 }
 
 void main() {
+  test('production playlist contains five bundled music tracks', () {
+    expect(NorieAudioManager.availableMusic, hasLength(5));
+    expect(NorieAudioManager.availableMusic.toSet(), hasLength(5));
+    for (final asset in NorieAudioManager.availableMusic) {
+      expect(asset, startsWith('audio/music/'));
+      expect(asset, endsWith('.mp3'));
+    }
+  });
   test('browser priming starts synchronously and retries on later gestures',
       () async {
     final backend = RecordingBackend();
@@ -89,7 +97,7 @@ void main() {
     final backend = RecordingBackend()
       ..sfxStarted = Completer<void>()
       ..releaseSfx = Completer<void>();
-    final audio = NorieAudioManager(backend: backend);
+    final audio = NorieAudioManager(backend: backend, playlist: const []);
     await audio.unlock();
     final playing = audio.playUiTap();
     await backend.sfxStarted!.future;
@@ -155,7 +163,7 @@ void main() {
       () async {
     SharedPreferences.setMockInitialValues({});
     final backend = RecordingBackend();
-    final audio = NorieAudioManager(backend: backend);
+    final audio = NorieAudioManager(backend: backend, playlist: const []);
     await audio.load();
     await audio.unlock();
     final reading = audio.enterContext(NorieAudioContext.lesson);
@@ -229,7 +237,7 @@ void main() {
       'feedback selects correct asset, suppresses duplicates and respects mute',
       () async {
     final backend = RecordingBackend();
-    final a = NorieAudioManager(backend: backend);
+    final a = NorieAudioManager(backend: backend, playlist: const []);
     await a.load();
     await a.unlock();
     await a.playCorrect();
@@ -259,6 +267,31 @@ void main() {
     expect(backend.events.where((e) => e.startsWith('start:')).length, 1);
     expect(backend.events, contains('resume:0'));
     a.dispose();
+  });
+  testWidgets('production rotation plays all five before repeating',
+      (tester) async {
+    final backend = RecordingBackend();
+    final audio = NorieAudioManager(backend: backend);
+    await audio.load();
+    expect(backend.events, isEmpty);
+    await audio.unlock();
+    await tester.pump(const Duration(seconds: 3));
+    for (var transition = 0; transition < 10; transition++) {
+      backend.positions.add(MusicPosition(transition % 2,
+          const Duration(seconds: 98), const Duration(seconds: 100)));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+    }
+    final tracks = backend.events
+        .where((event) => event.startsWith('start:'))
+        .map((event) => event.split(':').last)
+        .toList();
+    expect(tracks, hasLength(11));
+    expect(tracks.take(5).toSet(), NorieAudioManager.availableMusic.toSet());
+    expect(tracks.skip(5).take(5), tracks.take(5));
+    expect(tracks.last, tracks.first);
+    expect(backend.levels.values.where((volume) => volume > 0), hasLength(1));
+    audio.dispose();
   });
   testWidgets('playlist crossfades without repeating and ducks temporarily',
       (tester) async {

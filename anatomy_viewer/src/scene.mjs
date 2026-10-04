@@ -132,7 +132,7 @@ export class AtlasScene {
     for (const mesh of this.meshes()) {
       const id = mesh.userData.structureId;
       mesh.visible = visible.has(id);
-      const selected = this.state.selected === id;
+      const selected = !this.quiz && this.state.selected === id;
       mesh.material.color.copy(selected ? new THREE.Color('#42e8e0') : mesh.userData.baseColor);
       mesh.material.emissive.set(selected ? '#104d53' : '#000000');
       mesh.material.transparent = this.alpha < 1;

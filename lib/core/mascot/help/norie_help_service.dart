@@ -27,10 +27,10 @@ class NorieHelpService {
     if (query.contains('tutorial') || query.contains('guide me')) {
       return const NorieHelpResponse(
         kind: NorieHelpResponseKind.appHelp,
-        text: 'You can replay the tutorial for the section you’re currently using.',
+        text: 'Start the complete app guide, then use Contents to search or jump to any section. It covers lessons, quizzes, AI Study, anatomy, progress, accounts, settings, and offline use.',
         quickActions: [
           NorieHelpQuickAction(
-            label: 'Replay this tutorial',
+            label: 'Start Tutorial',
             destination: NorieHelpDestination.replayTutorial,
           ),
         ],

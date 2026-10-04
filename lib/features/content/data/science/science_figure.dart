@@ -82,6 +82,13 @@ class ScienceFigure {
           'g11-replicates',
           'g11-slope',
           'g11-uncertainty',
+          'g12-genetics',
+          'g12-equilibrium',
+          'g12-fields',
+          'g12-geology',
+          'g12-sampling',
+          'g12-diversity',
+          'g12-niche',
         ].contains(picture)) {
       throw ArgumentError('Unknown Science picture: $picture');
     }

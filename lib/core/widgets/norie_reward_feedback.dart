@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../audio/norie_reward_sound.dart';
+import '../mascot/norie_mascot_controller.dart';
+import '../mascot/norie_mascot_view.dart';
 import '../theme/norie_theme.dart';
 import 'norie_credit_coin.dart';
 
@@ -83,7 +85,8 @@ class NorieRewardBanner extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.check_circle_rounded, color: NorieColors.green, size: 20),
+          const Icon(Icons.check_circle_rounded,
+              color: NorieColors.green, size: 20),
         ],
       ),
     );
@@ -96,10 +99,11 @@ abstract final class NorieRewardPopup {
     required int credits,
     required int xp,
     String title = 'Reward claimed!',
+    bool correctAnswer = false,
   }) async {
-    if (credits <= 0 && xp <= 0) return;
+    if (credits <= 0 && xp <= 0 && !correctAnswer) return;
 
-    if (credits > 0) {
+    if (credits > 0 && !correctAnswer) {
       unawaited(NorieRewardSound.playCoin());
     }
 
@@ -108,12 +112,15 @@ abstract final class NorieRewardPopup {
       barrierDismissible: true,
       barrierLabel: 'Dismiss reward',
       barrierColor: Colors.black.withValues(alpha: .52),
-      transitionDuration: const Duration(milliseconds: 360),
+      transitionDuration: MediaQuery.of(context).disableAnimations
+          ? Duration.zero
+          : Duration(milliseconds: correctAnswer ? 160 : 360),
       pageBuilder: (context, animation, secondaryAnimation) {
         return _NorieRewardPopupCard(
           credits: credits,
           xp: xp,
           title: title,
+          correctAnswer: correctAnswer,
         );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
@@ -139,11 +146,13 @@ class _NorieRewardPopupCard extends StatefulWidget {
     required this.credits,
     required this.xp,
     required this.title,
+    this.correctAnswer = false,
   });
 
   final int credits;
   final int xp;
   final String title;
+  final bool correctAnswer;
 
   @override
   State<_NorieRewardPopupCard> createState() => _NorieRewardPopupCardState();
@@ -151,12 +160,14 @@ class _NorieRewardPopupCard extends StatefulWidget {
 
 class _NorieRewardPopupCardState extends State<_NorieRewardPopupCard> {
   Timer? _dismissTimer;
+  late final NorieMascotController _mascot = NorieMascotController()..correct();
 
   @override
   void initState() {
     super.initState();
-    _dismissTimer = Timer(const Duration(milliseconds: 2100), () {
-      if (mounted && Navigator.of(context).canPop()) {
+    _dismissTimer =
+        Timer(Duration(milliseconds: widget.correctAnswer ? 1100 : 2100), () {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
         Navigator.of(context).pop();
       }
     });
@@ -165,6 +176,7 @@ class _NorieRewardPopupCardState extends State<_NorieRewardPopupCard> {
   @override
   void dispose() {
     _dismissTimer?.cancel();
+    _mascot.dispose();
     super.dispose();
   }
 
@@ -205,15 +217,19 @@ class _NorieRewardPopupCardState extends State<_NorieRewardPopupCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (widget.credits > 0)
+              if (widget.correctAnswer)
+                NorieMascotView(controller: _mascot, size: 110)
+              else if (widget.credits > 0)
                 const NorieCreditCoin(size: 78)
               else
-                const Icon(Icons.star_rounded, size: 68, color: NorieColors.orange),
+                const Icon(Icons.star_rounded,
+                    size: 68, color: NorieColors.orange),
               const SizedBox(height: 10),
               Text(
                 widget.title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
+                style:
+                    const TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 9),
               if (widget.credits > 0)
@@ -236,10 +252,12 @@ class _NorieRewardPopupCardState extends State<_NorieRewardPopupCard> {
                 ),
               ],
               const SizedBox(height: 12),
-              const Text(
-                'Added to your rewards.',
-                style: TextStyle(color: NorieColors.textSecondary, fontSize: 10),
-              ),
+              if (widget.credits > 0 || widget.xp > 0)
+                const Text(
+                  'Added to your rewards.',
+                  style:
+                      TextStyle(color: NorieColors.textSecondary, fontSize: 10),
+                ),
             ],
           ),
         ),

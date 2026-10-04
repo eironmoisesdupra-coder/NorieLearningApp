@@ -36,3 +36,9 @@ test/build results, and deployment status without narrating minor implementation
 steps. Done means requested behavior implemented, relevant tests updated,
 analysis/tests green, relevant builds validated, no obvious regressions, and a
 clearly reported branch/PR state. State exactly what remains if incomplete.
+
+After every app update or promotion, always include download links for both the
+Windows PC package and the Android APK in the final handoff. Identify the build
+or revision each link provides. Prefer durable links that the user can open on
+another device. If either platform's updated build is unavailable, say so
+explicitly and label any previous build accurately; do not omit that platform.

@@ -51,6 +51,7 @@ class _LearnScreenState extends State<LearnScreen> {
       drawerEdgeDragWidth: 48,
       body: NorieTutorialEntry(
         definition: NorieTutorialCatalog.learn,
+        autoStart: false,
         child: SafeArea(
         child: Center(
           child: ConstrainedBox(

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../norie_app_context.dart';
 import '../norie_mascot_controller.dart';
@@ -20,13 +21,41 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   final NorieTutorialStore store;
   final NorieVoiceController? voiceController;
 
-  final Map<String, GlobalKey> _targets = <String, GlobalKey>{};
+  final Map<String, List<GlobalKey>> _targets = {};
+  final Map<GlobalKey, VoidCallback> _focusActions = {};
+  bool _notificationScheduled = false;
 
   NorieTutorialDefinition? _activeDefinition;
   int _currentIndex = 0;
   int _focusGeneration = 0;
   bool _autoRecentering = false;
   bool _disposed = false;
+  bool _showingContents = false;
+
+  bool get showingContents => _showingContents;
+
+  void browse({NorieTutorialDefinition? section}) {
+    if (_disposed) return;
+    _focusGeneration++;
+    _activeDefinition = NorieTutorialCatalog.complete;
+    _currentIndex = 0;
+    final index = _activeDefinition!.steps
+        .indexWhere((step) => step.id == section?.steps.firstOrNull?.id);
+    if (index >= 0) _currentIndex = index;
+    showContents();
+  }
+
+  void showContents() {
+    if (!isActive || _disposed) return;
+    final stepId = currentStep?.id;
+    _activeDefinition = NorieTutorialCatalog.complete;
+    final index =
+        _activeDefinition!.steps.indexWhere((step) => step.id == stepId);
+    _currentIndex = index < 0 ? 0 : index;
+    _showingContents = true;
+    unawaited(voiceController?.stop());
+    _notify();
+  }
 
   NorieTutorialDefinition? get activeDefinition => _activeDefinition;
   bool get isActive => _activeDefinition != null;
@@ -45,17 +74,31 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   bool get isLastStep => isActive && _currentIndex == stepCount - 1;
 
   Future<bool> startIfNeeded(NorieTutorialDefinition definition) async {
-    if (definition.steps.isEmpty || await store.isComplete(definition.id)) {
+    if (_disposed ||
+        isActive ||
+        definition.steps.isEmpty ||
+        await store.isComplete(definition.id)) {
       return false;
     }
+    if (_disposed || isActive) return false;
     _start(definition);
     return true;
   }
 
   Future<void> replay(NorieTutorialDefinition definition) async {
-    if (definition.steps.isEmpty) return;
+    if (_disposed || definition.steps.isEmpty) return;
     _start(definition);
   }
+
+  void goTo(int index) {
+    if (!isActive || index < 0 || index >= stepCount || _disposed) return;
+    _showingContents = false;
+    _currentIndex = index;
+    _activateStep();
+    _notify();
+  }
+
+  void previous() => goTo(_currentIndex - 1);
 
   Future<void> next() async {
     final definition = _activeDefinition;
@@ -76,6 +119,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   }
 
   void dismissWithoutCompletion() {
+    FocusManager.instance.primaryFocus?.unfocus();
     _focusGeneration++;
     _activeDefinition = null;
     _currentIndex = 0;
@@ -84,30 +128,67 @@ class NorieTutorialCoordinator extends ChangeNotifier {
     _notify();
   }
 
-  void registerTarget(String id, GlobalKey key) {
-    _targets[id] = key;
-    if (currentStep?.targetId == id) {
+  void registerTarget(String id, GlobalKey key, {VoidCallback? onFocus}) {
+    final keys = _targets.putIfAbsent(id, () => []);
+    if (!keys.contains(key)) keys.add(key);
+    if (onFocus != null) _focusActions[key] = onFocus;
+    if (currentStep?.targetId == id ||
+        id == 'tour.${currentStep?.destination?.name}') {
       _scheduleFocusForCurrentStep();
       _notify();
     }
   }
 
   void unregisterTarget(String id, GlobalKey key) {
-    if (identical(_targets[id], key)) {
-      _targets.remove(id);
+    _focusActions.remove(key);
+    if (_targets[id]?.remove(key) ?? false) {
+      if (_targets[id]!.isEmpty) _targets.remove(id);
       if (currentStep?.targetId == id) _notify();
     }
   }
 
   Rect? targetRect(String? targetId) {
     if (targetId == null) return null;
-    final key = _targets[targetId];
+    final key = _targetKey(targetId);
     final context = key?.currentContext;
     final renderObject = context?.findRenderObject();
-    if (renderObject is! RenderBox || !renderObject.attached) return null;
+    if (renderObject is! RenderBox ||
+        !renderObject.attached ||
+        !renderObject.hasSize) {
+      return null;
+    }
+    var hidden = false;
+    context?.visitAncestorElements((element) {
+      if (element.widget is Offstage && (element.widget as Offstage).offstage) {
+        hidden = true;
+      }
+      return !hidden;
+    });
+    if (hidden) return null;
 
     final topLeft = renderObject.localToGlobal(Offset.zero);
     return topLeft & renderObject.size;
+  }
+
+  GlobalKey? _targetKey(String id) {
+    for (final key in (_targets[id] ?? <GlobalKey>[]).reversed) {
+      final context = key.currentContext;
+      if (context == null) continue;
+      var hidden = false;
+      context.visitAncestorElements((element) {
+        if (element.widget is Offstage &&
+            (element.widget as Offstage).offstage) {
+          hidden = true;
+        }
+        return !hidden;
+      });
+      if (!hidden) return key;
+    }
+    final destination = currentStep?.destination;
+    if (destination != null && id != 'tour.${destination.name}') {
+      return _targetKey('tour.${destination.name}');
+    }
+    return null;
   }
 
   Future<void> focusCurrentTarget({
@@ -117,7 +198,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
     final targetId = step?.targetId;
     if (step == null || targetId == null || _disposed) return;
 
-    final key = _targets[targetId];
+    final key = _targetKey(targetId);
     final context = key?.currentContext;
     if (context == null) return;
 
@@ -125,13 +206,14 @@ class NorieTutorialCoordinator extends ChangeNotifier {
 
     await Scrollable.ensureVisible(
       context,
-      alignment: .5,
+      alignment: .2,
       duration: duration,
       curve: Curves.easeOutCubic,
       alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
     );
 
     if (_disposed || generation != _focusGeneration) return;
+    _focusActions[key]?.call();
     _notify();
   }
 
@@ -155,6 +237,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
 
   void _start(NorieTutorialDefinition definition) {
     _focusGeneration++;
+    _showingContents = false;
     _activeDefinition = definition;
     _currentIndex = 0;
     _activateStep();
@@ -224,6 +307,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   Future<void> _finish({required bool markComplete}) async {
     final definition = _activeDefinition;
     if (definition == null) return;
+    FocusManager.instance.primaryFocus?.unfocus();
 
     if (markComplete) {
       await store.markComplete(definition.id);
@@ -238,7 +322,18 @@ class NorieTutorialCoordinator extends ChangeNotifier {
   }
 
   void _notify() {
-    if (!_disposed) notifyListeners();
+    if (_disposed) return;
+    if (WidgetsBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      if (_notificationScheduled) return;
+      _notificationScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _notificationScheduled = false;
+        if (!_disposed) notifyListeners();
+      });
+    } else {
+      notifyListeners();
+    }
   }
 
   @override
@@ -246,6 +341,7 @@ class NorieTutorialCoordinator extends ChangeNotifier {
     _disposed = true;
     _focusGeneration++;
     _targets.clear();
+    _focusActions.clear();
     super.dispose();
   }
 }

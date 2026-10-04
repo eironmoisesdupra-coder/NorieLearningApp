@@ -1,26 +1,89 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:fsrs/fsrs.dart' as fsrs;
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/cloud/supabase_config.dart';
 import '../domain/norie_study_models.dart';
 import 'norie_study_offline_store.dart';
+import 'norie_local_job_client.dart';
 
 class NorieStudyService {
-  NorieStudyService._();
+  NorieStudyService._() : _clientOverride = null;
+
+  @visibleForTesting
+  NorieStudyService.forTesting(SupabaseClient client)
+      : _clientOverride = client;
+
+  final SupabaseClient? _clientOverride;
 
   static final NorieStudyService instance = NorieStudyService._();
+  static const localEnabled = bool.fromEnvironment('NORIE_LOCAL_AI');
+  static const localUrl = String.fromEnvironment('NORIE_LOCAL_AI_URL',
+      defaultValue: 'http://127.0.0.1:8752');
+  static bool supportsLocalMode(NorieStudyGenerationMode mode) => const [
+        NorieStudyGenerationMode.multipleChoice,
+        NorieStudyGenerationMode.identification,
+        NorieStudyGenerationMode.flashcards,
+        NorieStudyGenerationMode.mixed,
+      ].contains(mode);
 
   static const _bucket = 'study-sources';
   static const _setProjection =
-      'id,user_id,title,source_type,source_name,generation_mode,requested_count,status,topic_tag,ai_model,created_at,study_questions(id,position,kind,prompt,options,correct_values,explanation,source_excerpt,topic_tag,difficulty,ordered_items),study_attempts(xp_awarded)';
+      'id,user_id,title,source_type,source_name,generation_mode,requested_count,status,topic_tag,ai_model,created_at,study_questions(id,position,kind,prompt,options,correct_values,explanation,source_excerpt,topic_tag,difficulty,ordered_items),study_attempts(xp_awarded,total_count)';
 
-  SupabaseClient? get _client => NorieSupabase.client;
+  SupabaseClient? get _client =>
+      _clientOverride ?? (localEnabled ? null : NorieSupabase.client);
+
+  final _localJobs = NorieLocalJobClient(base: Uri.parse(localUrl));
+
+  Future<Map<String, dynamic>> _localPost(
+      String path, Map<String, dynamic> payload,
+      {void Function(Map<String, dynamic>)? onProgress}) {
+    return _localJobs.run(path == '/api/ask' ? 'ask' : 'generate', payload,
+        onProgress: onProgress);
+  }
+
   bool _syncInProgress = false;
   NorieStudyOfflineStore get _offlineStore =>
       NorieStudyOfflineStore(_client?.auth.currentUser?.id ?? 'local');
+
+  NorieStudyOfflineStore _storeFor(NorieStudySet studySet) {
+    final store = _offlineStore;
+    if (studySet.ownerId != null && studySet.ownerId != store.userId) {
+      throw StateError('Sign in to the account that owns this deck.');
+    }
+    return store;
+  }
+
+  Future<Map<String, fsrs.Card>> reviewCards(NorieStudySet studySet) =>
+      _storeFor(studySet).reviewCards(studySet.id);
+
+  Future<DateTime> reviewCard(
+          NorieStudySet studySet, String questionId, fsrs.Rating rating) =>
+      _storeFor(studySet).reviewCard(studySet.id, questionId, rating);
+
+  Future<int> rewardAnswer(
+      NorieStudySet studySet, NorieStudyAnswer answer) async {
+    final xp = await _storeFor(studySet).claimAnswerReward(studySet.id, answer);
+    if (xp > 0) {
+      NorieProgression.instance.addXp(xp);
+      NorieProgression.instance.addCredits(1);
+    }
+    return xp;
+  }
+
+  Future<NorieStudySet> editCard(
+      NorieStudySet studySet, NorieStudyQuestion question,
+      {bool deleted = false}) async {
+    final store = _storeFor(studySet);
+    await store.editCard(studySet, question, deleted: deleted);
+    unawaited(syncPendingAttempts());
+    return (await store.getSet(studySet.id))!;
+  }
 
   Future<NorieAiQuota?> getAiQuota() async {
     final client = _client;
@@ -44,7 +107,8 @@ class NorieStudyService {
     final cached = await store.listSets();
     unawaited(syncPendingAttempts());
     if (cached.isNotEmpty && !refresh) {
-      unawaited(_fetchStudySets(store));
+      unawaited(
+          _fetchStudySets(store).then<void>((_) {}, onError: (Object _) {}));
       return cached;
     }
     return _fetchStudySets(store);
@@ -78,7 +142,10 @@ class NorieStudyService {
       }
       return sets;
     } catch (_) {
-      return store.listSets();
+      final cached = await store.listSets();
+      if (cached.isNotEmpty) return cached;
+      throw StateError(
+          'Your study library could not be loaded. Check your connection or try again later.');
     }
   }
 
@@ -92,12 +159,14 @@ class NorieStudyService {
       ..sort((a, b) => a.position.compareTo(b.position));
     final set = NorieStudySet.fromMap(map, questions: questions);
     final attempts = map['study_attempts'] as List? ?? [];
-    if (attempts
-        .any((row) => row is Map && (row['xp_awarded'] as num? ?? 0) > 0)) {
+    if (attempts.any((row) =>
+        row is Map &&
+        ((row['xp_awarded'] as num? ?? 0) > 0 ||
+            (row['total_count'] as num? ?? 0) > 0))) {
       await store.markRewarded(set.id);
     }
     await store.saveSet(set);
-    return set;
+    return (await store.getSet(set.id)) ?? set;
   }
 
   Future<NorieStudySet?> getStudySet(String id) async {
@@ -192,18 +261,32 @@ class NorieStudyService {
     String sourceName = '',
     String mimeType = '',
     String topicTag = '',
+    void Function(Map<String, dynamic>)? onLocalProgress,
   }) async {
+    if (localEnabled) {
+      final data = await _localPost(
+          '/api/generate',
+          {
+            'title': title,
+            'source_type': sourceType,
+            'source_text': sourceText,
+            'mode': mode.wireValue,
+            'question_count': questionCount,
+            'topic_tag': topicTag,
+          },
+          onProgress: onLocalProgress);
+      final questions = (data['questions'] as List)
+          .map((raw) =>
+              NorieStudyQuestion.fromMap(Map<String, dynamic>.from(raw as Map)))
+          .toList();
+      final set = NorieStudySet.fromMap(data, questions: questions);
+      await _offlineStore.saveSet(set);
+      return set;
+    }
     final client = _client;
     if (client == null || client.auth.currentUser == null) {
       throw StateError(
           'Connect to the internet and sign in to generate an AI quiz. Built-in quizzes work offline.');
-    }
-
-    final quota = await getAiQuota();
-    if (quota != null && !quota.canGenerate) {
-      throw StateError(
-        'Daily AI generation limit reached. Your free allowance resets tomorrow.',
-      );
     }
 
     try {
@@ -246,6 +329,19 @@ class NorieStudyService {
         throw StateError('The generated study set could not be loaded.');
       }
       return set;
+    } on FunctionException catch (error) {
+      final details = error.details;
+      if (details is Map) {
+        throw StateError(_friendlyAiError(
+          details['error']?.toString() ?? 'generation_failed',
+          details['message']?.toString(),
+        ));
+      }
+      throw StateError(
+          'The AI service returned an error (${error.status}). Try again later.');
+    } on TimeoutException {
+      throw StateError(
+          'Generation is taking longer than expected. Check your saved study sets before retrying.');
     } catch (error) {
       final message = error.toString();
       if (message.contains('ai_not_configured')) {
@@ -264,6 +360,11 @@ class NorieStudyService {
     required String studySetId,
     required String question,
   }) async {
+    if (localEnabled) {
+      final data = await _localPost(
+          '/api/ask', {'study_set_id': studySetId, 'question': question});
+      return data['answer'] as String;
+    }
     final client = _client;
     if (client == null || client.auth.currentUser == null) {
       throw StateError('Connect to the internet and sign in to use Ask Norie.');
@@ -338,6 +439,26 @@ class NorieStudyService {
     final store = NorieStudyOfflineStore(user.id);
     _syncInProgress = true;
     try {
+      for (final change in await store.pendingCardChanges()) {
+        if (client.auth.currentUser?.id != user.id) return;
+        try {
+          if (change['deleted'] == true) {
+            await client
+                .from('study_questions')
+                .delete()
+                .eq('id', change['id'])
+                .eq('study_set_id', change['study_set_id'])
+                .timeout(const Duration(seconds: 8));
+          } else {
+            await _syncCardChange(client, user.id, store, change);
+            continue;
+          }
+          await store.acknowledgeCardChange(
+              change['id'] as String, change['revision'] as String);
+        } catch (_) {
+          // Retain this edit, but do not block unrelated edits or results.
+        }
+      }
       for (final attempt in await store.pendingAttempts()) {
         if (client.auth.currentUser?.id != user.id) return;
         // Stable IDs make retries safe even if a response is lost after insert.
@@ -364,7 +485,50 @@ class NorieStudyService {
     }
   }
 
+  Future<void> _syncCardChange(SupabaseClient client, String ownerId,
+      NorieStudyOfflineStore store, Map<String, dynamic> original) async {
+    var change = original;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      if (client.auth.currentUser?.id != ownerId) return;
+      try {
+        await client.from('study_questions').upsert({
+          ...Map<String, dynamic>.from(change['question'] as Map),
+          'study_set_id': change['study_set_id'],
+        }).timeout(const Duration(seconds: 8));
+        await store.acknowledgeCardChange(
+            change['id'] as String, change['revision'] as String);
+        return;
+      } on PostgrestException catch (error) {
+        if (error.code != '23505' || attempt != 0) rethrow;
+        final rows = await client
+            .from('study_questions')
+            .select('position')
+            .eq('study_set_id', change['study_set_id'])
+            .order('position', ascending: false)
+            .limit(1)
+            .timeout(const Duration(seconds: 8));
+        if (client.auth.currentUser?.id != ownerId) return;
+        final next =
+            rows.isEmpty ? 0 : (rows.first['position'] as num).toInt() + 1;
+        final updated = await store.repositionCardChange(
+            change['id'] as String, change['revision'] as String, next);
+        if (updated == null) return;
+        change = updated;
+      }
+    }
+  }
+
   Future<void> deleteStudySet(NorieStudySet studySet) async {
+    if (localEnabled) {
+      final response = await http
+          .delete(Uri.parse('$localUrl/api/sets/${studySet.id}'))
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        throw StateError('Could not delete the local source.');
+      }
+      await _offlineStore.removeSet(studySet.id);
+      return;
+    }
     final client = _client;
     final user = client?.auth.currentUser;
     if (client == null || user == null) {

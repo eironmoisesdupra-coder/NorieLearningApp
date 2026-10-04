@@ -8,6 +8,7 @@ void main() {
   testWidgets('signed-out learners can open lessons without cloud access',
       (tester) async {
     SharedPreferences.setMockInitialValues({
+      'norie.tutorial.complete.v2.complete': true,
       'norie.tutorial.home.v1.complete': true,
       'norie.tutorial.learn.v1.complete': true,
       'norie.tutorial.challenge.v1.complete': true,

@@ -15,6 +15,9 @@ class StudyHubScreen extends StatefulWidget {
 
 class _StudyHubScreenState extends State<StudyHubScreen> {
   late Future<List<NorieStudySet>> _setsFuture;
+  String _query = '';
+  bool _dueOnly = false;
+  Map<String, int> _dueCounts = {};
 
   @override
   void initState() {
@@ -23,7 +26,24 @@ class _StudyHubScreenState extends State<StudyHubScreen> {
   }
 
   void _reload() {
-    _setsFuture = NorieStudyService.instance.listStudySets();
+    _setsFuture = _load();
+  }
+
+  Future<List<NorieStudySet>> _load({bool refresh = false}) async {
+    final sets =
+        await NorieStudyService.instance.listStudySets(refresh: refresh);
+    final counts = <String, int>{};
+    final now = DateTime.now().toUtc();
+    for (final set in sets) {
+      final cards = await NorieStudyService.instance.reviewCards(set);
+      counts[set.id] = set.questions
+          .where((question) =>
+              cards[question.id] == null ||
+              !cards[question.id]!.due.isAfter(now))
+          .length;
+    }
+    _dueCounts = counts;
+    return sets;
   }
 
   Future<void> _openGenerator() async {
@@ -78,18 +98,48 @@ class _StudyHubScreenState extends State<StudyHubScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.cloud_off_rounded, size: 40),
+                          const SizedBox(height: 16),
+                          const Text('Could not load your study library.',
+                              textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: () => setState(_reload),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
                 final sets = snapshot.data ?? const <NorieStudySet>[];
                 if (sets.isEmpty) {
                   return _EmptyStudyLab(onCreate: _openGenerator);
                 }
+                final visible = sets
+                    .where((set) =>
+                        '${set.title} ${set.topicTag ?? ''} ${set.sourceName ?? ''}'
+                            .toLowerCase()
+                            .contains(_query) &&
+                        (!_dueOnly || (_dueCounts[set.id] ?? 0) > 0))
+                    .toList();
 
                 return RefreshIndicator(
                   onRefresh: () async {
                     setState(() {
-                      _setsFuture = NorieStudyService.instance
-                          .listStudySets(refresh: true);
+                      _setsFuture = _load(refresh: true);
                     });
-                    await _setsFuture;
+                    try {
+                      await _setsFuture;
+                    } catch (_) {/* Rendered by FutureBuilder. */}
                   },
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -105,11 +155,31 @@ class _StudyHubScreenState extends State<StudyHubScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      for (final set in sets)
+                      TextField(
+                        decoration: const InputDecoration(
+                            labelText: 'Search decks',
+                            prefixIcon: Icon(Icons.search_rounded)),
+                        onChanged: (value) =>
+                            setState(() => _query = value.trim().toLowerCase()),
+                      ),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Due now'),
+                        value: _dueOnly,
+                        onChanged: (value) =>
+                            setState(() => _dueOnly = value ?? false),
+                      ),
+                      if (visible.isEmpty)
+                        const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text('No matching decks.',
+                                textAlign: TextAlign.center)),
+                      for (final set in visible)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _StudySetTile(
                             studySet: set,
+                            dueCount: _dueCounts[set.id] ?? 0,
                             onTap: () => _openSet(set),
                           ),
                         ),
@@ -179,10 +249,12 @@ class _StudySetTile extends StatelessWidget {
   const _StudySetTile({
     required this.studySet,
     required this.onTap,
+    required this.dueCount,
   });
 
   final NorieStudySet studySet;
   final VoidCallback onTap;
+  final int dueCount;
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +307,7 @@ class _StudySetTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       ready
-                          ? '${studySet.itemCount} items · ${studySet.mode.label}'
+                          ? '${studySet.itemCount} items · $dueCount due · ${studySet.mode.label}'
                           : studySet.status.toUpperCase(),
                       style: const TextStyle(
                         color: NorieColors.textSecondary,

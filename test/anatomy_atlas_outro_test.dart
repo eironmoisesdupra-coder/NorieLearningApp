@@ -50,6 +50,11 @@ void main() {
     await tester.tap(find.text('Open atlas quiz'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsNothing);
+    await tester.tap(find.byTooltip('Show hint'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsOneWidget);
+    expect(find.textContaining('Bones, support'), findsOneWidget);
     for (var i = 0; i < 4; i++) {
       final viewer = tester
           .widget<AnatomyAtlasModelView>(find.byType(AnatomyAtlasModelView));
@@ -71,6 +76,7 @@ void main() {
       await tester.tap(next);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsNothing);
     }
     expect(find.byKey(const ValueKey('quiz-outro')), findsOneWidget);
     expect(NorieProgression.instance.totalXp, before + 30);
@@ -78,14 +84,17 @@ void main() {
     await tester.tap(find.text('Review Mistakes'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Which structure is highlighted?'), findsOneWidget);
+    expect(find.text('Which anatomical structure is shown?'), findsOneWidget);
     expect(find.textContaining('Your answer:'), findsOneWidget);
     final back = find.text('Back to results');
     await tester.scrollUntilVisible(back, 200,
-        scrollable: find.descendant(
-            of: find.byType(DraggableScrollableSheet),
-            matching: find.byType(Scrollable)).first);
-    await tester.drag(find.byType(DraggableScrollableSheet), const Offset(0, -200));
+        scrollable: find
+            .descendant(
+                of: find.byType(DraggableScrollableSheet),
+                matching: find.byType(Scrollable))
+            .first);
+    await tester.drag(
+        find.byType(DraggableScrollableSheet), const Offset(0, -200));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.tap(back);
     await tester.pump();

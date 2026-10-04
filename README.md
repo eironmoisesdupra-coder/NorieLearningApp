@@ -49,6 +49,57 @@ Build the first complete learning loop:
 
 Status: foundation phase.
 
+## In-app guide
+
+The first visit to Home opens the complete app guide. The question-mark buttons
+on Home, Learn, Challenge, Progress, and Profile open searchable contents with
+the relevant section ready to continue. The menu provides **Start Tutorial**
+and **Help & Support**; asking Norie for a tutorial also starts the full guide.
+
+There are 18 chapters covering navigation, subject/grade paths, lessons and
+activities, quiz controls, AI generation, the study library and card editing,
+spaced review, source Q&A, both anatomy viewers, challenges, results/rewards,
+progress/mastery, profile, accounts/sync, shop/membership, sound settings, and
+offline troubleshooting. Content distinguishes working controls from previews
+and local-only behavior from cloud functionality.
+
+Use **Contents** to search or jump, **Back** to revisit a step, **Next** to
+continue, and **Close** to return to the app. The guide opens temporary previews
+of the relevant screens, highlights registered areas, and shows category paths.
+**Focus area** scrolls to the highlighted control; the Atlas camera step also
+demonstrates focusing on a femur. Closing restores the screen underneath,
+including in-progress work. Overview topics without a specific control highlight
+their destination screen. The guide never generates questions, spends credits,
+or submits answers. Close it before trying an underlying control. Completion or closing
+suppresses automatic replay on this device; manual replay remains available.
+
+The catalog lives in `lib/core/mascot/tutorial/norie_tutorial_models.dart`.
+Update the relevant chapter when changing a user-facing workflow, and run
+`flutter test test/norie_tutorial_test.dart test/app_smoke_test.dart`.
+
+## Anatomy Atlas Quiz
+
+Quiz opens a setup screen for one or more body systems and a reference.
+**Every part** includes all available systems and references. A round contains
+20 distinct named structures; smaller selections must be broadened before
+starting. The magnifying-glass button reveals a short description or system
+clue, and the camera and music buttons recenter the structure and toggle music.
+Quiz models retain their original atlas material colors and shading instead
+of the exploration viewer's cyan selection tint. These are educational models,
+not newly textured photorealistic scans.
+
+## Background music
+
+Five bundled CC0 ambient/piano recordings by The Cynic Project rotate after the
+first tap or key press, with a random starting track and 2.5-second crossfades.
+All five play before the rotation repeats. Settings provides separate music and
+sound-effect volume/mute controls and quieter music during lessons.
+
+Tracks: Synthwave 4k, Vaporware, Lifewave 2k, Synthwave 15k, and Synthwave 421k.
+See [soundtrack credits and licensing](assets/audio/music/README.md).
+No streaming service is needed. Installed packages bundle the files; published
+web builds must finish their initial online asset cache before offline use.
+
 ## Offline learning
 
 Home, built-in Mathematics/Science/English lessons, practice, challenges,

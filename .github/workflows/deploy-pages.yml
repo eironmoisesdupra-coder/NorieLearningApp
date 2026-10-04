@@ -52,6 +52,9 @@ jobs:
       - name: Remove generated default test
         run: rm -f test/widget_test.dart
 
+      - name: Fetch licensed offline music
+        run: python scripts/fetch_music_assets.py
+
       - name: Fetch anatomy 3D assets
         run: bash scripts/fetch_anatomy_assets.sh
 

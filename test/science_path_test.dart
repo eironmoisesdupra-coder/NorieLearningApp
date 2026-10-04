@@ -7,6 +7,30 @@ import 'package:norie_learning/features/content/presentation/norie_lesson_screen
 import 'package:norie_learning/features/content/domain/norie_content_models.dart';
 
 void main() {
+  test('Science publishes 55 authored G2–G12 topics in the existing 65-topic path',
+      () {
+    final authoredGrades = [for (var grade = 2; grade <= 12; grade++) 'g$grade'];
+    expect(ScienceCurriculum.grades.keys, unorderedEquals(authoredGrades));
+    expect(ScienceCurriculum.grades.values.expand((pack) => pack), hasLength(55));
+    for (final grade in authoredGrades) {
+      expect(NorieFoundationCurriculum.topicsFor('Science', grade),
+          same(ScienceCurriculum.grades[grade]),
+          reason: '$grade must resolve to its authored pack, not starter content');
+    }
+    final path = NorieFoundationCurriculum.gradeLevels
+        .expand((grade) => NorieFoundationCurriculum.topicsFor('Science', grade.id))
+        .toList();
+    expect(path, hasLength(65));
+    expect(path.map((topic) => topic.id).toSet(), hasLength(65));
+    expect(path.where((topic) => topic.gradeLevel == 'g1'), hasLength(5));
+    final college = path.where((topic) => topic.gradeLevel == 'college').toList();
+    expect(college, hasLength(5));
+    expect(ScienceCurriculum.grades.containsKey('college'), isFalse,
+        reason: 'College retains starter content and is not an authored pack');
+    for (final topic in college) {
+      expect(topic.lesson.introduction, startsWith('Build a clear College'));
+    }
+  });
   test('authored grades do not repeat question stems or substantial prose', () {
     final stems = <String, String>{};
     final paragraphs = <String, String>{};
