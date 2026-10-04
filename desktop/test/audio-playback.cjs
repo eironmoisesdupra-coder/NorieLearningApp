@@ -41,7 +41,7 @@ async function main() {
         window.norieAudioEvents.push({ type: 'pause', source: this.src });
         return pause.call(this);
       };
-      for (const id of ['home.v1', 'learn.v1', 'challenge.v1']) {
+      for (const id of ['complete.v2', 'home.v1', 'learn.v1', 'challenge.v1']) {
         localStorage.setItem(`flutter.norie.tutorial.${id}.complete`, 'true');
       }
     });
