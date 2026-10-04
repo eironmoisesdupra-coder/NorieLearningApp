@@ -94,27 +94,30 @@ async function main() {
     const catalog = JSON.parse(await fs.readFile(path.resolve(__dirname, '../../assets/anatomy/atlas-catalog.json')));
     const beforeXp = await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp')));
     await page.getByRole('button', { name: 'Quiz', exact: true }).click();
-    await page.getByText('Identify Â· 1/10', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Start 20-question quiz', exact: true }).click();
+    await page.getByText('Identify · 1/20', { exact: true }).waitFor();
     const quizFrame = page.frames().filter(frame => frame.url().includes('atlas-viewer.html')).at(-1);
-    for (let item = 0; item < 10; item++) {
-      await page.getByText(`Identify Â· ${item + 1}/10`, { exact: true }).waitFor();
+    for (let item = 0; item < 20; item++) {
+      await page.getByText(`Identify · ${item + 1}/20`, { exact: true }).waitFor();
       await quizFrame.waitForFunction(index => window.atlasCommands.filter(c => c.type === 'configure').length >= index + 1, item);
       const target = await quizFrame.evaluate(() => window.atlasCommands.filter(c => c.type === 'configure').at(-1).payload.target);
       const answer = catalog.structures.find(s => s.id === target).name;
       await answerClick(page.getByRole('button', { name: answer, exact: true }));
       await answerClick(page.getByRole('button', { name: 'Check answer', exact: true }));
       await page.getByText(`Correct: ${answer}`, { exact: true }).waitFor();
-      await answerClick(page.getByRole('button', { name: item === 9 ? 'Finish quiz' : 'Next structure', exact: true }));
+      await answerClick(page.getByRole('button', { name: item === 19 ? 'Finish quiz' : 'Next structure', exact: true }));
     }
     await page.getByRole('button', { name: 'Continue', exact: true }).waitFor();
-    await page.waitForFunction(xp => Number(localStorage.getItem('flutter.norie.totalXp')) === xp + 100, beforeXp);
+    await page.waitForFunction(xp => Number(localStorage.getItem('flutter.norie.totalXp')) === xp + 200, beforeXp);
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
-    assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), beforeXp + 100);
-    console.log('PASS: phone-sized atlas quiz completed offline and awarded exactly 100 XP once');
-    let referenceLabel = 'Adult male Â· BodyParts3D';
+    assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), beforeXp + 200);
+    console.log('PASS: phone-sized atlas quiz completed offline and awarded exactly 200 XP once');
+    await page.getByText('Atlas quiz setup', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    let referenceLabel = 'Adult male · BodyParts3D';
     for (const [label, name, count] of [
-      ['Joints & ligaments Â· detail', 'Anterior cruciate ligament (left)', 626],
-      ['Endocrine glands Â· detail', 'Inferior parathyroid gland (left)', 11],
+      ['Joints & ligaments · detail', 'Anterior cruciate ligament (left)', 626],
+      ['Endocrine glands · detail', 'Inferior parathyroid gland (left)', 11],
     ]) {
       await page.getByRole('button', { name: referenceLabel, exact: true }).click();
       await page.getByText('Choose an anatomy reference', { exact: true }).waitFor();
