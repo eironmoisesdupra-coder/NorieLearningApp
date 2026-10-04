@@ -77,18 +77,19 @@ void main() {
     final client = await clientFor(MockClient((request) async {
       if (request.url.path.endsWith('study_attempts')) {
         attempts++;
-        return http.Response('', 201);
+        return http.Response('', 201, request: request);
       }
       if (request.method == 'GET') {
         return http.Response('[{"position":8}]', 200,
-            headers: {'content-type': 'application/json'});
+            request: request, headers: {'content-type': 'application/json'});
       }
       positions.add(jsonDecode(request.body)['position'] as int);
       if (positions.length == 1) {
         return http.Response(
-            jsonEncode({'code': '23505', 'message': 'position conflict'}), 409);
+            jsonEncode({'code': '23505', 'message': 'position conflict'}), 409,
+            request: request);
       }
-      return http.Response('', 201);
+      return http.Response('', 201, request: request);
     }));
     await NorieStudyService.forTesting(client).syncPendingAttempts();
     expect(positions, [1, 9]);
@@ -116,9 +117,10 @@ void main() {
         attempts++;
       } else if (jsonDecode(request.body)['id'] == 'bone-q1') {
         return http.Response(
-            jsonEncode({'code': '23503', 'message': 'removed deck'}), 409);
+            jsonEncode({'code': '23503', 'message': 'removed deck'}), 409,
+            request: request);
       }
-      return http.Response('', 201);
+      return http.Response('', 201, request: request);
     }));
     await NorieStudyService.forTesting(client).syncPendingAttempts();
     expect(attempts, 1);
@@ -140,6 +142,7 @@ void main() {
           }
         ]),
         200,
+        request: request,
         headers: {'content-type': 'application/json'})));
     final loaded =
         await NorieStudyService.forTesting(client).listStudySets(refresh: true);
