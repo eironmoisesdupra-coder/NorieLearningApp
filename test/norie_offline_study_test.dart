@@ -4,6 +4,7 @@ import 'package:norie_learning/features/study/data/norie_study_service.dart';
 import 'package:norie_learning/features/study/data/norie_study_offline_store.dart';
 import 'package:norie_learning/features/study/domain/norie_study_models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fsrs/fsrs.dart' as fsrs;
 
 const question = NorieStudyQuestion(
   id: 'q1',
@@ -30,6 +31,48 @@ NorieStudySet savedSet() => NorieStudySet(
     );
 
 void main() {
+  test('reviews persist per learner and are scheduled in UTC', () async {
+    SharedPreferences.setMockInitialValues({});
+    final due = await NorieStudyOfflineStore('alice')
+        .reviewCard('deck', 'card', fsrs.Rating.good);
+    final saved = await NorieStudyOfflineStore('alice').reviewCards('deck');
+    expect(saved['card']!.due, due);
+    expect(due.isUtc, isTrue);
+    expect(due.isAfter(DateTime.now().toUtc()), isTrue);
+    expect(await NorieStudyOfflineStore('bob').reviewCards('deck'), isEmpty);
+  });
+
+  test(
+      'per-answer rewards are durable, deduplicated and deducted from completion XP',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = NorieStudyOfflineStore('alice');
+    const answer =
+        NorieStudyAnswer(question: question, response: '5', correct: true);
+    expect(await store.claimAnswerReward(savedSet().id, answer), 5);
+    expect(
+        await NorieStudyOfflineStore('alice')
+            .claimAnswerReward(savedSet().id, answer),
+        0);
+    final completion =
+        await store.recordAttempt(studySet: savedSet(), answers: [answer]);
+    expect(completion.xpAwarded, 20);
+  });
+
+  test('self-rated cards do not earn answer or completion XP', () async {
+    SharedPreferences.setMockInitialValues({});
+    final card =
+        NorieStudyQuestion.fromMap({...question.toMap(), 'kind': 'flashcard'});
+    final answer =
+        NorieStudyAnswer(question: card, response: 'Knew it', correct: true);
+    final store = NorieStudyOfflineStore('alice');
+    expect(await store.claimAnswerReward('deck', answer), 0);
+    final result =
+        await store.recordAttempt(studySet: savedSet(), answers: [answer]);
+    expect(result.xpAwarded, 0);
+    expect(result.total, 0);
+  });
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await NorieProgression.instance.load();

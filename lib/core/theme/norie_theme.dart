@@ -29,7 +29,11 @@ abstract final class NorieTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: NorieColors.background,
       fontFamily: 'sans-serif',
-      fontFamilyFallback: const ['NorieEmoji'],
+      fontFamilyFallback: const [
+        'NorieScienceText',
+        'NorieScienceSymbols',
+        'NorieEmoji'
+      ],
       cardTheme: const CardThemeData(
         color: NorieColors.surface,
         elevation: 0,

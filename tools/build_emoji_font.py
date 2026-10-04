@@ -6,6 +6,7 @@ Flutter UI and approved lesson fixtures. Regenerate when adding emoji content.
 """
 from pathlib import Path
 import hashlib
+import re
 import urllib.request
 
 from fontTools import subset
@@ -18,6 +19,27 @@ SOURCE = f"https://raw.githubusercontent.com/google/fonts/{REVISION}/ofl/notoemo
 SHA256 = "de6c18832938afc99caf132b39d6a30a19bac7f2e812e28db2535b4608d27551"
 
 
+def unicode_codepoints(text):
+    """Collect literal symbols and Dart Unicode escapes as scalar values."""
+    codepoints = {ord(c) for c in text if ord(c) >= 0x2000
+                  and not 0xD800 <= ord(c) <= 0xDFFF}
+    # Match adjacent UTF-16 surrogate escapes before individual four-digit
+    # escapes; isolated surrogates are not Unicode scalar values.
+    escapes = re.finditer(
+        r"\\u([dD][89ABab][0-9A-Fa-f]{2})\\u([dD][C-Fc-f][0-9A-Fa-f]{2})"
+        r"|\\u\{([0-9A-Fa-f]+)\}|\\u([0-9A-Fa-f]{4})", text
+    )
+    for match in escapes:
+        high, low, braced, fixed = match.groups()
+        if high is not None:
+            codepoint = 0x10000 + ((int(high, 16) - 0xD800) << 10) + int(low, 16) - 0xDC00
+        else:
+            codepoint = int(braced or fixed, 16)
+        if 0x2000 <= codepoint <= 0x10FFFF and not 0xD800 <= codepoint <= 0xDFFF:
+            codepoints.add(codepoint)
+    return codepoints
+
+
 def main():
     cache = ROOT / "build/font-source/NotoEmoji-variable.ttf"
     cache.parent.mkdir(parents=True, exist_ok=True)
@@ -28,7 +50,7 @@ def main():
     font = instantiateVariableFont(TTFont(cache), {"wght": 400}, inplace=False)
     texts = [p.read_text(encoding="utf-8") for p in (ROOT / "lib").rglob("*.dart")]
     texts += [p.read_text(encoding="utf-8") for p in (ROOT / "test/fixtures/grade1_science").glob("*.txt")]
-    codepoints = {ord(c) for text in texts for c in text if ord(c) >= 0x2000}
+    codepoints = set().union(*(unicode_codepoints(text) for text in texts))
     codepoints.update([0x200D, 0xFE0E, 0xFE0F, 0x20E3, 0x23, 0x2A, *range(0x30, 0x3A)])
     options = subset.Options()
     options.hinting = False

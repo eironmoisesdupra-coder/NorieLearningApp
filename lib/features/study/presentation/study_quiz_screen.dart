@@ -2,6 +2,7 @@ import '../../../core/quiz/quiz_result_summary.dart';
 import '../../../core/quiz/norie_quiz_outro.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/audio/norie_audio_manager.dart';
+import '../../../core/widgets/norie_reward_feedback.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -39,6 +40,8 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
   bool _correct = false;
   bool _flashcardRevealed = false;
   bool _finishing = false;
+  bool _rewarding = false;
+  int _answerXp = 0;
 
   NorieStudyQuestion get _question => _questions[_index];
 
@@ -97,14 +100,17 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
       value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
   bool _isCorrect(String response) {
+    if (_question.kind == NorieStudyQuestionKind.ordering) {
+      return response == _question.orderedItems.join(' → ');
+    }
     final normalized = _normalize(response);
     return _question.correctValues.any(
       (answer) => _normalize(answer) == normalized,
     );
   }
 
-  void _check() {
-    if (_checked) return;
+  Future<void> _check() async {
+    if (_checked || _rewarding) return;
 
     String response;
     switch (_question.kind) {
@@ -146,16 +152,33 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
         correct: correct,
       ),
     );
+    if (correct) {
+      setState(() => _rewarding = true);
+      try {
+        final xp = await NorieStudyService.instance
+            .rewardAnswer(widget.studySet, _answers.last);
+        if (!mounted) return;
+        _answerXp += xp;
+        await NorieRewardPopup.show(context,
+            credits: xp > 0 ? 1 : 0,
+            xp: xp,
+            title: 'Correct!',
+            correctAnswer: true);
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  'The answer is correct, but its reward could not be saved.')));
+        }
+      } finally {
+        if (mounted) setState(() => _rewarding = false);
+      }
+    }
   }
 
   void _rateFlashcard(bool knewIt) {
     if (_checked) return;
     NorieAudioManager.instance.playQuizSelect();
-    if (knewIt) {
-      NorieAudioManager.instance.playCorrect();
-    } else {
-      NorieAudioManager.instance.playWrong();
-    }
     setState(() {
       _checked = true;
       _correct = knewIt;
@@ -175,7 +198,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
   }
 
   Future<void> _next() async {
-    if (!_checked || _finishing) return;
+    if (!_checked || _finishing || _rewarding) return;
 
     if (_index < _questions.length - 1) {
       final previousTier =
@@ -219,7 +242,12 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
             studySet: widget.studySet,
             attemptId: _attemptId,
             answers: List.unmodifiable(_answers),
-            result: result,
+            result: NorieStudyAttemptResult(
+              correct: result.correct,
+              total: result.total,
+              xpAwarded: result.xpAwarded + _answerXp,
+              firstRewardedCompletion: result.firstRewardedCompletion,
+            ),
           ),
         ),
       );
@@ -323,6 +351,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                     enabled: !_checked,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _check(),
+                    onChanged: (_) => setState(() {}),
                     decoration: const InputDecoration(
                       labelText: 'Your answer',
                       prefixIcon: Icon(Icons.edit_rounded),
@@ -330,6 +359,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                   )
                 else if (_question.kind == NorieStudyQuestionKind.ordering)
                   _OrderingRecall(
+                    key: ValueKey(_question.id),
                     items: _question.orderedItems,
                     selected: _selected,
                     checked: _checked,
@@ -362,7 +392,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                 if (_question.kind != NorieStudyQuestionKind.flashcard)
                   FilledButton(
                     onPressed: _checked
-                        ? (_finishing ? null : _next)
+                        ? (_finishing || _rewarding ? null : _next)
                         : ((_selected != null ||
                                 _textController.text.trim().isNotEmpty)
                             ? _check
@@ -541,12 +571,13 @@ class _Choice extends StatelessWidget {
   }
 }
 
-class _OrderingRecall extends StatelessWidget {
+class _OrderingRecall extends StatefulWidget {
   const _OrderingRecall({
     required this.items,
     required this.selected,
     required this.checked,
     required this.onSelected,
+    super.key,
   });
 
   final List<String> items;
@@ -555,26 +586,56 @@ class _OrderingRecall extends StatelessWidget {
   final ValueChanged<String> onSelected;
 
   @override
+  State<_OrderingRecall> createState() => _OrderingRecallState();
+}
+
+class _OrderingRecallState extends State<_OrderingRecall> {
+  late final List<String> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List.of(widget.items)..shuffle();
+    if (_items.length > 1 && _items.join('|') == widget.items.join('|')) {
+      _items.add(_items.removeAt(0));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) {
+    if (_items.isEmpty) {
       return const Text(
         'This generated ordering item has no sequence data.',
         style: TextStyle(color: NorieColors.textSecondary),
       );
     }
 
-    final expected = items.join(' → ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Recall the correct sequence, then reveal it.',
-          style: TextStyle(color: NorieColors.textSecondary),
+        ReorderableListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: !widget.checked,
+          itemCount: _items.length,
+          onReorderItem: (oldIndex, newIndex) {
+            if (widget.checked) return;
+            setState(() {
+              _items.insert(newIndex, _items.removeAt(oldIndex));
+            });
+            widget.onSelected(_items.join(' → '));
+          },
+          itemBuilder: (context, index) => ListTile(
+            key: ValueKey(_items[index]),
+            title: Text(_items[index]),
+            leading: Text('${index + 1}'),
+          ),
         ),
-        const SizedBox(height: 12),
         OutlinedButton(
-          onPressed: checked ? null : () => onSelected(expected),
-          child: Text(selected == null ? 'Reveal sequence' : expected),
+          onPressed: widget.checked
+              ? null
+              : () => widget.onSelected(_items.join(' → ')),
+          child: const Text('Use this order'),
         ),
       ],
     );

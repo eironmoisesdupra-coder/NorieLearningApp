@@ -5,8 +5,72 @@ import 'package:norie_learning/core/quiz/norie_quiz_outro.dart';
 import 'package:norie_learning/core/quiz/quiz_result_summary.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_view.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_state.dart';
+import 'package:norie_learning/core/theme/norie_theme.dart';
 
 void main() {
+  testWidgets('result and mistake text inherit bundled offline font fallbacks',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final summary = QuizResultSummary(
+        attemptId: 'b',
+        historyKey: 'offline-fonts',
+        title: 'Science',
+        correctCount: 9,
+        totalCount: 10,
+        xpEarned: 0,
+        gradeLevel: 1,
+        answers: const [
+          QuizAnswerRecord(
+              questionId: 'heat',
+              prompt: 'Which surface absorbs heat?',
+              response: 'White',
+              correctAnswer: 'Black',
+              explanation: 'Dark surfaces absorb more sunlight.',
+              correct: false)
+        ]);
+    await tester.pumpWidget(MaterialApp(
+        theme: NorieTheme.dark,
+        builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child!),
+        home: Scaffold(
+            body: Builder(
+                builder: (context) => TextButton(
+                    onPressed: () =>
+                        NorieQuizOutro.show(context, summary: summary),
+                    child: const Text('Open'))))));
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(summary.message, 'Great job! \u{1F31F}');
+    final resultStyle =
+        DefaultTextStyle.of(tester.element(find.text(summary.message))).style;
+    const fallbacks = ['NorieScienceText', 'NorieScienceSymbols', 'NorieEmoji'];
+    expect(resultStyle.fontFamilyFallback, fallbacks);
+    expect(resultStyle.color, Colors.white);
+    expect(resultStyle.fontSize, 15);
+    expect(resultStyle.height, isNull);
+    expect(resultStyle.letterSpacing, isNull);
+
+    await tester.scrollUntilVisible(find.text('Review Mistakes'), 200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Review Mistakes'));
+    await tester.pumpAndSettle();
+    final reviewStyle = DefaultTextStyle.of(
+            tester.element(find.text(summary.mistakes.single.prompt)))
+        .style;
+    expect(reviewStyle.fontFamilyFallback, fallbacks);
+    expect(reviewStyle.color, Colors.white);
+    expect(reviewStyle.fontSize, 16);
+    expect(reviewStyle.height, 1.5);
+    expect(reviewStyle.letterSpacing, isNull);
+    Navigator.of(tester.element(find.text(summary.mistakes.single.prompt)))
+        .pop();
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('system back continues safely and rebuild does not replay result',
       (tester) async {
     SharedPreferences.setMockInitialValues({});

@@ -32,7 +32,7 @@ class HomeScreen extends StatelessWidget {
       ),
       drawerEdgeDragWidth: 48,
       body: NorieTutorialEntry(
-        definition: NorieTutorialCatalog.home,
+        definition: NorieTutorialCatalog.complete,
         child: Stack(
         children: [
           const Positioned.fill(child: _HomeBackdrop()),

@@ -30,6 +30,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
       widget.catalog, widget.reference, widget.systems);
   String? _choice;
   bool _modelReady = false;
+  bool _hintVisible = false;
   bool _outroShown = false;
   final _attemptId = const Uuid().v4();
   final _answers = <QuizAnswerRecord>[];
@@ -58,11 +59,10 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
         .label;
     _answers.add(QuizAnswerRecord(
         questionId: target.id,
-        prompt: 'Which structure is highlighted?',
+        prompt: 'Which anatomical structure is shown?',
         response: _choice!,
         correctAnswer: target.name,
-        explanation:
-            'The highlighted model is labeled ${target.name} in this atlas reference. Rotate the model in the review to inspect its shape and location.',
+        explanation: 'This is ${target.name}. ${_quiz.current.hint}',
         correct: correct,
         conceptId: target.systems.first,
         conceptLabel: topic));
@@ -83,6 +83,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
     setState(() {
       _choice = null;
       _modelReady = false;
+      _hintVisible = false;
     });
     if (_quiz.finished && !_outroShown) {
       _outroShown = true;
@@ -95,11 +96,11 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
               correctCount: _quiz.score,
               totalCount: _quiz.questions.length,
               xpEarned: reward ?? 0,
-              answers: _answers),
-          reviewVisualBuilder: (_, answer) => _AtlasReviewModel(
-              target: widget.catalog.structures
-                  .firstWhere((s) => s.id == answer.questionId),
-              reference: widget.reference));
+              answers: _answers), reviewVisualBuilder: (_, answer) {
+        final target = widget.catalog.structures
+            .firstWhere((structure) => structure.id == answer.questionId);
+        return _AtlasReviewModel(target: target, reference: target.reference);
+      });
       if (!mounted) return;
       if (action == QuizOutroAction.retry) {
         Navigator.pushReplacement(
@@ -135,21 +136,52 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
           ])));
     }
     final question = _quiz.current;
+    final audio = NorieAudioManager.instance;
     return Scaffold(
         appBar: AppBar(
-            title: Text(
-                'Identify · ${_quiz.index + 1}/${_quiz.questions.length}')),
+            title:
+                Text('Identify · ${_quiz.index + 1}/${_quiz.questions.length}'),
+            actions: [
+              IconButton(
+                  tooltip: _hintVisible ? 'Hide hint' : 'Show hint',
+                  icon: Icon(_hintVisible ? Icons.search_off : Icons.search),
+                  onPressed: () =>
+                      setState(() => _hintVisible = !_hintVisible)),
+              IconButton(
+                  tooltip: 'Recenter structure',
+                  icon: const Icon(Icons.center_focus_strong),
+                  onPressed: !_modelReady
+                      ? null
+                      : () => _controller
+                          .send('focus', {'id': question.target.id})),
+              ListenableBuilder(
+                  listenable: audio,
+                  builder: (context, _) => IconButton(
+                      tooltip: audio.musicEnabled ? 'Mute music' : 'Play music',
+                      icon: Icon(audio.musicEnabled
+                          ? Icons.music_note
+                          : Icons.music_off),
+                      onPressed: () async {
+                        await audio.unlock();
+                        await audio.setMusicEnabled(!audio.musicEnabled);
+                      })),
+            ]),
         body: SafeArea(
             child: Column(children: [
           const Padding(
               padding: EdgeInsets.all(12),
-              child: Text(
-                  'Which structure is highlighted? Rotate or zoom to inspect it.')),
+              child: Text('Which anatomical structure is shown?')),
+          if (_hintVisible)
+            Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Text(question.hint,
+                    key: const ValueKey('atlas-quiz-hint'),
+                    style: const TextStyle(color: NorieColors.textSecondary))),
           Expanded(
               flex: 5,
               child: AnatomyAtlasModelView(
                   controller: _controller,
-                  reference: widget.reference,
+                  reference: question.target.reference,
                   systems: question.target.systems,
                   target: question.target.id,
                   onLoaded: (ready) {

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AtlasState, isSelectionGesture, validCommand } from '../src/state.mjs';
+import * as THREE from 'three';
+import { AtlasScene } from '../src/scene.mjs';
 
 const structures = [
   { id: 'bone', reference: 'male', systems: ['skeletal'], asset: 'bones' },
@@ -55,4 +57,28 @@ test('bridge rejects unexpected versions, sessions and arbitrary commands', () =
   for (const patch of [{ version: 2 }, { session: 'other' }, { type: 'eval' }]) {
     assert.equal(validCommand({ version: 1, session: 'abc', type: 'restore', ...patch }, 'abc'), false);
   }
+});
+
+test('quiz targets keep their anatomical material instead of the selection glow', () => {
+  const material = new THREE.MeshStandardMaterial({ color: '#d7c4a5', roughness: 0.8 });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(), material);
+  mesh.userData = { structureId: 'bone', baseColor: material.color.clone() };
+  const scene = Object.create(AtlasScene.prototype);
+  scene.state = new AtlasState(structures);
+  scene.state.configure('male', ['skeletal']);
+  scene.state.select('bone');
+  scene.alpha = 1;
+  scene.meshes = () => [mesh];
+  scene.quiz = false;
+  scene.updateVisibility();
+  assert.equal(material.color.getHexString(), '42e8e0');
+  scene.quiz = true;
+  scene.updateVisibility();
+  assert.equal(material.color.getHexString(), 'd7c4a5');
+  assert.equal(material.emissive.getHexString(), '000000');
+  assert.equal(material.roughness, 0.8);
+  assert.equal(material.opacity, 1);
+  assert.equal(mesh.visible, true);
+  mesh.geometry.dispose();
+  material.dispose();
 });

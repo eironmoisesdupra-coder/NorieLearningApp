@@ -18,14 +18,14 @@ class NorieAudioManager extends ChangeNotifier {
   }
   static final instance = NorieAudioManager();
   static const expectedMusic = [
-    'audio/music/norie_orbit.mp3',
-    'audio/music/starlight_study.mp3',
-    'audio/music/pixel_discovery.mp3',
-    'audio/music/cosmic_focus.mp3',
-    'audio/music/night_classroom.mp3'
+    'audio/music/synthwave_4k.mp3',
+    'audio/music/vaporware.mp3',
+    'audio/music/lifewave_2k.mp3',
+    'audio/music/synthwave_15k.mp3',
+    'audio/music/synthwave_421k.mp3'
   ];
   // No placeholder or remote music. Add only licensed, bundled production files.
-  static const List<String> availableMusic = [];
+  static const List<String> availableMusic = expectedMusic;
   static const crossfadeDuration = Duration(milliseconds: 2500);
   final NorieAudioBackend _backend;
   final List<String> _playlist;
@@ -221,10 +221,7 @@ class NorieAudioManager extends ChangeNotifier {
       _transitioning = true;
       unawaited(_queue(() async {
         final old = _activeChannel;
-        final next = _playlist.length == 1
-            ? 0
-            : (_track + 1 + _random.nextInt(_playlist.length - 1)) %
-                _playlist.length;
+        final next = (_track + 1) % _playlist.length;
         final channel = 1 - old;
         try {
           await _backend.startMusic(channel, _playlist[next]);

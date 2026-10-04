@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/audio/norie_audio_manager.dart';
+import '../../../core/mascot/norie_mascot_scope.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../domain/anatomy_atlas_catalog.dart';
 import '../domain/anatomy_models.dart';
 import 'anatomy_atlas_controller.dart';
 import 'anatomy_atlas_model_view.dart';
-import 'anatomy_atlas_quiz_screen.dart';
+import 'anatomy_atlas_quiz_setup_screen.dart';
 import 'anatomy_viewer_screen.dart';
 
 class AnatomyAtlasScreen extends StatefulWidget {
@@ -23,6 +26,28 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   String _reference = 'male';
   AtlasStructure? _selected;
   double _opacity = 1;
+  String? _tutorialStructureId;
+
+  void _focusTutorialModel() {
+    final step =
+        NorieMascotScope.maybeOf(context)?.tutorialCoordinator.currentStep;
+    if (step?.id == 'anatomy-camera' && _tutorialStructureId != null) {
+      _controller.send('focus', {'id': _tutorialStructureId});
+    } else {
+      _controller.send('camera', {'view': 'reset'});
+    }
+  }
+
+  void _tutorialModelLoaded(bool loaded) {
+    final coordinator = NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
+    if (loaded &&
+        coordinator?.currentStep?.destination ==
+            NorieTutorialDestination.anatomy &&
+        coordinator?.showingContents == false) {
+      _focusTutorialModel();
+    }
+  }
+
   late final Object _audioContext;
   @override
   void initState() {
@@ -212,6 +237,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Anatomy Atlas'), actions: [
+          const NorieTutorialReplayButton(
+              definition: NorieTutorialCatalog.anatomy),
           IconButton(
               tooltip: 'Skeleton fundamentals',
               icon: const Icon(Icons.school_outlined),
@@ -243,6 +270,10 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   final count = catalog.search(_reference, _systems, '').length;
+                  _tutorialStructureId = catalog
+                      .search(_reference, _systems, 'femur')
+                      .firstOrNull
+                      ?.id;
                   final detailLinks = [
                     ('articular', 'joints', 'Joint capsules & ligaments'),
                     ('endocrine', 'glands', 'Thyroid & other glands'),
@@ -253,24 +284,28 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                           _systems.contains(link.$1) && _reference != link.$2)
                       .toList();
                   return Column(children: [
-                    Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(children: [
-                          Expanded(
-                              child: TextButton.icon(
-                                  onPressed: () => _chooseReference(catalog),
-                                  icon: const Icon(Icons.unfold_more),
-                                  label: Text(
-                                      catalog.references
-                                          .firstWhere((r) => r.id == _reference)
-                                          .label,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis))),
-                          IconButton(
-                              tooltip: 'Sources and coverage',
-                              onPressed: () => _credits(catalog),
-                              icon: const Icon(Icons.info_outline)),
-                        ])),
+                    NorieTutorialTarget(
+                        id: 'anatomy.settings',
+                        child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Row(children: [
+                              Expanded(
+                                  child: TextButton.icon(
+                                      onPressed: () =>
+                                          _chooseReference(catalog),
+                                      icon: const Icon(Icons.unfold_more),
+                                      label: Text(
+                                          catalog.references
+                                              .firstWhere(
+                                                  (r) => r.id == _reference)
+                                              .label,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis))),
+                              IconButton(
+                                  tooltip: 'Sources and coverage',
+                                  onPressed: () => _credits(catalog),
+                                  icon: const Icon(Icons.info_outline)),
+                            ]))),
                     if (_reference == 'female')
                       const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 12),
@@ -303,96 +338,117 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                               style: const TextStyle(
                                   fontSize: 12,
                                   color: NorieColors.textSecondary))),
-                    SizedBox(
-                        height: 49,
-                        child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            children: [
-                              for (final system in AnatomyCatalog.systems)
-                                Padding(
-                                    padding: const EdgeInsets.only(right: 7),
-                                    child: FilterChip(
-                                        label: Text(system.label),
-                                        selected:
-                                            _systems.contains(system.id.name),
-                                        onSelected: catalog
-                                                .search(_reference,
-                                                    {system.id.name}, '')
-                                                .isEmpty
-                                            ? null
-                                            : (enabled) => setState(() {
-                                                  if (!enabled &&
-                                                      _systems.length == 1) {
-                                                    return;
-                                                  }
-                                                  NorieAudioManager.instance
-                                                      .playUiSelect();
-                                                  _systems = {..._systems};
-                                                  enabled
-                                                      ? _systems
-                                                          .add(system.id.name)
-                                                      : _systems.remove(
-                                                          system.id.name);
-                                                  _selected = null;
-                                                  _opacity = 1;
-                                                }))),
-                            ])),
+                    NorieTutorialTarget(
+                        id: 'anatomy.systems',
+                        child: SizedBox(
+                            height: 49,
+                            child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                children: [
+                                  for (final system in AnatomyCatalog.systems)
+                                    Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 7),
+                                        child: FilterChip(
+                                            label: Text(system.label),
+                                            selected: _systems
+                                                .contains(system.id.name),
+                                            onSelected: catalog
+                                                    .search(_reference,
+                                                        {system.id.name}, '')
+                                                    .isEmpty
+                                                ? null
+                                                : (enabled) => setState(() {
+                                                      if (!enabled &&
+                                                          _systems.length ==
+                                                              1) {
+                                                        return;
+                                                      }
+                                                      NorieAudioManager.instance
+                                                          .playUiSelect();
+                                                      _systems = {..._systems};
+                                                      enabled
+                                                          ? _systems.add(
+                                                              system.id.name)
+                                                          : _systems.remove(
+                                                              system.id.name);
+                                                      _selected = null;
+                                                      _opacity = 1;
+                                                    }))),
+                                ]))),
                     Expanded(
-                        child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: AnatomyAtlasModelView(
-                              controller: _controller,
-                              reference: _reference,
-                              systems: _systems,
-                              onSelected: (id) {
-                                final values =
-                                    catalog.structures.where((s) => s.id == id);
-                                if (values.isNotEmpty) {
-                                  setState(() => _selected = values.first);
-                                }
-                              },
-                            ))),
-                    SizedBox(
-                        height: 46,
-                        child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            children: [
-                              TextButton.icon(
-                                  onPressed: () => _browse(catalog),
-                                  icon: const Icon(Icons.search),
-                                  label: Text('Search $count parts')),
-                              TextButton.icon(
-                                  onPressed: count == 0
-                                      ? null
-                                      : () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute<void>(
-                                              builder: (_) =>
-                                                  AnatomyAtlasQuizScreen(
-                                                      catalog: catalog,
-                                                      reference: _reference,
-                                                      systems: {..._systems}))),
-                                  icon: const Icon(Icons.quiz_outlined),
-                                  label: const Text('Quiz')),
-                              for (final view in [
-                                'front',
-                                'back',
-                                'left',
-                                'right',
-                                'top',
-                                'reset'
-                              ])
-                                TextButton(
-                                    onPressed: () {
-                                      NorieAudioManager.instance.playUiTap();
-                                      _controller
-                                          .send('camera', {'view': view});
-                                    },
-                                    child: Text(view[0].toUpperCase() +
-                                        view.substring(1))),
-                            ])),
+                        child: NorieTutorialTarget(
+                            id: 'anatomy.explore',
+                            onFocus: _focusTutorialModel,
+                            child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: AnatomyAtlasModelView(
+                                  controller: _controller,
+                                  reference: _reference,
+                                  systems: _systems,
+                                  onLoaded: _tutorialModelLoaded,
+                                  onSelected: (id) {
+                                    final values = catalog.structures
+                                        .where((s) => s.id == id);
+                                    if (values.isNotEmpty) {
+                                      setState(() => _selected = values.first);
+                                    }
+                                  },
+                                )))),
+                    NorieTutorialTarget(
+                        id: 'anatomy.camera',
+                        onFocus: _focusTutorialModel,
+                        child: SizedBox(
+                            height: 46,
+                            child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                                children: [
+                                  NorieTutorialTarget(
+                                      id: 'anatomy.atlas',
+                                      child: TextButton.icon(
+                                          onPressed: () => _browse(catalog),
+                                          icon: const Icon(Icons.search),
+                                          label: Text('Search $count parts'))),
+                                  NorieTutorialTarget(
+                                      id: 'anatomy.quiz',
+                                      child: TextButton.icon(
+                                          onPressed: count == 0
+                                              ? null
+                                              : () => Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute<void>(
+                                                      builder: (_) =>
+                                                          AnatomyAtlasQuizSetupScreen(
+                                                              catalog: catalog,
+                                                              reference:
+                                                                  _reference,
+                                                              systems: {
+                                                                ..._systems
+                                                              }))),
+                                          icon: const Icon(Icons.quiz_outlined),
+                                          label: const Text('Quiz'))),
+                                  for (final view in [
+                                    'front',
+                                    'back',
+                                    'left',
+                                    'right',
+                                    'top',
+                                    'reset'
+                                  ])
+                                    TextButton(
+                                        onPressed: () {
+                                          NorieAudioManager.instance
+                                              .playUiTap();
+                                          _controller
+                                              .send('camera', {'view': view});
+                                        },
+                                        child: Text(view[0].toUpperCase() +
+                                            view.substring(1))),
+                                ]))),
                     if (_selected case final selected?)
                       Container(
                           width: double.infinity,

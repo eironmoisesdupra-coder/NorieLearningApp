@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/mascot/norie_ai_generation_sequence.dart';
 import '../../../core/mascot/norie_mascot_scope.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../data/norie_study_service.dart';
 import '../domain/norie_study_models.dart';
@@ -34,6 +35,7 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
   bool _working = false;
   int _generationCaptionStep = 0;
   Timer? _generationCaptionTimer;
+  String? _localJobCaption;
 
   PlatformFile? _pickedFile;
   Uint8List? _pickedBytes;
@@ -43,8 +45,7 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
   @override
   void initState() {
     super.initState();
-    _questionCount = const [5, 10, 20, 40]
-            .contains(widget.initialQuestionCount)
+    _questionCount = const [5, 10, 20, 40].contains(widget.initialQuestionCount)
         ? widget.initialQuestionCount
         : 10;
   }
@@ -59,6 +60,10 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
   }
 
   Future<void> _pickSource() async {
+    if (NorieStudyService.localEnabled) {
+      _show('Local AI currently accepts pasted notes.');
+      return;
+    }
     try {
       final file = await FilePicker.pickFile(
         type: FileType.custom,
@@ -130,6 +135,8 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
     mascotSequence?.start();
     _generationCaptionTimer?.cancel();
     _generationCaptionStep = 0;
+    _localJobCaption =
+        NorieStudyService.localEnabled ? 'Submitting request...' : null;
     _generationCaptionTimer = Timer.periodic(
       const Duration(milliseconds: 1400),
       (_) {
@@ -162,6 +169,17 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
         sourceName: sourceName,
         mimeType: _mimeType,
         topicTag: topic,
+        onLocalProgress: (job) {
+          if (!mounted || !_working) return;
+          final progress = job['progress'];
+          setState(() {
+            _localJobCaption = job['status'] == 'queued'
+                ? 'Queued - position ${job['queue_position']}'
+                : progress is Map
+                    ? '${progress['accepted']} / $_questionCount source cards accepted'
+                    : 'Generating source cards...';
+          });
+        },
       );
 
       if (!mounted) return;
@@ -241,7 +259,9 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Study Set'),
+        title: const Text(NorieStudyService.localEnabled
+            ? 'Create Local Study Set'
+            : 'Create Study Set'),
         backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
@@ -255,8 +275,11 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
                 const _GeneratorHero(),
                 const SizedBox(height: 10),
                 const Text(
-                  'AI quiz generation needs internet and a signed-in account. After generation, saved quizzes can be studied offline.',
-                  style: TextStyle(color: NorieColors.textSecondary, fontSize: 12),
+                  NorieStudyService.localEnabled
+                      ? 'Local AI · Ollama · This device'
+                      : 'AI quiz generation needs internet and a signed-in account. After generation, saved quizzes can be studied offline.',
+                  style:
+                      TextStyle(color: NorieColors.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(height: 20),
                 TextField(
@@ -300,22 +323,26 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
                 ),
                 const SizedBox(height: 14),
                 if (!_usingFile)
-                  TextField(
-                    controller: _notesController,
-                    minLines: 8,
-                    maxLines: 18,
-                    decoration: const InputDecoration(
-                      alignLabelWithHint: true,
-                      labelText: 'Source material',
-                      hintText:
-                          'Paste your notes, reviewer, or textbook excerpt here...',
-                    ),
-                  )
+                  NorieTutorialTarget(
+                      id: 'ai-study.source',
+                      child: TextField(
+                        controller: _notesController,
+                        minLines: 8,
+                        maxLines: 18,
+                        decoration: const InputDecoration(
+                          alignLabelWithHint: true,
+                          labelText: 'Source material',
+                          hintText:
+                              'Paste your notes, reviewer, or textbook excerpt here...',
+                        ),
+                      ))
                 else
-                  _FileSourceCard(
-                    fileName: _pickedFile?.name,
-                    onPick: _working ? null : _pickSource,
-                  ),
+                  NorieTutorialTarget(
+                      id: 'ai-study.source',
+                      child: _FileSourceCard(
+                        fileName: _pickedFile?.name,
+                        onPick: _working ? null : _pickSource,
+                      )),
                 const SizedBox(height: 22),
                 const Text(
                   'Practice mode',
@@ -325,24 +352,28 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                DropdownButtonFormField<NorieStudyGenerationMode>(
-                  initialValue: _mode,
-                  items: [
-                    for (final mode in NorieStudyGenerationMode.values)
-                      DropdownMenuItem(
-                        value: mode,
-                        child: Text(mode.label),
+                NorieTutorialTarget(
+                    id: 'ai-study.mode',
+                    child: DropdownButtonFormField<NorieStudyGenerationMode>(
+                      initialValue: _mode,
+                      items: [
+                        for (final mode in NorieStudyGenerationMode.values)
+                          if (!NorieStudyService.localEnabled ||
+                              NorieStudyService.supportsLocalMode(mode))
+                            DropdownMenuItem(
+                              value: mode,
+                              child: Text(mode.label),
+                            ),
+                      ],
+                      onChanged: _working
+                          ? null
+                          : (value) {
+                              if (value != null) setState(() => _mode = value);
+                            },
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.quiz_rounded),
                       ),
-                  ],
-                  onChanged: _working
-                      ? null
-                      : (value) {
-                          if (value != null) setState(() => _mode = value);
-                        },
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.quiz_rounded),
-                  ),
-                ),
+                    )),
                 const SizedBox(height: 18),
                 const Text(
                   'Number of items',
@@ -412,30 +443,33 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
                 if (_working) ...[
                   const SizedBox(height: 20),
                   _NorieGenerationPanel(
-                    caption: NorieAiGenerationSequence.captionForStep(
-                      _generationCaptionStep,
-                    ),
+                    caption: _localJobCaption ??
+                        NorieAiGenerationSequence.captionForStep(
+                          _generationCaptionStep,
+                        ),
                   ),
                 ],
                 const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: _working ? null : _generate,
-                  icon: _working
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.auto_awesome_rounded),
-                  label: Text(
-                    _working ? 'Generating…' : 'Generate Study Set',
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: NorieColors.violet,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 17),
-                  ),
-                ),
+                NorieTutorialTarget(
+                    id: 'ai-study.generate',
+                    child: FilledButton.icon(
+                      onPressed: _working ? null : _generate,
+                      icon: _working
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_awesome_rounded),
+                      label: Text(
+                        _working ? 'Generating…' : 'Generate Study Set',
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: NorieColors.violet,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 17),
+                      ),
+                    )),
               ],
             ),
           ),
@@ -467,7 +501,9 @@ class _GeneratorHero extends StatelessWidget {
           SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Build practice from notes, PDF, Word, PowerPoint, text files, or images of study material.',
+              NorieStudyService.localEnabled
+                  ? 'Local Study Generator'
+                  : 'Build practice from notes, PDF, Word, PowerPoint, text files, or images of study material.',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 height: 1.4,
@@ -535,7 +571,6 @@ class _FileSourceCard extends StatelessWidget {
     );
   }
 }
-
 
 class _NorieGenerationPanel extends StatelessWidget {
   const _NorieGenerationPanel({required this.caption});

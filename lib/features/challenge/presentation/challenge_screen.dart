@@ -26,6 +26,7 @@ class ChallengeScreen extends StatelessWidget {
       drawerEdgeDragWidth: 48,
       body: NorieTutorialEntry(
         definition: NorieTutorialCatalog.challenge,
+        autoStart: false,
         child: Stack(
         children: [
           const Positioned.fill(

@@ -27,8 +27,9 @@ class NorieQuizScreen extends StatefulWidget {
 class _NorieQuizScreenState extends State<NorieQuizScreen> {
   final _attemptId = const Uuid().v4();
   final List<QuizAnswerRecord> _answers = [];
-  late final _questions =
-      NorieItemRandomizer.randomize(widget.topic.quiz.questions);
+  late final _questions = NorieItemRandomizer.randomize(
+      widget.topic.quiz.questions,
+      byDifficulty: NorieSciencePracticePolicy.usesTiers(widget.topic));
   late final _audioToken =
       NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
   bool _finishing = false;

@@ -43,9 +43,11 @@ class NorieGradeLessonsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 5),
-                const Text(
-                  'Five pre-generated foundation lessons. Complete them in order for the recommended path, or open any lesson to review.',
-                  style: TextStyle(
+                Text(
+                  subject.toLowerCase() == 'science'
+                      ? 'Follow the five lessons in order, or revisit a topic. Each lesson includes explanations, practice and a mastery challenge.'
+                      : 'Five pre-generated foundation lessons. Complete them in order for the recommended path, or open any lesson to review.',
+                  style: const TextStyle(
                     color: NorieColors.textSecondary,
                     height: 1.4,
                   ),

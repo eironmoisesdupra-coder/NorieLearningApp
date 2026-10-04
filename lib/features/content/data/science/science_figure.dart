@@ -1,0 +1,118 @@
+/// Locally authored diagram content; all labels render as accessible text.
+///
+/// Processes and cycles use ordered stages. Comparisons use paired labels and
+/// explanations. Bars use nonnegative measurements on a shared zero baseline.
+/// Three particle panels represent solid, liquid and gas, in that order.
+class ScienceFigure {
+  const ScienceFigure({
+    required this.title,
+    required this.kind,
+    required this.labels,
+    required this.details,
+    this.note = '',
+    this.values = const [],
+    this.unit = '',
+    this.picture = '',
+  }) : assert(kind == 'process' ||
+            kind == 'cycle' ||
+            kind == 'comparison' ||
+            kind == 'bars' ||
+            kind == 'particles');
+
+  final String title;
+  final String kind;
+  final List<String> labels;
+  final List<String> details;
+  final String note;
+  final List<double> values;
+  final String unit;
+  final String picture;
+
+  /// Validate authored data separately so grade packs can use const figures.
+  void validate() {
+    if (picture.isNotEmpty &&
+        !const [
+          'butterfly',
+          'bean',
+          'habitat',
+          'shadow',
+          'daynight',
+          'plant-parts',
+          'forces',
+          'g4-body',
+          'g4-rock',
+          'g4-moon',
+          'g5-cells',
+          'g5-food-web',
+          'g5-lever',
+          'g5-water-paths',
+          'g6-key',
+          'g6-circuit',
+          'g6-branches',
+          'g6-plates',
+          'g6-solar',
+          'g7-investigation',
+          'g7-microscope',
+          'g7-diffusion',
+          'g7-motion',
+          'g7-earth',
+          'g8-inheritance',
+          'g8-reaction',
+          'g8-work',
+          'g8-wave',
+          'g8-greenhouse',
+          'g9-biology',
+          'g9-atom',
+          'g9-bonding',
+          'g9-motion',
+          'g9-seafloor',
+          'g9-subduction',
+          'g9-gps',
+          'g10-selection',
+          'g10-periodic',
+          'g10-ph',
+          'g10-circuit',
+          'g10-population',
+          'g10-energy',
+          'g10-cascade',
+          'g11-cell',
+          'g11-stoichiometry',
+          'g11-mechanics',
+          'g11-materials',
+          'g11-replicates',
+          'g11-slope',
+          'g11-uncertainty',
+          'g12-genetics',
+          'g12-equilibrium',
+          'g12-fields',
+          'g12-geology',
+          'g12-sampling',
+          'g12-diversity',
+          'g12-niche',
+        ].contains(picture)) {
+      throw ArgumentError('Unknown Science picture: $picture');
+    }
+    if (labels.isEmpty || labels.length != details.length) {
+      throw ArgumentError(
+          'Figures need a matching explanation for each label.');
+    }
+    if (kind == 'bars' &&
+        (values.length != labels.length ||
+            values.any((value) => !value.isFinite || value < 0))) {
+      throw ArgumentError('Bars need one finite nonnegative value per label.');
+    }
+    if (kind == 'particles') {
+      const states = ['solid', 'liquid', 'gas'];
+      if (labels.length != 3) {
+        throw ArgumentError(
+            'Particle labels must be Solid, Liquid, Gas in that order.');
+      }
+      for (var index = 0; index < 3; index++) {
+        if (labels[index].trim().toLowerCase() != states[index]) {
+          throw ArgumentError(
+              'Particle labels must be Solid, Liquid, Gas in that order.');
+        }
+      }
+    }
+  }
+}

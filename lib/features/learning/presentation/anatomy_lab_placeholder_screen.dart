@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../domain/anatomy_models.dart';
 import '../domain/anatomy_atlas_catalog.dart';
-import 'anatomy_atlas_quiz_screen.dart';
+import 'anatomy_atlas_quiz_setup_screen.dart';
 import 'anatomy_animated_backdrop.dart';
 import 'anatomy_quiz_screen.dart';
 import 'anatomy_atlas_screen.dart';
@@ -62,7 +62,7 @@ class _AnatomyLabPlaceholderScreenState
     try {
       final catalog = _atlas ?? await AnatomyAtlasCatalog.load();
       if (!mounted) return;
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AnatomyAtlasQuizScreen(
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AnatomyAtlasQuizSetupScreen(
         catalog: catalog, reference: 'male', systems: _selected.map((s) => s.name).toSet())));
     } on Object catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('The bundled atlas could not be opened. Try the viewer to retry.')));

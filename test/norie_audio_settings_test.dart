@@ -18,7 +18,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
         MaterialApp(home: NorieAudioSettingsScreen(manager: audio)));
-    expect(find.text('Soundtrack coming soon'), findsOneWidget);
+    expect(find.text('Music available offline'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(find.byType(Switch).at(1));
     await tester.pumpAndSettle();

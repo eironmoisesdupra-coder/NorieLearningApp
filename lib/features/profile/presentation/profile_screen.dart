@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/account/norie_account_service.dart';
 import '../../../core/assets/norie_assets.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/cloud/norie_cloud_sync.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
@@ -33,6 +35,7 @@ class ProfileScreen extends StatelessWidget {
           ? null
           : AppBar(
               title: const Text('Profile'),
+              actions: const [NorieTutorialReplayButton(definition: NorieTutorialCatalog.profile)],
               backgroundColor: Colors.transparent,
             ),
       body: Stack(
@@ -84,6 +87,8 @@ class ProfileScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
+                            const Spacer(),
+                            const NorieTutorialReplayButton(definition: NorieTutorialCatalog.profile),
                           ],
                         ),
                       ),

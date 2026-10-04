@@ -33,6 +33,9 @@ jobs:
           path: build/anatomy-research
           key: anatomy-sources-${{ hashFiles('scripts/anatomy/sources.json') }}
           restore-keys: anatomy-sources-
+      - name: Fetch licensed offline music
+        run: python scripts/fetch_music_assets.py
+
       - name: Fetch licensed anatomy assets
         shell: bash
         run: bash scripts/fetch_anatomy_assets.sh

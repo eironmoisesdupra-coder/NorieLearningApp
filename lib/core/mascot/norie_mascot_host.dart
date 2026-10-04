@@ -20,11 +20,13 @@ class NorieMascotHost extends StatefulWidget {
   const NorieMascotHost({
     required this.child,
     this.onNavigate,
+    this.onTutorialStep,
     super.key,
   });
 
   final Widget child;
   final ValueChanged<NorieHelpDestination>? onNavigate;
+  final ValueChanged<NorieTutorialStep?>? onTutorialStep;
 
   @override
   State<NorieMascotHost> createState() => _NorieMascotHostState();
@@ -37,13 +39,12 @@ class _NorieMascotHostState extends State<NorieMascotHost>
   late final NorieVoiceController _voiceController = NorieVoiceController();
   late final NorieTutorialCoordinator _tutorialCoordinator =
       NorieTutorialCoordinator(
-        controller: _controller,
-        store: NorieTutorialStore(),
-        voiceController: _voiceController,
-      )..addListener(_handleTutorialChanged);
+    controller: _controller,
+    store: NorieTutorialStore(),
+    voiceController: _voiceController,
+  )..addListener(_handleTutorialChanged);
 
-  NorieContextSnapshot _contextSnapshot =
-      const NorieContextSnapshot.home();
+  NorieContextSnapshot _contextSnapshot = const NorieContextSnapshot.home();
   bool _assistantVisible = false;
   bool _appActive = true;
   bool _precacheStarted = false;
@@ -75,6 +76,10 @@ class _NorieMascotHostState extends State<NorieMascotHost>
   }
 
   void _handleTutorialChanged() {
+    if (!_tutorialCoordinator.showingContents ||
+        !_tutorialCoordinator.isActive) {
+      widget.onTutorialStep?.call(_tutorialCoordinator.currentStep);
+    }
     if (mounted) setState(() {});
   }
 
@@ -97,28 +102,13 @@ class _NorieMascotHostState extends State<NorieMascotHost>
 
   Future<void> _handleHelpAction(NorieHelpDestination destination) async {
     if (destination == NorieHelpDestination.replayTutorial) {
-      final definition = _tutorialForArea(_contextSnapshot.area);
       _hideAssistant();
-      if (definition != null) {
-        await _tutorialCoordinator.replay(definition);
-      }
+      await _tutorialCoordinator.replay(NorieTutorialCatalog.complete);
       return;
     }
 
     _hideAssistant();
     widget.onNavigate?.call(destination);
-  }
-
-  NorieTutorialDefinition? _tutorialForArea(NorieAppArea area) {
-    return switch (area) {
-      NorieAppArea.home => NorieTutorialCatalog.home,
-      NorieAppArea.learn => NorieTutorialCatalog.learn,
-      NorieAppArea.challenge => NorieTutorialCatalog.challenge,
-      NorieAppArea.anatomy => NorieTutorialCatalog.anatomy,
-      NorieAppArea.study => NorieTutorialCatalog.aiStudy,
-      NorieAppArea.quiz => NorieTutorialCatalog.quiz,
-      _ => null,
-    };
   }
 
   bool get _showMascot {
@@ -172,9 +162,14 @@ class _NorieMascotHostState extends State<NorieMascotHost>
                 ),
               ),
             ),
-          NorieTutorialOverlay(
-            coordinator: _tutorialCoordinator,
-          ),
+          if (_tutorialCoordinator.isActive)
+            FocusScope(
+                child: Overlay(initialEntries: [
+              OverlayEntry(
+                  builder: (_) => NorieTutorialOverlay(
+                        coordinator: _tutorialCoordinator,
+                      )),
+            ])),
           if (_assistantVisible)
             Positioned.fill(
               child: NorieHelpSheet(

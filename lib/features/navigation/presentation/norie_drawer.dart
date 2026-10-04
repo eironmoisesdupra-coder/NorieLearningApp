@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/account/norie_account_service.dart';
+import '../../../core/mascot/norie_mascot_scope.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
 import '../../../core/audio/norie_audio_settings_screen.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
@@ -216,17 +218,25 @@ class NorieDrawer extends StatelessWidget {
                   color: NorieColors.border,
                 ),
                 _MenuItem(
+                  icon: Icons.play_circle_outline_rounded,
+                  label: 'Start Tutorial',
+                  color: NorieColors.cyan,
+                  onTap: () async {
+                    final coordinator = NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
+                    Navigator.of(context).pop();
+                    await coordinator?.replay(NorieTutorialCatalog.complete);
+                  },
+                ),
+                _MenuItem(
                   icon: Icons.help_outline_rounded,
                   label: 'Help & Support',
                   color: NorieColors.textSecondary,
                   compact: true,
-                  onTap: () => _openUpcoming(
-                    context,
-                    title: 'Help & Support',
-                    subtitle:
-                        'Guides, support resources, and feedback tools will appear here.',
-                    icon: Icons.help_outline_rounded,
-                  ),
+                  onTap: () {
+                    final coordinator = NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
+                    Navigator.of(context).pop();
+                    coordinator?.browse();
+                  },
                 ),
                 _MenuItem(
                   icon: Icons.info_outline_rounded,

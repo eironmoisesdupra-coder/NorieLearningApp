@@ -17,7 +17,7 @@ class NoriePracticeModeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = norieContentAccent(topic.accent);
-    final modes = topic.gradeLevel == 'g1'
+    final modes = const ['g1', 'g2'].contains(topic.gradeLevel)
         ? const [NorieActivityMode.multipleChoice]
         : NorieActivityMode.values;
 
@@ -42,9 +42,13 @@ class NoriePracticeModeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Every new run randomizes item order. Choice-based modes also shuffle the answer positions.',
-                  style: TextStyle(
+                Text(
+                  NorieSciencePracticePolicy.usesTiers(topic)
+                      ? topic.gradeLevel == 'g2'
+                          ? 'Start with simpler questions, then use what you learned. Choose one answer each time. Questions and answer choices can change order.'
+                          : 'Practice moves from foundation to application, with questions shuffled within each level. Answer positions also change. Identification uses one-word answers; other items use multiple choice.'
+                      : 'Every new run randomizes item order. Choice-based modes also shuffle the answer positions.',
+                  style: const TextStyle(
                     color: NorieColors.textSecondary,
                     height: 1.45,
                   ),

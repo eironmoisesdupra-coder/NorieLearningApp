@@ -7,6 +7,7 @@ import '../core/mascot/norie_mascot_host.dart';
 import '../core/theme/norie_theme.dart';
 import '../features/learning/presentation/anatomy_lab_placeholder_screen.dart';
 import '../features/navigation/presentation/main_shell.dart';
+import '../features/navigation/presentation/norie_tutorial_navigation.dart';
 import '../features/onboarding/presentation/onboarding_flow.dart';
 import '../features/study/presentation/study_generator_screen.dart';
 
@@ -20,6 +21,7 @@ class NorieApp extends StatefulWidget {
 class _NorieAppState extends State<NorieApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final _audioNavigation = NorieAudioNavigation();
+  late final _tutorialNavigation = NorieTutorialNavigation(_navigatorKey);
 
   void _navigateFromHelp(NorieHelpDestination destination) {
     final navigator = _navigatorKey.currentState;
@@ -72,6 +74,7 @@ class _NorieAppState extends State<NorieApp> {
       builder: (context, child) => NorieAudioHost(
           child: NorieMascotHost(
         onNavigate: _navigateFromHelp,
+        onTutorialStep: _tutorialNavigation.showStep,
         child: child ?? const SizedBox.shrink(),
       )),
       home: const SplashScreen(),

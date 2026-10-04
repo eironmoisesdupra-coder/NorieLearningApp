@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/assets/norie_assets.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_ambient_backdrop.dart';
@@ -29,6 +31,7 @@ class ProgressScreen extends StatelessWidget {
           ? null
           : AppBar(
               title: const Text('Progress'),
+              actions: const [NorieTutorialReplayButton(definition: NorieTutorialCatalog.progress)],
               backgroundColor: Colors.transparent,
               leading: Builder(
                 builder: (drawerContext) => IconButton(
@@ -83,6 +86,8 @@ class ProgressScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
+                            const Spacer(),
+                            const NorieTutorialReplayButton(definition: NorieTutorialCatalog.progress),
                           ],
                         ),
                       ),

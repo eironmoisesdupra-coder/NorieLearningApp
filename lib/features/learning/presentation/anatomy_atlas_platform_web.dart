@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:js_interop';
 import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
+import '../../../core/mascot/norie_mascot_scope.dart';
+import '../../../core/mascot/tutorial/norie_tutorial_coordinator.dart';
 import 'anatomy_atlas_controller.dart';
 
 class AnatomyAtlasPlatform extends StatefulWidget {
@@ -15,6 +17,7 @@ class AnatomyAtlasPlatform extends StatefulWidget {
 
 class _AnatomyAtlasPlatformState extends State<AnatomyAtlasPlatform> {
   web.HTMLIFrameElement? _frame;
+  NorieTutorialCoordinator? _tutorial;
   late final JSFunction _listener;
   final _origin = web.window.location.origin;
   @override
@@ -38,6 +41,26 @@ class _AnatomyAtlasPlatformState extends State<AnatomyAtlasPlatform> {
     widget.controller.addListener(_send);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tutorial = NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
+    if (identical(tutorial, _tutorial)) return;
+    _tutorial?.removeListener(_updateInteraction);
+    _tutorial = tutorial;
+    _tutorial?.addListener(_updateInteraction);
+    _updateInteraction();
+  }
+
+  void _updateInteraction() {
+    final frame = _frame;
+    if (frame == null) return;
+    final blocked = _tutorial?.isActive ?? false;
+    frame.style.pointerEvents = blocked ? 'none' : 'auto';
+    frame.tabIndex = blocked ? -1 : 0;
+    if (blocked && web.document.activeElement == frame) frame.blur();
+  }
+
   void _send() {
     final command = widget.controller.lastCommand;
     if (command != null) {
@@ -48,6 +71,7 @@ class _AnatomyAtlasPlatformState extends State<AnatomyAtlasPlatform> {
 
   @override
   void dispose() {
+    _tutorial?.removeListener(_updateInteraction);
     widget.controller.removeListener(_send);
     web.window.removeEventListener('message', _listener);
     _frame?.src = 'about:blank';
@@ -60,6 +84,7 @@ class _AnatomyAtlasPlatformState extends State<AnatomyAtlasPlatform> {
         onElementCreated: (element) {
           final frame = element as web.HTMLIFrameElement;
           _frame = frame;
+          _updateInteraction();
           frame.title = 'NorieLearning interactive anatomy atlas';
           frame.style.border = '0';
           frame.style.width = '100%';
