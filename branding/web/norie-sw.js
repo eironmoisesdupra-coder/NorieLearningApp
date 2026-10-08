@@ -1,4 +1,10 @@
 const CACHE_NAME = 'norie-offline-__NORIE_BUILD_SHA__';
+const BUILD_SHA = '__NORIE_BUILD_SHA__';
+
+async function appWindows() {
+  const windows = await self.clients.matchAll({type: 'window', includeUncontrolled: true});
+  return windows.filter(client => client.url?.startsWith(self.registration.scope));
+}
 
 const REQUIRED_ASSETS = [
   './',
@@ -6,6 +12,7 @@ const REQUIRED_ASSETS = [
   './flutter_bootstrap.js',
   './main.dart.js',
   './manifest.json',
+  './norie-updates.mjs',
   './norie-logo.svg',
   './assets/assets/fonts/NorieEmoji.ttf',
   './assets/assets/anatomy/overview-skeleton.glb',
@@ -77,23 +84,45 @@ self.addEventListener('install', (event) => {
       const cache = await caches.open(CACHE_NAME);
       await cacheRequired(cache);
       await cacheOptional(cache);
-      await self.skipWaiting();
     })(),
   );
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    (async () => {
-      const names = await caches.keys();
-      await Promise.all(
-        names
-          .filter((name) => name.startsWith('norie-offline-') && name !== CACHE_NAME)
-          .map((name) => caches.delete(name)),
-      );
-      await self.clients.claim();
-    })(),
+async function deleteOldCaches() {
+  const names = await caches.keys();
+  await Promise.all(
+    names
+      .filter((name) => name.startsWith('norie-offline-') && name !== CACHE_NAME)
+      .map((name) => caches.delete(name)),
   );
+}
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'NORIE_ACTIVATE_UPDATE') {
+    event.waitUntil((async () => {
+      const windows = await appWindows();
+      const otherWindows = windows.filter((client) => client.id !== event.source?.id);
+      if (otherWindows.length > 0) {
+        event.source?.postMessage({type: 'NORIE_UPDATE_BLOCKED_MULTITAB'});
+        return;
+      }
+      await self.skipWaiting();
+    })());
+  } else if (event.data?.type === 'NORIE_CLIENT_READY') {
+    event.waitUntil((async () => {
+      if (event.data.build !== BUILD_SHA) return;
+      const windows = await appWindows();
+      if (windows.some(client => client.id !== event.source?.id)) return;
+      await deleteOldCaches();
+    })());
+  }
+});
+
+self.addEventListener('activate', (event) => {
+  // Do not delete the previous cache or claim existing tabs here. Activation
+  // follows an explicit learner action; cleanup waits until the reloaded client
+  // confirms that the new bundle is running.
+  event.waitUntil(Promise.resolve());
 });
 
 function normalizedRequest(request) {

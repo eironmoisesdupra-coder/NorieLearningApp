@@ -14,7 +14,6 @@ import '../../study/presentation/study_generator_screen.dart';
 import '../../study/presentation/study_hub_screen.dart';
 import 'anatomy_lab_placeholder_screen.dart';
 
-
 class LearnScreen extends StatefulWidget {
   const LearnScreen({
     super.key,
@@ -53,170 +52,175 @@ class _LearnScreenState extends State<LearnScreen> {
         definition: NorieTutorialCatalog.learn,
         autoStart: false,
         child: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
-              children: [
-                Builder(
-                  builder: (drawerContext) => _LearnHeader(
-                    onMenuPressed: () =>
-                        Scaffold.of(drawerContext).openDrawer(),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
+                children: [
+                  Builder(
+                    builder: (drawerContext) => _LearnHeader(
+                      onMenuPressed: () =>
+                          Scaffold.of(drawerContext).openDrawer(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 18),
-                NorieTutorialTarget(
-                  id: 'learn.ai',
-                  child: _LearnHero(
-                    onAiTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => StudyGeneratorScreen(
-                          initialQuestionCount: _questionCount,
-                        ),
-                      ),
-                    );
-                    },
+                  const SizedBox(height: 18),
+                  NorieTutorialTarget(
+                    id: 'learn.ai',
+                    child: _LearnHero(
+                      onAiTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => StudyGeneratorScreen(
+                              initialQuestionCount: _questionCount,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 28),
-                const Text(
-                  'Explore Subjects',
-                  style: TextStyle(
-                    fontSize: 29,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -.7,
+                  const SizedBox(height: 28),
+                  const Text(
+                    'Explore Subjects',
+                    style: TextStyle(
+                      fontSize: 29,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -.7,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Choose a learning area, then dive into focused topics and mastery paths.',
-                  style: TextStyle(
-                    color: NorieColors.textSecondary,
-                    height: 1.45,
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Science has authored Grade 1–College modules. Mathematics and English are starter previews.',
+                    style: TextStyle(
+                      color: NorieColors.textSecondary,
+                      height: 1.45,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                NorieTutorialTarget(
-                  id: 'learn.subjects',
-                  child: _SubjectTile(
-                    title: 'Mathematics',
-                  subtitle: 'Algebra · Geometry · Calculus · Statistics',
-                  icon: Icons.calculate_rounded,
-                  color: NorieColors.primary,
-                  progress: .68,
-                  badge: 'EXPANDING',
-                  onTap: () {
-                    NorieProgression.instance
-                        .recordSubjectExplored('Mathematics');
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const NorieGradeSelectScreen(
-                          subject: 'Mathematics',
-                          icon: Icons.calculate_rounded,
-                          accent: NorieColors.primary,
-                        ),
-                      ),
-                    );
-                    },
+                  const SizedBox(height: 20),
+                  NorieTutorialTarget(
+                    id: 'learn.subjects',
+                    child: _SubjectTile(
+                      title: 'Mathematics',
+                      subtitle:
+                          'Starter preview · Subject lessons in development',
+                      icon: Icons.calculate_rounded,
+                      color: NorieColors.primary,
+                      progress: .68,
+                      badge: 'STARTER',
+                      onTap: () {
+                        NorieProgression.instance
+                            .recordSubjectExplored('Mathematics');
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const NorieGradeSelectScreen(
+                              subject: 'Mathematics',
+                              icon: Icons.calculate_rounded,
+                              accent: NorieColors.primary,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _SubjectTile(
-                  title: 'Science',
-                  subtitle: 'Chemistry · Biology · Physics · Earth Science',
-                  icon: Icons.science_rounded,
-                  color: NorieColors.green,
-                  progress: .72,
-                  badge: 'LIVE',
-                  onTap: () {
-                    NorieProgression.instance.recordSubjectExplored('Science');
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const NorieGradeSelectScreen(
-                          subject: 'Science',
-                          icon: Icons.science_rounded,
-                          accent: NorieColors.green,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                _SubjectTile(
-                  title: '3D Anatomy Lab',
-                  subtitle: 'Layered human anatomy · 3D viewer · Identification',
-                  icon: Icons.accessibility_new_rounded,
-                  color: NorieColors.cyan,
-                  progress: 0,
-                  badge: 'LIVE',
-                  onTap: () {
-                    NorieProgression.instance
-                        .recordSubjectExplored('3D Anatomy Lab');
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const AnatomyLabPlaceholderScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                _SubjectTile(
-                  title: 'English',
-                  subtitle: 'Grammar · Vocabulary · Reading · Communication',
-                  icon: Icons.menu_book_rounded,
-                  color: NorieColors.orange,
-                  progress: .45,
-                  badge: 'EXPANDING',
-                  onTap: () {
-                    NorieProgression.instance.recordSubjectExplored('English');
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const NorieGradeSelectScreen(
-                          subject: 'English',
-                          icon: Icons.menu_book_rounded,
-                          accent: NorieColors.orange,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 28),
-                _AiQaPreview(
-                  selectedCount: _questionCount,
-                  onCountSelected: (value) {
-                    if (value == 100) {
-                      _previewOnly(
-                        '100 questions is a Premium-plan preview option.',
-                      );
-                      return;
-                    }
-                    setState(() => _questionCount = value);
-                  },
-                  onPreviewTap: (action) {
-                    if (action == 'hub') {
+                  const SizedBox(height: 12),
+                  _SubjectTile(
+                    title: 'Science',
+                    subtitle: 'Chemistry · Biology · Physics · Earth Science',
+                    icon: Icons.science_rounded,
+                    color: NorieColors.green,
+                    progress: .72,
+                    badge: 'LIVE',
+                    onTap: () {
+                      NorieProgression.instance
+                          .recordSubjectExplored('Science');
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => const StudyHubScreen(),
+                          builder: (_) => const NorieGradeSelectScreen(
+                            subject: 'Science',
+                            icon: Icons.science_rounded,
+                            accent: NorieColors.green,
+                          ),
                         ),
                       );
-                      return;
-                    }
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => StudyGeneratorScreen(
-                          initialQuestionCount: _questionCount,
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _SubjectTile(
+                    title: '3D Anatomy Lab',
+                    subtitle:
+                        'Layered human anatomy · 3D viewer · Identification',
+                    icon: Icons.accessibility_new_rounded,
+                    color: NorieColors.cyan,
+                    progress: 0,
+                    badge: 'LIVE',
+                    onTap: () {
+                      NorieProgression.instance
+                          .recordSubjectExplored('3D Anatomy Lab');
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const AnatomyLabPlaceholderScreen(),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _SubjectTile(
+                    title: 'English',
+                    subtitle:
+                        'Starter preview · Subject lessons in development',
+                    icon: Icons.menu_book_rounded,
+                    color: NorieColors.orange,
+                    progress: .45,
+                    badge: 'STARTER',
+                    onTap: () {
+                      NorieProgression.instance
+                          .recordSubjectExplored('English');
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const NorieGradeSelectScreen(
+                            subject: 'English',
+                            icon: Icons.menu_book_rounded,
+                            accent: NorieColors.orange,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 28),
+                  _AiQaPreview(
+                    selectedCount: _questionCount,
+                    onCountSelected: (value) {
+                      if (value == 100) {
+                        _previewOnly(
+                          '100 questions is a Premium-plan preview option.',
+                        );
+                        return;
+                      }
+                      setState(() => _questionCount = value);
+                    },
+                    onPreviewTap: (action) {
+                      if (action == 'hub') {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const StudyHubScreen(),
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => StudyGeneratorScreen(
+                            initialQuestionCount: _questionCount,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
       bottomNavigationBar: widget.embedded
           ? null

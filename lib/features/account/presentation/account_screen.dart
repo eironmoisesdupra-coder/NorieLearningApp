@@ -93,14 +93,12 @@ class _AccountScreenState extends State<AccountScreen> {
         : NorieAccountService.instance.pendingEmail ?? '';
 
     setState(() => _submitting = true);
-    final result =
-        await NorieAccountService.instance.resendConfirmation(email);
+    final result = await NorieAccountService.instance.resendConfirmation(email);
     if (!mounted) return;
     setState(() => _submitting = false);
 
     _show(
-      result ??
-          'Confirmation email resent. Check your inbox and spam folder.',
+      result ?? 'Confirmation email resent. Check your inbox and spam folder.',
     );
   }
 
@@ -120,8 +118,7 @@ class _AccountScreenState extends State<AccountScreen> {
     setState(() => _submitting = false);
 
     _show(
-      result ??
-          'Password reset email sent. Open the link to return to Norie.',
+      result ?? 'Password reset email sent. Open the link to return to Norie.',
     );
   }
 
@@ -139,8 +136,7 @@ class _AccountScreenState extends State<AccountScreen> {
           controller: controller,
           autofocus: true,
           textInputAction: TextInputAction.done,
-          onSubmitted: (value) =>
-              Navigator.of(dialogContext).pop(value),
+          onSubmitted: (value) => Navigator.of(dialogContext).pop(value),
           decoration: const InputDecoration(
             labelText: 'Display name',
             prefixIcon: Icon(Icons.person_rounded),
@@ -152,8 +148,7 @@ class _AccountScreenState extends State<AccountScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(controller.text),
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
             child: const Text('Save'),
           ),
         ],
@@ -228,10 +223,8 @@ class _AccountScreenState extends State<AccountScreen> {
                             },
                           ),
                           const SizedBox(height: 12),
-                          if (_createAccount)
-                            const _PrivateDemoInviteNote(),
-                          if (_createAccount)
-                            const SizedBox(height: 12),
+                          if (_createAccount) const _PrivateDemoInviteNote(),
+                          if (_createAccount) const SizedBox(height: 12),
                           if (_createAccount) ...[
                             TextField(
                               controller: _nameController,
@@ -261,12 +254,12 @@ class _AccountScreenState extends State<AccountScreen> {
                             onSubmitted: (_) => _submit(),
                             decoration: InputDecoration(
                               labelText: 'Password',
-                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              prefixIcon:
+                                  const Icon(Icons.lock_outline_rounded),
                               suffixIcon: IconButton(
                                 onPressed: () {
                                   setState(
-                                    () => _obscurePassword =
-                                        !_obscurePassword,
+                                    () => _obscurePassword = !_obscurePassword,
                                   );
                                 },
                                 icon: Icon(
@@ -281,9 +274,7 @@ class _AccountScreenState extends State<AccountScreen> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: TextButton(
-                                onPressed: _submitting
-                                    ? null
-                                    : _forgotPassword,
+                                onPressed: _submitting ? null : _forgotPassword,
                                 child: const Text('Forgot password?'),
                               ),
                             ),
@@ -740,6 +731,11 @@ class _SignedInAccount extends StatelessWidget {
         NorieCloudSyncStatus.syncing => (
             Icons.sync_rounded,
             'Synchronizing…',
+            NorieColors.orange,
+          ),
+        NorieCloudSyncStatus.pending => (
+            Icons.cloud_upload_outlined,
+            'Waiting to synchronize',
             NorieColors.orange,
           ),
         NorieCloudSyncStatus.synced => (

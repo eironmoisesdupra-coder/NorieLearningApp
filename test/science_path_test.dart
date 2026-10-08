@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
 import 'package:norie_learning/features/content/data/science/science_curriculum.dart';
 import 'package:norie_learning/features/content/presentation/science_figure_view.dart';
@@ -7,42 +8,50 @@ import 'package:norie_learning/features/content/presentation/norie_lesson_screen
 import 'package:norie_learning/features/content/domain/norie_content_models.dart';
 
 void main() {
-  test('Science publishes 55 authored G2–G12 topics in the existing 65-topic path',
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+  test(
+      'Science publishes 60 authored G2–College topics in the existing 65-topic path',
       () {
-    final authoredGrades = [for (var grade = 2; grade <= 12; grade++) 'g$grade'];
+    final authoredGrades = [
+      for (var grade = 2; grade <= 12; grade++) 'g$grade',
+      'college'
+    ];
     expect(ScienceCurriculum.grades.keys, unorderedEquals(authoredGrades));
-    expect(ScienceCurriculum.grades.values.expand((pack) => pack), hasLength(55));
+    expect(
+        ScienceCurriculum.grades.values.expand((pack) => pack), hasLength(60));
     for (final grade in authoredGrades) {
       expect(NorieFoundationCurriculum.topicsFor('Science', grade),
           same(ScienceCurriculum.grades[grade]),
-          reason: '$grade must resolve to its authored pack, not starter content');
+          reason:
+              '$grade must resolve to its authored pack, not starter content');
     }
     final path = NorieFoundationCurriculum.gradeLevels
-        .expand((grade) => NorieFoundationCurriculum.topicsFor('Science', grade.id))
+        .expand(
+            (grade) => NorieFoundationCurriculum.topicsFor('Science', grade.id))
         .toList();
     expect(path, hasLength(65));
     expect(path.map((topic) => topic.id).toSet(), hasLength(65));
     expect(path.where((topic) => topic.gradeLevel == 'g1'), hasLength(5));
-    final college = path.where((topic) => topic.gradeLevel == 'college').toList();
+    final college =
+        path.where((topic) => topic.gradeLevel == 'college').toList();
     expect(college, hasLength(5));
-    expect(ScienceCurriculum.grades.containsKey('college'), isFalse,
-        reason: 'College retains starter content and is not an authored pack');
-    for (final topic in college) {
-      expect(topic.lesson.introduction, startsWith('Build a clear College'));
-    }
+    expect(ScienceCurriculum.grades.containsKey('college'), isTrue);
   });
   test('authored grades do not repeat question stems or substantial prose', () {
     final stems = <String, String>{};
     final paragraphs = <String, String>{};
-    for (final topic in ScienceCurriculum.grades.values.expand((pack) => pack)) {
+    for (final topic
+        in ScienceCurriculum.grades.values.expand((pack) => pack)) {
       for (final q in [...topic.quiz.questions, ...topic.challenge.rounds]) {
         final key = q.prompt.trim().toLowerCase();
         expect(stems[key], isNull, reason: '${q.id} repeats ${stems[key]}');
         stems[key] = q.id;
       }
-      for (final section in topic.lesson.sections.where((s) => (s.body?.length ?? 0) > 140 && !s.reveal)) {
+      for (final section in topic.lesson.sections
+          .where((s) => (s.body?.length ?? 0) > 140 && !s.reveal)) {
         final key = section.body!.trim().toLowerCase();
-        expect(paragraphs[key], isNull, reason: '${topic.id} repeats ${paragraphs[key]}');
+        expect(paragraphs[key], isNull,
+            reason: '${topic.id} repeats ${paragraphs[key]}');
         paragraphs[key] = topic.id;
       }
     }

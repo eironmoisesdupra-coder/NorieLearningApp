@@ -1,0 +1,119 @@
+﻿name: Publish tested release
+
+on:
+  push:
+    tags: ['v*']
+    branches: ['release/v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to publish after exact-revision CI succeeds
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: norie-public-release
+  cancel-in-progress: false
+
+jobs:
+  packages:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.revision.outputs.tag }}
+      revision: ${{ steps.revision.outputs.revision }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve an existing release tag on develop
+        id: revision
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_REVISION: ${{ github.sha }}
+        shell: bash
+        run: |
+          RELEASE_TAG=${RELEASE_TAG#release/}
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          if [[ "$RELEASE_REF" == refs/heads/release/* ]]; then
+            revision=$(git rev-parse "$RELEASE_REVISION^{commit}")
+          else
+            revision=$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")
+          fi
+          git merge-base --is-ancestor "$revision" origin/develop
+          git checkout --detach "$revision"
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+      - name: Require successful trusted CI at the exact revision
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.revision.outputs.tag }}
+          RELEASE_SHA: ${{ steps.revision.outputs.revision }}
+        run: python scripts/release/prepare_release.py gate --tag "$RELEASE_TAG" --revision "$RELEASE_SHA"
+      - uses: actions/download-artifact@v4
+        with:
+          name: NorieLearning-android-release
+          path: android-package
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.gate.outputs.android_run }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: NorieLearning-Windows-offline
+          path: windows-package
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.gate.outputs.windows_run }}
+      - name: Prepare durable packages and checksums
+        env:
+          RELEASE_TAG: ${{ steps.revision.outputs.tag }}
+          RELEASE_SHA: ${{ steps.revision.outputs.revision }}
+        run: |
+          mkdir release-assets
+          cp android-package/app-release.apk release-assets/NorieLearning-Android.apk
+          cp windows-package/NorieLearning-Windows.zip release-assets/NorieLearning-Windows.zip
+          python scripts/release/prepare_release.py metadata --tag "$RELEASE_TAG" --revision "$RELEASE_SHA"
+          cp release-notes.md release-assets/release-notes.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validated-release-packages
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    needs: packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: validated-release-packages
+          path: release-assets
+      - name: Upload draft then publish both verified platforms together
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.packages.outputs.tag }}
+          RELEASE_SHA: ${{ needs.packages.outputs.revision }}
+        shell: bash
+        run: |
+          existing_tag=$(gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" --jq '.object.sha' 2>/dev/null || true)
+          if [[ -n "$existing_tag" ]]; then
+            resolved=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq '.sha')
+            [[ "$resolved" == "$RELEASE_SHA" ]] || { echo 'Version tag points to a different revision'; exit 1; }
+          fi
+          if gh release view "$RELEASE_TAG" --json isDraft > existing-release.json 2>/dev/null; then
+            python -c 'import json; assert json.load(open("existing-release.json"))["isDraft"], "Published releases are immutable in this workflow; create a new version"'
+          else
+            gh release create "$RELEASE_TAG" --draft --target "$RELEASE_SHA" --title "NorieLearning $RELEASE_TAG" --notes-file release-assets/release-notes.md
+          fi
+          gh release edit "$RELEASE_TAG" --notes-file release-assets/release-notes.md
+          gh release upload "$RELEASE_TAG" release-assets/NorieLearning-Windows.zip release-assets/NorieLearning-Android.apk release-assets/release-metadata.json release-assets/SHA256SUMS.txt --clobber
+          gh release edit "$RELEASE_TAG" --draft=false --latest

@@ -1,0 +1,133 @@
+COLLEGE SCIENCE AUTHORING AND SOURCE REVIEW — 2026-10-04
+
+Scope
+The five established College titles and IDs are preserved. Each is an
+introductory university module with a focused quantitative theme, not a claim
+to replace an entire university survey course. Grade 1 is unchanged.
+
+General Biology: enzyme kinetics, model assumptions, metabolic coupling.
+General Chemistry: Gibbs energy, entropy, temperature and composition.
+University Physics: harmonic dynamics, energy, damping and driving.
+Earth Science: planetary radiation and carbon reservoir budgets.
+Scientific Research: independent experimental units, design and inference.
+
+Each module contains four measurable objectives, worked and guided examples,
+assumption checks, subject-specific common mistakes, an evidence activity,
+recap, 20 practice items in 7/7/6 tiers, three independent mastery items and
+three locally authored figures. All assessment items are multiple choice;
+no forced identification of multiword university terminology is introduced.
+
+Sources consulted for factual verification
+These are reference links, not runtime dependencies. Wording, numbers for
+fictional exercises, questions and diagrams are original. No source images,
+tables or third-party assets were copied. Existing licenses remain unchanged.
+
+General Biology
+- NIH/NCATS Assay Guidance Manual, Mechanism of Action Assays for Enzymes:
+  https://www.ncbi.nlm.nih.gov/books/NBK92001/
+  Verified Michaelis-Menten interpretation and reversible competitive
+  inhibition. The normal page returned a browser challenge on open; its
+  indexed official text and printable search result were available.
+- NIH/NCATS Assay Guidance Manual, Basics of Enzymatic Assays for HTS:
+  https://www.ncbi.nlm.nih.gov/books/NBK92007/
+  Verified initial-rate conditions, substrate depletion and assay linearity.
+- NCBI Bookshelf, Molecular Biology of the Cell, Protein Function:
+  https://www.ncbi.nlm.nih.gov/books/NBK26911/
+  Cross-check of catalysis and kinetic parameters. Km is explicitly NOT
+  identified universally with substrate dissociation constant.
+
+General Chemistry
+- OpenStax/Rice University, Chemistry 2e, 16.4 Free Energy:
+  https://openstax.org/books/chemistry-2e/pages/16-4-free-energy
+  Verified Delta G = Delta H - T Delta S; Delta G = Delta G standard + RT ln Q;
+  Delta G standard = -RT ln K. Exercises independently derive temperature
+  crossover, inverse/squared K and activity exponents. Actual reaction Delta G
+  is explicitly distinguished from its standard-state value. Constant Delta H
+  and Delta S are stated approximations over the indicated temperature range.
+
+University Physics
+- OpenStax/Rice University, University Physics Volume 1, 15.1:
+  https://openstax.org/books/university-physics-volume-1/pages/15-1-simple-harmonic-motion
+- Same publisher and volume, 15.5 Damped Oscillations:
+  https://openstax.org/books/university-physics-volume-1/pages/15-5-damped-oscillations
+  Verified restoring force, displacement/velocity/acceleration relationships,
+  mass/stiffness scaling and damping. Energy values are calculated independently
+  from work and conservation. Position does not uniquely determine velocity
+  sign. Finite damping limits real driven response; resonance is not described
+  as universally infinite or as always peaking exactly at natural frequency.
+
+Earth Science
+- NASA Science, Climate and Earth's Energy Budget:
+  https://science.nasa.gov/earth/earth-observatory/climate-and-earths-energy-budget/
+- NOAA Ocean Service, What is the carbon cycle?:
+  https://oceanservice.noaa.gov/facts/carbon-cycle.html
+- NOAA Global Monitoring Laboratory, Basics of the Carbon Cycle:
+  https://gml.noaa.gov/outreach/carbon_toolkit/basics.html
+  Verified reflected versus absorbed radiation, infrared exchange, reservoirs
+  and time-scale differences. Solar irradiance 1360 W/m2 and all flux examples
+  are rounded illustrative model inputs, not current observational claims.
+  Effective emission temperature is distinguished from surface temperature;
+  molecule turnover is distinguished from removal of an excess CO2 inventory.
+
+Scientific Research
+- NIST/SEMATECH handbook, Randomized block designs:
+  https://www.itl.nist.gov/div898/handbook/pri/section3/pri332.htm
+- NIST/SEMATECH handbook, Critical values and p values:
+  https://www.itl.nist.gov/div898/handbook/prc/section1/prc131.htm
+- NIST/SEMATECH handbook, Confidence limits for the mean:
+  https://www.itl.nist.gov/div898/handbook/eda/section3/eda352.htm
+- NIST/SEMATECH handbook, Relationship between test and confidence interval:
+  https://www.itl.nist.gov/div898/handbook/prc/section1/prc15.htm
+  Verified blocking, prechosen significance, p-value interpretation and
+  interval/test relationship. The multiplier 2 is always explicitly supplied
+  as an approximation. Multiplicity arithmetic explicitly assumes independent
+  tests. Random assignment is distinguished from random population sampling.
+
+Second-pass calculations and scope audit
+- Biology: 90*6/(2+6)=67.5; 120*9/(3+9)=90; inhibited 120*9/(9+9)=60.
+  Two linked steps +12 and -30 total -18 kJ/mol only with a coupling mechanism.
+- Chemistry: 30-250*0.100=5; crossover 300 K; 8.314*300*ln(0.1)/1000
+  is approximately -5.743 kJ/mol. Reverse/double of K=4 gives 1/16.
+- Physics: sqrt(200/0.5)=20 rad/s; T=0.31416 s; E=1 J. At A/2,
+  U=0.25 J and speed=sqrt(3)=1.732 m/s. Fourfold mass doubles T.
+- Earth: 1360/4=340; absorption 0.7*340=238. Albedo reduction 0.05
+  adds 17 W/m2. Net 9-11 over four years removes 8 GtC; 3*44/12=11 GtCO2.
+- Research: 6/sqrt(9)=2; 6/sqrt(36)=1; 4 +/- 2*1.5 gives [1,7].
+  SE of two independent means with s=4 and n=16 is sqrt(2)=1.414.
+  1-0.95^20=0.641514. Six pots with ten leaf readings remain n=6 per group.
+
+Diagrams
+Fifteen registered figures use the existing accessible process, comparison,
+cycle and bar renderer. Bar charts provide units and model conditions. No
+remote images, new drawing engine, anatomy edits or mascot changes are needed.
+The shared science_path_test exercises every registered figure at narrow width
+and enlarged text; College is included automatically after registration.
+
+Verification handoff
+Dedicated test: test/college_science_test.dart covers stable IDs, progression,
+full assessment structure, registered visuals, independent numerical results
+and critical scientific interpretation regressions. The existing shared path
+test needs its old 55-topic/College-placeholder assertions updated to the
+60-topic G2-College authored inventory. Root agent owns that shared change.
+Flutter analyze/test and platform builds are run centrally by the root agent
+to avoid competing Flutter startup locks. This note does not assert they pass.
+
+Integration audit — 2026-10-08
+Read all five modules and all 115 assessment rows. An independent Python
+calculation/string-key check covered 40 quantitative practice/mastery answers,
+including logarithms, rate saturation, harmonic energy, carbon budgets and
+independent-group uncertainty. No incorrect answer keys were found. Structural
+checks confirmed 23 rows per topic; the existing Dart tests verify shuffled keys.
+The College source uses ASCII text only, including spelled-out scientific
+symbols, so it adds no unsupported scientific-font glyph requirements.
+
+Reopened the official OpenStax chemistry and harmonic-motion chapters, NASA
+energy-budget article and NIST confidence-limit guidance listed above. Official
+indexed NIH assay text and NOAA reservoir guidance corroborated kinetic and
+carbon-cycle limits. These sources are review references; lessons remain offline.
+Grade 1–12 authored source files were not changed by this content audit.
+
+Mathematics and English currently use general learning-strategy templates,
+not authored subject assessments. Subject and grade entry screens therefore
+identify them as starter previews with subject lessons in development. Science
+coverage is described as authored Grade 1–College modules, not complete courses.

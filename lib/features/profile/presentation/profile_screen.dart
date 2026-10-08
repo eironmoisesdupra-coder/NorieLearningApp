@@ -10,6 +10,7 @@ import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_ambient_backdrop.dart';
 import '../../commerce/presentation/norie_shop_placeholder_screen.dart';
 import '../../commerce/presentation/subscription_placeholder_screen.dart';
+import '../../content/data/norie_foundation_curriculum.dart';
 import '../../account/presentation/account_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 
@@ -35,7 +36,10 @@ class ProfileScreen extends StatelessWidget {
           ? null
           : AppBar(
               title: const Text('Profile'),
-              actions: const [NorieTutorialReplayButton(definition: NorieTutorialCatalog.profile)],
+              actions: const [
+                NorieTutorialReplayButton(
+                    definition: NorieTutorialCatalog.profile)
+              ],
               backgroundColor: Colors.transparent,
             ),
       body: Stack(
@@ -48,276 +52,410 @@ class ProfileScreen extends StatelessWidget {
           ),
           SafeArea(
             child: AnimatedBuilder(
-          animation: NorieAccountService.instance,
-          builder: (context, _) {
-            return AnimatedBuilder(
-              animation: NorieProgression.instance,
+              animation: NorieAccountService.instance,
               builder: (context, _) {
-                final progression = NorieProgression.instance;
-                final account = NorieAccountService.instance;
-            final snapshot = progression.snapshot;
-            final accuracy = (progression.quizAccuracy * 100).round();
+                return AnimatedBuilder(
+                  animation: NorieProgression.instance,
+                  builder: (context, _) {
+                    final progression = NorieProgression.instance;
+                    final account = NorieAccountService.instance;
+                    final snapshot = progression.snapshot;
+                    final accuracy = (progression.quizAccuracy * 100).round();
 
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
-                  children: [
-                    if (embedded)
-                      Builder(
-                        builder: (drawerContext) => Row(
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 760),
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
                           children: [
-                            IconButton(
-                              onPressed: () =>
-                                  Scaffold.of(drawerContext).openDrawer(),
-                              tooltip: 'Open menu',
-                              style: IconButton.styleFrom(
-                                backgroundColor: NorieColors.surface,
-                                side:
-                                    const BorderSide(color: NorieColors.border),
-                              ),
-                              icon: const Icon(Icons.menu_rounded),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'Profile',
-                              style: TextStyle(
-                                fontSize: 21,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const Spacer(),
-                            const NorieTutorialReplayButton(definition: NorieTutorialCatalog.profile),
-                          ],
-                        ),
-                      ),
-                    if (embedded) const SizedBox(height: 22),
-                    _AccountSummaryCard(account: account),
-                    const SizedBox(height: 14),
-                    _CommercePreviewRow(
-                      onMembershipTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                const SubscriptionPlaceholderScreen(),
-                          ),
-                        );
-                      },
-                      onShopTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const NorieShopPlaceholderScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(22),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF101F49),
-                            Color(0xFF25205D),
-                            Color(0xFF421D58),
-                          ],
-                        ),
-                        border: Border.all(
-                          color: NorieColors.cyan.withValues(alpha: .34),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: NorieColors.violet.withValues(alpha: .12),
-                            blurRadius: 32,
-                            offset: const Offset(0, 14),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 104,
-                            height: 104,
-                            child: Image.asset(
-                              NorieAssets.mascotBase,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  account.displayName?.isNotEmpty == true
-                                      ? account.displayName!
-                                      : 'Norie Learner',
-                                  style: const TextStyle(
-                                    fontSize: 23,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Building knowledge one session at a time.',
-                                  style: TextStyle(
-                                    color: NorieColors.textSecondary,
-                                    fontSize: 11,
-                                    height: 1.35,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
+                            if (embedded)
+                              Builder(
+                                builder: (drawerContext) => Row(
                                   children: [
-                                    SizedBox(
-                                      width: 42,
-                                      height: 42,
-                                      child: Image.asset(
-                                        NorieAssets.rankForTitle(snapshot.title),
-                                        fit: BoxFit.contain,
+                                    IconButton(
+                                      onPressed: () =>
+                                          Scaffold.of(drawerContext)
+                                              .openDrawer(),
+                                      tooltip: 'Open menu',
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: NorieColors.surface,
+                                        side: const BorderSide(
+                                            color: NorieColors.border),
+                                      ),
+                                      icon: const Icon(Icons.menu_rounded),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'Profile',
+                                      style: TextStyle(
+                                        fontSize: 21,
+                                        fontWeight: FontWeight.w900,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Level ${snapshot.level} · ${snapshot.title}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
+                                    const Spacer(),
+                                    const NorieTutorialReplayButton(
+                                        definition:
+                                            NorieTutorialCatalog.profile),
                                   ],
+                                ),
+                              ),
+                            if (embedded) const SizedBox(height: 22),
+                            _AccountSummaryCard(account: account),
+                            const SizedBox(height: 14),
+                            _CommercePreviewRow(
+                              onMembershipTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        const SubscriptionPlaceholderScreen(),
+                                  ),
+                                );
+                              },
+                              onShopTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        const NorieShopPlaceholderScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.all(22),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF101F49),
+                                    Color(0xFF25205D),
+                                    Color(0xFF421D58),
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color:
+                                      NorieColors.cyan.withValues(alpha: .34),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: NorieColors.violet
+                                        .withValues(alpha: .12),
+                                    blurRadius: 32,
+                                    offset: const Offset(0, 14),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 104,
+                                    height: 104,
+                                    child: Image.asset(
+                                      NorieAssets.mascotBase,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          account.displayName?.isNotEmpty ==
+                                                  true
+                                              ? account.displayName!
+                                              : 'Norie Learner',
+                                          style: const TextStyle(
+                                            fontSize: 23,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          'Building knowledge one session at a time.',
+                                          style: TextStyle(
+                                            color: NorieColors.textSecondary,
+                                            fontSize: 11,
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 42,
+                                              height: 42,
+                                              child: Image.asset(
+                                                NorieAssets.rankForTitle(
+                                                    snapshot.title),
+                                                fit: BoxFit.contain,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'Level ${snapshot.level} · ${snapshot.title}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount:
+                                  MediaQuery.sizeOf(context).width >= 600
+                                      ? 4
+                                      : 2,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              childAspectRatio: 1.45,
+                              children: [
+                                _StatCard(
+                                  label: 'Total XP',
+                                  value: '${snapshot.totalXp}',
+                                  icon: Icons.star_rounded,
+                                  color: NorieColors.orange,
+                                ),
+                                _StatCard(
+                                  label: 'Streak',
+                                  value: '${progression.currentStreak} days',
+                                  icon: Icons.local_fire_department_rounded,
+                                  color: NorieColors.magenta,
+                                ),
+                                _StatCard(
+                                  label: 'Lessons',
+                                  value: '${progression.completedLessons}',
+                                  icon: Icons.menu_book_rounded,
+                                  color: NorieColors.cyan,
+                                ),
+                                _StatCard(
+                                  label: 'Accuracy',
+                                  value: progression.questionsAnswered == 0
+                                      ? '—'
+                                      : '$accuracy%',
+                                  icon: Icons.analytics_rounded,
+                                  color: NorieColors.green,
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount:
-                          MediaQuery.sizeOf(context).width >= 600 ? 4 : 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 1.45,
-                      children: [
-                        _StatCard(
-                          label: 'Total XP',
-                          value: '${snapshot.totalXp}',
-                          icon: Icons.star_rounded,
-                          color: NorieColors.orange,
-                        ),
-                        _StatCard(
-                          label: 'Streak',
-                          value: '${progression.currentStreak} days',
-                          icon: Icons.local_fire_department_rounded,
-                          color: NorieColors.magenta,
-                        ),
-                        _StatCard(
-                          label: 'Lessons',
-                          value: '${progression.completedLessons}',
-                          icon: Icons.menu_book_rounded,
-                          color: NorieColors.cyan,
-                        ),
-                        _StatCard(
-                          label: 'Accuracy',
-                          value: progression.questionsAnswered == 0
-                              ? '—'
-                              : '$accuracy%',
-                          icon: Icons.analytics_rounded,
-                          color: NorieColors.green,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Learning activity',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _ActivityCard(
-                      icon: Icons.track_changes_rounded,
-                      title: 'Focused sessions',
-                      value: '${progression.studySessions}',
-                    ),
-                    const SizedBox(height: 10),
-                    _ActivityCard(
-                      icon: Icons.emoji_events_rounded,
-                      title: 'Challenge sessions',
-                      value: '${progression.challengeSessions}',
-                      subtitle:
-                          'Speed best: ${progression.speedBestScore}/10 · Weekly: ${progression.weeklyChallengeDays}/${NorieChallengeRules.weeklyGoalDays}',
-                    ),
-                    const SizedBox(height: 10),
-                    _ActivityCard(
-                      icon: Icons.psychology_alt_rounded,
-                      title: 'Topic mastery',
-                      value:
-                          '${progression.masteredTopicCount}/${progression.topicMastery.length}',
-                      subtitle:
-                          '${progression.weakTopics.length} weak topics detected',
-                    ),
-                    const SizedBox(height: 10),
-                    _ActivityCard(
-                      icon: Icons.explore_rounded,
-                      title: 'Subjects explored',
-                      value: '${progression.exploredSubjects.length}',
-                      subtitle: progression.exploredSubjects.isEmpty
-                          ? 'Open subjects from Learn to build this list.'
-                          : progression.exploredSubjects.join(' · '),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Achievements',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Learning activity',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
-                          ),
-                        ),
-                        Text(
-                          '${progression.unlockedAchievementCount} / ${progression.achievements.length}',
-                          style: const TextStyle(
-                            color: NorieColors.cyan,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    for (final achievement in progression.achievements)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 9),
-                        child: _AchievementStatus(
-                          achievement: achievement,
+                            const SizedBox(height: 12),
+                            _ActivityCard(
+                              icon: Icons.track_changes_rounded,
+                              title: 'Focused sessions',
+                              value: '${progression.studySessions}',
+                            ),
+                            const SizedBox(height: 10),
+                            _ActivityCard(
+                              icon: Icons.emoji_events_rounded,
+                              title: 'Challenge sessions',
+                              value: '${progression.challengeSessions}',
+                              subtitle:
+                                  'Speed best: ${progression.speedBestScore}/10 · Weekly: ${progression.weeklyChallengeDays}/${NorieChallengeRules.weeklyGoalDays}',
+                            ),
+                            const SizedBox(height: 10),
+                            _ActivityCard(
+                              icon: Icons.psychology_alt_rounded,
+                              title: 'Topic mastery',
+                              value:
+                                  '${progression.masteredTopicCount}/${progression.topicMastery.length}',
+                              subtitle:
+                                  '${progression.weakTopics.length} weak topics detected',
+                            ),
+                            const SizedBox(height: 10),
+                            _ActivityCard(
+                              icon: Icons.explore_rounded,
+                              title: 'Subjects explored',
+                              value: '${progression.exploredSubjects.length}',
+                              subtitle: progression.exploredSubjects.isEmpty
+                                  ? 'Open subjects from Learn to build this list.'
+                                  : progression.exploredSubjects.join(' · '),
+                            ),
+                            const SizedBox(height: 24),
+                            _ScienceTrophyShelf(progression: progression),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Achievements',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '${progression.unlockedAchievementCount} / ${progression.achievements.length}',
+                                  style: const TextStyle(
+                                    color: NorieColors.cyan,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            for (final achievement in progression.achievements)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 9),
+                                child: _AchievementStatus(
+                                  achievement: achievement,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                  ],
-                ),
-              ),
+                    );
+                  },
                 );
               },
-            );
-          },
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ScienceTrophyShelf extends StatelessWidget {
+  const _ScienceTrophyShelf({required this.progression});
+
+  final NorieProgression progression;
+
+  @override
+  Widget build(BuildContext context) {
+    final grades = NorieFoundationCurriculum.gradeLevels;
+    final completedGrades = grades.where((grade) {
+      final topics = NorieFoundationCurriculum.topicsFor('Science', grade.id);
+      return topics.isNotEmpty &&
+          topics.every((topic) => progression.isTopicCompleted(topic.id));
+    }).toSet();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Science journey trophies',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              ),
+            ),
+            Text(
+              '${completedGrades.length}/${grades.length}',
+              style: const TextStyle(
+                color: NorieColors.cyan,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        const Text(
+          'A trophy appears when all required lessons in that Science grade are complete. It is derived from existing lesson progress and does not award duplicate XP.',
+          style: TextStyle(
+            color: NorieColors.textSecondary,
+            fontSize: 10,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 102,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: grades.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 9),
+            itemBuilder: (context, index) {
+              final grade = grades[index];
+              final topics =
+                  NorieFoundationCurriculum.topicsFor('Science', grade.id);
+              final completed = topics
+                  .where((topic) => progression.isTopicCompleted(topic.id))
+                  .length;
+              final earned = completedGrades.contains(grade);
+              return Semantics(
+                label: earned
+                    ? '${grade.label} Science Complete trophy earned'
+                    : '${grade.label} Science trophy, $completed of ${topics.length} lessons complete',
+                child: Container(
+                  width: 94,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: earned
+                        ? NorieColors.cyan.withValues(alpha: .10)
+                        : NorieColors.surface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: earned
+                          ? NorieColors.cyan.withValues(alpha: .55)
+                          : NorieColors.border,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        earned
+                            ? Icons.emoji_events_rounded
+                            : Icons.emoji_events_outlined,
+                        color: earned
+                            ? NorieColors.orange
+                            : NorieColors.textSecondary,
+                        size: 30,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        grade.shortLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        earned ? 'Complete' : '$completed/${topics.length}',
+                        style: TextStyle(
+                          color: earned
+                              ? NorieColors.green
+                              : NorieColors.textSecondary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -605,9 +743,7 @@ class _AchievementStatus extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  achievement.unlocked
-                      ? 'Unlocked'
-                      : achievement.progressLabel,
+                  achievement.unlocked ? 'Unlocked' : achievement.progressLabel,
                   style: const TextStyle(
                     color: NorieColors.textSecondary,
                     fontSize: 10,
@@ -621,7 +757,6 @@ class _AchievementStatus extends StatelessWidget {
     );
   }
 }
-
 
 class _AccountSummaryCard extends StatelessWidget {
   const _AccountSummaryCard({required this.account});
@@ -638,6 +773,7 @@ class _AccountSummaryCard extends StatelessWidget {
         final status = signedIn
             ? switch (sync.status) {
                 NorieCloudSyncStatus.syncing => 'Synchronizing…',
+                NorieCloudSyncStatus.pending => 'Waiting to synchronize',
                 NorieCloudSyncStatus.synced => 'Cloud synchronized',
                 NorieCloudSyncStatus.error => 'Sync needs attention',
                 _ => 'Cloud account connected',
@@ -651,6 +787,7 @@ class _AccountSummaryCard extends StatelessWidget {
                 NorieCloudSyncStatus.synced => NorieColors.green,
                 NorieCloudSyncStatus.error => NorieColors.magenta,
                 NorieCloudSyncStatus.syncing => NorieColors.orange,
+                NorieCloudSyncStatus.pending => NorieColors.orange,
                 _ => NorieColors.cyan,
               }
             : NorieColors.textSecondary;

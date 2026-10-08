@@ -4,11 +4,14 @@ import '../../../core/assets/norie_assets.dart';
 import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
 import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/progression/norie_progression.dart';
+import '../../../core/progression/norie_lesson_journey.dart';
+import '../../content/presentation/norie_lesson_screen.dart';
+import '../../content/data/norie_foundation_curriculum.dart';
+import 'norie_welcome_card.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_credit_coin.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
 import '../../common/presentation/coming_soon_screen.dart';
-import '../../learning/presentation/atomic_structure_lesson_screen.dart';
 import '../../learning/presentation/learn_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 import '../../progress/presentation/progress_screen.dart';
@@ -23,6 +26,15 @@ class HomeScreen extends StatelessWidget {
   final bool embedded;
   final ValueChanged<int>? onTabSelected;
 
+  void _openLearning(BuildContext context) {
+    if (onTabSelected != null) {
+      onTabSelected!(1);
+    } else {
+      Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => const LearnScreen()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,58 +45,62 @@ class HomeScreen extends StatelessWidget {
       drawerEdgeDragWidth: 48,
       body: NorieTutorialEntry(
         definition: NorieTutorialCatalog.complete,
+        autoStart: false,
         child: Stack(
-        children: [
-          const Positioned.fill(child: _HomeBackdrop()),
-          SafeArea(
-            child: LayoutBuilder(
-          builder: (context, constraints) {
-            final contentWidth =
-                constraints.maxWidth > 760 ? 720.0 : constraints.maxWidth;
+          children: [
+            const Positioned.fill(child: _HomeBackdrop()),
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final contentWidth =
+                      constraints.maxWidth > 760 ? 720.0 : constraints.maxWidth;
 
-            return Center(
-              child: SizedBox(
-                width: contentWidth,
-                child: CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
-                      sliver: SliverList.list(
-                        children: [
-                          Builder(
-                            builder: (drawerContext) => _Header(
-                              onMenuPressed: () =>
-                                  Scaffold.of(drawerContext).openDrawer(),
+                  return Center(
+                    child: SizedBox(
+                      width: contentWidth,
+                      child: CustomScrollView(
+                        slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
+                            sliver: SliverList.list(
+                              children: [
+                                Builder(
+                                  builder: (drawerContext) => _Header(
+                                    onMenuPressed: () =>
+                                        Scaffold.of(drawerContext).openDrawer(),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                NorieTutorialTarget(
+                                  id: 'home.learn',
+                                  child: _HomeHero(
+                                    onLearnTap: () => _openLearning(context),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                NorieWelcomeCard(
+                                    onLearnTap: () => _openLearning(context)),
+                                _ContinueLearningCard(
+                                    onLearnTap: () => _openLearning(context)),
+                                const SizedBox(height: 16),
+                                _HomeActionGrid(
+                                  onChallengeTap: () => onTabSelected?.call(2),
+                                  onStudyTap: () => onTabSelected?.call(1),
+                                ),
+                                const SizedBox(height: 16),
+                                const _LevelCard(),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 18),
-                          NorieTutorialTarget(
-                            id: 'home.learn',
-                            child: _HomeHero(
-                              onLearnTap: () => onTabSelected?.call(1),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          const _ContinueLearningCard(),
-                          const SizedBox(height: 16),
-                          _HomeActionGrid(
-                            onChallengeTap: () => onTabSelected?.call(2),
-                            onStudyTap: () => onTabSelected?.call(1),
-                          ),
-                          const SizedBox(height: 16),
-                          const _LevelCard(),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
-            );
-          },
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
       bottomNavigationBar:
           embedded ? null : _BottomNavigation(onTabSelected: onTabSelected),
@@ -551,133 +567,83 @@ class _StudyLabCard extends StatelessWidget {
 }
 
 class _ContinueLearningCard extends StatelessWidget {
-  const _ContinueLearningCard();
+  const _ContinueLearningCard({required this.onLearnTap});
+  final VoidCallback onLearnTap;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF103B88),
-            Color(0xFF182C73),
-            Color(0xFF351D6C),
-          ],
-        ),
-        border: Border.all(color: const Color(0xFF3374D9)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x335B5CE2),
-            blurRadius: 30,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'CONTINUE LEARNING',
-            style: TextStyle(
-              fontSize: 11,
-              letterSpacing: 1.6,
-              color: Color(0xFFAED8FF),
-              fontWeight: FontWeight.w700,
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: Listenable.merge(
+            [NorieLessonJourney.instance, NorieProgression.instance]),
+        builder: (context, _) {
+          final topic = NorieLessonJourney.instance.lastTopic;
+          final completed = topic != null &&
+              NorieProgression.instance.isTopicCompleted(topic.id);
+          final grade = topic == null
+              ? null
+              : NorieFoundationCurriculum.gradeLevels
+                  .where((grade) => grade.id == topic.gradeLevel)
+                  .firstOrNull;
+          return Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(26),
+              gradient: const LinearGradient(colors: [
+                Color(0xFF103B88),
+                Color(0xFF182C73),
+                Color(0xFF351D6C)
+              ]),
+              border: Border.all(color: const Color(0xFF3374D9)),
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Chemistry:\nAtomic Structure',
-                      style: TextStyle(
-                        fontSize: 25,
-                        height: 1.05,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Build the building blocks of a brighter tomorrow.',
-                      style: TextStyle(
-                        color: Color(0xFFD8E6FF),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(topic == null ? 'START LEARNING' : 'CONTINUE LEARNING',
+                  style: const TextStyle(
+                      fontSize: 11,
+                      letterSpacing: 1.6,
+                      color: Color(0xFFAED8FF),
+                      fontWeight: FontWeight.w700)),
+              const SizedBox(height: 10),
+              Text(topic?.title ?? 'Your first lesson awaits',
+                  style: const TextStyle(
+                      fontSize: 25, height: 1.1, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              Text(
+                  topic == null
+                      ? 'Choose a subject and grade to start learning offline.'
+                      : '${topic.subject} · ${grade?.label ?? topic.category}',
+                  style:
+                      const TextStyle(color: Color(0xFFD8E6FF), height: 1.4)),
+              if (topic != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                    completed
+                        ? 'Lesson completed · Review anytime'
+                        : 'Reading saved · Practice to complete this lesson',
+                    style: const TextStyle(
+                        color: Color(0xFFD8E6FF), fontSize: 12)),
+              ],
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: topic == null
+                    ? onLearnTap
+                    : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => NorieLessonScreen(topic: topic))),
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: Text(topic == null
+                    ? 'Choose a lesson'
+                    : completed
+                        ? 'Review Lesson'
+                        : 'Resume Lesson'),
+                style: FilledButton.styleFrom(
+                    backgroundColor: NorieColors.cyan,
+                    foregroundColor: NorieColors.background,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 14)),
               ),
-              Container(
-                width: 82,
-                height: 82,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const RadialGradient(
-                    colors: [
-                      Color(0xFF8CF7FF),
-                      NorieColors.primary,
-                      Color(0x003B82F6),
-                    ],
-                  ),
-                  border: Border.all(color: NorieColors.cyan),
-                ),
-                child: const Icon(
-                  Icons.hub_outlined,
-                  color: Colors.white,
-                  size: 42,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Row(
-            children: [
-              Expanded(
-                child: LinearProgressIndicator(
-                  value: .72,
-                  minHeight: 7,
-                  borderRadius: BorderRadius.all(Radius.circular(99)),
-                  color: NorieColors.cyan,
-                  backgroundColor: Color(0x4422D3EE),
-                ),
-              ),
-              SizedBox(width: 10),
-              Text('72%', style: TextStyle(fontWeight: FontWeight.w800)),
-            ],
-          ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const AtomicStructureLessonScreen(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Resume Lesson'),
-            style: FilledButton.styleFrom(
-              backgroundColor: NorieColors.cyan,
-              foregroundColor: NorieColors.background,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+            ]),
+          );
+        },
+      );
 }
 
 class _DailyChallengeCard extends StatelessWidget {
@@ -698,9 +664,7 @@ class _DailyChallengeCard extends StatelessWidget {
         subtitle: progression.dailyChallengeCompletedToday
             ? 'Completed today · replay available in Challenge.'
             : 'Solve 5 mixed questions and earn today’s bonus.',
-        trailing: progression.dailyChallengeCompletedToday
-            ? 'DONE'
-            : '+100 XP',
+        trailing: progression.dailyChallengeCompletedToday ? 'DONE' : '+100 XP',
       ),
     );
   }
@@ -824,7 +788,8 @@ class _InfoCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 3),
                 Text(
                   subtitle,

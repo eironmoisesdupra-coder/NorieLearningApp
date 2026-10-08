@@ -55,9 +55,11 @@ class NorieGradeSelectScreen extends StatelessWidget {
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const Text(
-                            'Choose your grade level. You can explore any level.',
-                            style: TextStyle(
+                          Text(
+                            subject.toLowerCase() == 'science'
+                                ? 'Authored Science modules. Choose any grade level.'
+                                : 'Starter preview. Subject lessons are in development.',
+                            style: const TextStyle(
                               color: NorieColors.textSecondary,
                               fontSize: 11,
                             ),
@@ -113,9 +115,8 @@ class _GradeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final topics = NorieFoundationCurriculum.topicsFor(subject, grade.id);
     final progression = NorieProgression.instance;
-    final completed = topics
-        .where((topic) => progression.isTopicCompleted(topic.id))
-        .length;
+    final completed =
+        topics.where((topic) => progression.isTopicCompleted(topic.id)).length;
 
     return Material(
       color: NorieColors.surface,
@@ -153,7 +154,9 @@ class _GradeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '5 foundation lessons · $completed/5 completed',
+                      subject.toLowerCase() == 'science'
+                          ? '${topics.length} authored modules · $completed/${topics.length} completed'
+                          : '${topics.length} starter previews · $completed/${topics.length} completed',
                       style: const TextStyle(
                         color: NorieColors.textSecondary,
                         fontSize: 10,

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
 import 'package:norie_learning/features/content/domain/norie_content_models.dart';
 import 'package:norie_learning/features/content/presentation/norie_grade1_science_visual.dart';
@@ -8,6 +9,7 @@ import 'package:norie_learning/features/content/presentation/norie_lesson_screen
 import 'package:norie_learning/features/content/presentation/norie_practice_mode_screen.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   test('materials completes the same Grade 1 progression with approved scope',
       () {
     final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1').last;

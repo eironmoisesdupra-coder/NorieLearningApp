@@ -8,12 +8,16 @@ import 'core/account/norie_demo_access_service.dart';
 import 'core/cloud/norie_cloud_sync.dart';
 import 'core/cloud/supabase_config.dart';
 import 'core/progression/norie_progression.dart';
+import 'core/progression/norie_lesson_journey.dart';
 import 'features/study/data/norie_study_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await NorieProgression.instance.load();
+  await NorieLessonJourney.instance.load();
+  NorieLessonJourney.instance
+      .addListener(NorieProgression.instance.recordJourneyChange);
 
   // Lessons and local progress must be available before any network work.
   runApp(const NorieApp());

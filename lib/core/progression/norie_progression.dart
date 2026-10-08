@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/commerce/domain/norie_shop_models.dart';
+import 'norie_lesson_journey.dart';
+import 'norie_progress_backup.dart';
 
 class NorieLevelSnapshot {
   const NorieLevelSnapshot({
@@ -127,11 +129,9 @@ class NorieTopicMastery {
 
   double get accuracy => attempts == 0 ? 0 : correct / attempts;
 
-  double get confidence =>
-      (attempts / 5).clamp(0.0, 1.0).toDouble();
+  double get confidence => (attempts / 5).clamp(0.0, 1.0).toDouble();
 
-  double get score =>
-      (accuracy * confidence).clamp(0.0, 1.0).toDouble();
+  double get score => (accuracy * confidence).clamp(0.0, 1.0).toDouble();
 
   NorieMasteryLevel get level {
     if (score < .40) return NorieMasteryLevel.learning;
@@ -222,9 +222,8 @@ abstract final class NorieLevelSystem {
 
     final isMaxLevel = level >= maxLevel;
     final requirement = isMaxLevel ? 0 : xpRequiredToAdvanceFrom(level);
-    final progress = isMaxLevel
-        ? 1.0
-        : (remaining / requirement).clamp(0.0, 1.0).toDouble();
+    final progress =
+        isMaxLevel ? 1.0 : (remaining / requirement).clamp(0.0, 1.0).toDouble();
 
     final nextRank = _nextRankAfter(level);
 
@@ -335,8 +334,7 @@ class NorieProgression extends ChangeNotifier {
   String? _equippedFrameId;
   String? _equippedBadgeId;
   String? _equippedThemeId;
-  List<NorieCreditTransaction> _creditTransactions =
-      <NorieCreditTransaction>[];
+  List<NorieCreditTransaction> _creditTransactions = <NorieCreditTransaction>[];
   Set<String> _exploredSubjects = <String>{};
   Set<String> _studyDates = <String>{};
   Set<String> _dailyChallengeDates = <String>{};
@@ -346,7 +344,8 @@ class NorieProgression extends ChangeNotifier {
   Set<String> _rewardedLessonTopics = <String>{};
   Set<String> _rewardedPerfectLessonTopics = <String>{};
   Map<String, NorieTopicMastery> _topicMastery = <String, NorieTopicMastery>{};
-  DateTime _lastModifiedAt = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  DateTime _lastModifiedAt =
+      DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   bool _onboardingComplete = false;
 
   int get totalXp => _totalXp;
@@ -383,9 +382,7 @@ class NorieProgression extends ChangeNotifier {
   }
 
   List<NorieTopicMastery> get weakTopics {
-    final items = _topicMastery.values
-        .where((topic) => topic.isWeak)
-        .toList()
+    final items = _topicMastery.values.where((topic) => topic.isWeak).toList()
       ..sort((a, b) => a.score.compareTo(b.score));
     return List.unmodifiable(items);
   }
@@ -436,8 +433,7 @@ class NorieProgression extends ChangeNotifier {
   bool get speedRewardEarnedToday =>
       _speedRewardDates.contains(_dateKey(DateTime.now()));
 
-  int get weeklyChallengeDays =>
-      _weeklyChallengeDaysAt(DateTime.now());
+  int get weeklyChallengeDays => _weeklyChallengeDaysAt(DateTime.now());
 
   double get weeklyChallengeProgress =>
       (weeklyChallengeDays / NorieChallengeRules.weeklyGoalDays)
@@ -472,8 +468,7 @@ class NorieProgression extends ChangeNotifier {
           title: 'Subject Explorer',
           description: 'Explore two different subject areas.',
           unlocked: _exploredSubjects.length >= 2,
-          progress:
-              (_exploredSubjects.length / 2).clamp(0.0, 1.0).toDouble(),
+          progress: (_exploredSubjects.length / 2).clamp(0.0, 1.0).toDouble(),
           progressLabel: '${_exploredSubjects.length.clamp(0, 2)} / 2 subjects',
         ),
         NorieAchievement(
@@ -519,8 +514,8 @@ class NorieProgression extends ChangeNotifier {
         _creditTransactions = <NorieCreditTransaction>[];
       }
     }
-    _exploredSubjects = (prefs.getStringList(_subjectsKey) ?? const <String>[])
-        .toSet();
+    _exploredSubjects =
+        (prefs.getStringList(_subjectsKey) ?? const <String>[]).toSet();
     _studyDates =
         (prefs.getStringList(_studyDatesKey) ?? const <String>[]).toSet();
     _dailyChallengeDates =
@@ -684,8 +679,7 @@ class NorieProgression extends ChangeNotifier {
     int challengeAttempts = 3,
   }) {
     final safeQuizAttempts = quizAttempts < 0 ? 0 : quizAttempts;
-    final safeChallengeAttempts =
-        challengeAttempts < 0 ? 0 : challengeAttempts;
+    final safeChallengeAttempts = challengeAttempts < 0 ? 0 : challengeAttempts;
     final totalAttempts = safeQuizAttempts + safeChallengeAttempts;
     final totalCorrect =
         (quizScore + challengeScore).clamp(0, totalAttempts).toInt();
@@ -738,6 +732,7 @@ class NorieProgression extends ChangeNotifier {
     _recordStudyDay(DateTime.now());
     _changed();
   }
+
   void recordGeneratedStudyAttempt({
     required int correct,
     required int total,
@@ -767,7 +762,6 @@ class NorieProgression extends ChangeNotifier {
 
     _changed();
   }
-
 
   void recordTopicAnswer({
     required String category,
@@ -909,6 +903,12 @@ class NorieProgression extends ChangeNotifier {
     _studyDates.add(_dateKey(date));
   }
 
+  int _journeyRestores = 0;
+
+  void recordJourneyChange() {
+    if (_journeyRestores == 0) _changed();
+  }
+
   void _changed({bool touchModified = true}) {
     if (touchModified) {
       _lastModifiedAt = DateTime.now().toUtc();
@@ -917,7 +917,21 @@ class NorieProgression extends ChangeNotifier {
     unawaited(_save());
   }
 
-  Future<void> _save() async {
+  Future<void> _saves = Future<void>.value();
+
+  /// Call only after the previous test has drained its pending persistence.
+  @visibleForTesting
+  void resetAsyncQueuesForTesting() {
+    _saves = Future<void>.value();
+  }
+
+  Future<void> _save() {
+    final operation = _saves.catchError((Object _) {}).then((_) => _persist());
+    _saves = operation;
+    return operation;
+  }
+
+  Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     await Future.wait([
       prefs.setInt(_xpKey, _totalXp),
@@ -985,38 +999,51 @@ class NorieProgression extends ChangeNotifier {
     ]);
   }
 
-  Future<void> resetForNewAccount() async {
-    _totalXp = 0;
-    _credits = 0;
-    _completedLessons = 0;
-    _studySessions = 0;
-    _correctAnswers = 0;
-    _questionsAnswered = 0;
-    _challengeSessions = 0;
-    _speedBestScore = 0;
-    _streakShields = 0;
-    _ownedShopItems = <String>{};
-    _equippedFrameId = null;
-    _equippedBadgeId = null;
-    _equippedThemeId = null;
-    _creditTransactions = <NorieCreditTransaction>[];
-    _exploredSubjects = <String>{};
-    _studyDates = <String>{};
-    _dailyChallengeDates = <String>{};
-    _speedRewardDates = <String>{};
-    _weeklyRewardedWeeks = <String>{};
-    _completedTopicIds = <String>{};
-    _rewardedLessonTopics = <String>{};
-    _rewardedPerfectLessonTopics = <String>{};
-    _topicMastery = <String, NorieTopicMastery>{};
-    _onboardingComplete = true;
-    _lastModifiedAt = DateTime.now().toUtc();
+  Future<bool> resetForNewAccount({bool Function()? stillCurrent}) async {
+    _journeyRestores++;
+    try {
+      final applied = await NorieLessonJourney.instance.reset(
+        stillCurrent: stillCurrent,
+        onApply: () {
+          _totalXp = 0;
+          _credits = 0;
+          _completedLessons = 0;
+          _studySessions = 0;
+          _correctAnswers = 0;
+          _questionsAnswered = 0;
+          _challengeSessions = 0;
+          _speedBestScore = 0;
+          _streakShields = 0;
+          _ownedShopItems = <String>{};
+          _equippedFrameId = null;
+          _equippedBadgeId = null;
+          _equippedThemeId = null;
+          _creditTransactions = <NorieCreditTransaction>[];
+          _exploredSubjects = <String>{};
+          _studyDates = <String>{};
+          _dailyChallengeDates = <String>{};
+          _speedRewardDates = <String>{};
+          _weeklyRewardedWeeks = <String>{};
+          _completedTopicIds = <String>{};
+          _rewardedLessonTopics = <String>{};
+          _rewardedPerfectLessonTopics = <String>{};
+          _topicMastery = <String, NorieTopicMastery>{};
+          _onboardingComplete = true;
+          _lastModifiedAt = DateTime.now().toUtc();
 
-    notifyListeners();
-    await _save();
+          notifyListeners();
+          unawaited(_save());
+        },
+      );
+      await _saves;
+      return applied;
+    } finally {
+      _journeyRestores--;
+    }
   }
 
   Map<String, dynamic> exportCloudState() => {
+        'lesson_journey': NorieLessonJourney.instance.exportState(),
         'schema_version': 1,
         'total_xp': _totalXp,
         'credits': _credits,
@@ -1040,8 +1067,8 @@ class NorieProgression extends ChangeNotifier {
         'weekly_rewarded_weeks': _weeklyRewardedWeeks.toList()..sort(),
         'completed_topic_ids': _completedTopicIds.toList()..sort(),
         'rewarded_lesson_topics': _rewardedLessonTopics.toList()..sort(),
-        'rewarded_perfect_lesson_topics':
-            _rewardedPerfectLessonTopics.toList()..sort(),
+        'rewarded_perfect_lesson_topics': _rewardedPerfectLessonTopics.toList()
+          ..sort(),
         'topic_mastery': _topicMastery.map(
           (key, value) => MapEntry(key, value.toJson()),
         ),
@@ -1049,76 +1076,94 @@ class NorieProgression extends ChangeNotifier {
         'modified_at': _lastModifiedAt.toIso8601String(),
       };
 
-  Future<void> importCloudState(
+  Future<bool> importCloudState(
     Map<String, dynamic> state, {
     DateTime? remoteModifiedAt,
+    bool Function()? stillCurrent,
   }) async {
-    _totalXp = _readInt(state['total_xp'], fallback: _totalXp);
-    _credits = _readInt(state['credits'], fallback: _credits);
-    _streakShields =
-        _readInt(state['streak_shields'], fallback: _streakShields);
-    _ownedShopItems = _readStringSet(state['owned_shop_items']);
-    _equippedFrameId = state['equipped_frame_id']?.toString();
-    _equippedBadgeId = state['equipped_badge_id']?.toString();
-    _equippedThemeId = state['equipped_theme_id']?.toString();
-    final rawTransactions = state['credit_transactions'];
-    if (rawTransactions is List) {
-      _creditTransactions = rawTransactions
-          .whereType<Map>()
-          .map((item) => NorieCreditTransaction.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
-          .toList();
-    }
-    _completedLessons =
-        _readInt(state['completed_lessons'], fallback: _completedLessons);
-    _studySessions =
-        _readInt(state['study_sessions'], fallback: _studySessions);
-    _correctAnswers =
-        _readInt(state['correct_answers'], fallback: _correctAnswers);
-    _questionsAnswered =
-        _readInt(state['questions_answered'], fallback: _questionsAnswered);
-    _challengeSessions =
-        _readInt(state['challenge_sessions'], fallback: _challengeSessions);
-    _speedBestScore =
-        _readInt(state['speed_best_score'], fallback: _speedBestScore);
+    if (stillCurrent != null && !stillCurrent()) return false;
+    NorieProgressBackup.validateState(state);
+    final journey = NorieLessonJourney.validateState(
+        state['lesson_journey'] ?? NorieLessonJourney.emptyState);
+    _journeyRestores++;
+    try {
+      final applied = await NorieLessonJourney.instance.replaceState(
+        journey,
+        stillCurrent: stillCurrent,
+        onApply: () {
+          _totalXp = _readInt(state['total_xp'], fallback: _totalXp);
+          _credits = _readInt(state['credits'], fallback: _credits);
+          _streakShields =
+              _readInt(state['streak_shields'], fallback: _streakShields);
+          _ownedShopItems = _readStringSet(state['owned_shop_items']);
+          _equippedFrameId = state['equipped_frame_id']?.toString();
+          _equippedBadgeId = state['equipped_badge_id']?.toString();
+          _equippedThemeId = state['equipped_theme_id']?.toString();
+          final rawTransactions = state['credit_transactions'];
+          if (rawTransactions is List) {
+            _creditTransactions = rawTransactions
+                .whereType<Map>()
+                .map((item) => NorieCreditTransaction.fromJson(
+                      Map<String, dynamic>.from(item),
+                    ))
+                .toList();
+          }
+          _completedLessons =
+              _readInt(state['completed_lessons'], fallback: _completedLessons);
+          _studySessions =
+              _readInt(state['study_sessions'], fallback: _studySessions);
+          _correctAnswers =
+              _readInt(state['correct_answers'], fallback: _correctAnswers);
+          _questionsAnswered = _readInt(state['questions_answered'],
+              fallback: _questionsAnswered);
+          _challengeSessions = _readInt(state['challenge_sessions'],
+              fallback: _challengeSessions);
+          _speedBestScore =
+              _readInt(state['speed_best_score'], fallback: _speedBestScore);
 
-    _exploredSubjects = _readStringSet(state['explored_subjects']);
-    _studyDates = _readStringSet(state['study_dates']);
-    _dailyChallengeDates = _readStringSet(state['daily_challenge_dates']);
-    _speedRewardDates = _readStringSet(state['speed_reward_dates']);
-    _weeklyRewardedWeeks = _readStringSet(state['weekly_rewarded_weeks']);
-    _completedTopicIds = _readStringSet(state['completed_topic_ids']);
-    _rewardedLessonTopics = _readStringSet(state['rewarded_lesson_topics']);
-    _rewardedPerfectLessonTopics =
-        _readStringSet(state['rewarded_perfect_lesson_topics']);
+          _exploredSubjects = _readStringSet(state['explored_subjects']);
+          _studyDates = _readStringSet(state['study_dates']);
+          _dailyChallengeDates = _readStringSet(state['daily_challenge_dates']);
+          _speedRewardDates = _readStringSet(state['speed_reward_dates']);
+          _weeklyRewardedWeeks = _readStringSet(state['weekly_rewarded_weeks']);
+          _completedTopicIds = _readStringSet(state['completed_topic_ids']);
+          _rewardedLessonTopics =
+              _readStringSet(state['rewarded_lesson_topics']);
+          _rewardedPerfectLessonTopics =
+              _readStringSet(state['rewarded_perfect_lesson_topics']);
 
-    final rawMastery = state['topic_mastery'];
-    if (rawMastery is Map) {
-      _topicMastery = rawMastery.map(
-        (key, value) => MapEntry(
-          key.toString(),
-          NorieTopicMastery.fromJson(
-            Map<String, dynamic>.from(value as Map),
-          ),
-        ),
+          final rawMastery = state['topic_mastery'];
+          if (rawMastery is Map) {
+            _topicMastery = rawMastery.map(
+              (key, value) => MapEntry(
+                key.toString(),
+                NorieTopicMastery.fromJson(
+                  Map<String, dynamic>.from(value as Map),
+                ),
+              ),
+            );
+          }
+
+          final cloudOnboarding = state['onboarding_complete'];
+          if (cloudOnboarding is bool) {
+            _onboardingComplete = cloudOnboarding;
+          }
+
+          final stateModified = DateTime.tryParse(
+            state['modified_at']?.toString() ?? '',
+          );
+          _lastModifiedAt =
+              (remoteModifiedAt ?? stateModified ?? DateTime.now()).toUtc();
+          _migrateLegacyTopicCompletion();
+
+          _changed(touchModified: false);
+        },
       );
+      await _saves;
+      return applied;
+    } finally {
+      _journeyRestores--;
     }
-
-    final cloudOnboarding = state['onboarding_complete'];
-    if (cloudOnboarding is bool) {
-      _onboardingComplete = cloudOnboarding;
-    }
-
-    final stateModified = DateTime.tryParse(
-      state['modified_at']?.toString() ?? '',
-    );
-    _lastModifiedAt = (remoteModifiedAt ?? stateModified ?? DateTime.now())
-        .toUtc();
-    _migrateLegacyTopicCompletion();
-
-    _changed(touchModified: false);
-    await _save();
   }
 
   bool _migrateLegacyTopicCompletion() {
