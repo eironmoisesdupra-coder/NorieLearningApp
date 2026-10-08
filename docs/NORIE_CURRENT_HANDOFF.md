@@ -1,39 +1,46 @@
 # NorieLearning Current Integration Handoff
 
-Updated 2026-10-08. This source integrates the ChatGPT-continued 0.5.0+8 ZIP into the published develop baseline 38b634ca8770ec78c4c6cac79beab836c3a66319.
+Updated 2026-10-08. Current source prepares Flutter **0.6.0+9** and desktop **0.6.0**, implementing the user's updated game-progression blueprint. Historical design-only wording in the attachment is superseded by the explicit implementation request.
 
 ## Workspace and publication
 
-Active worktree: C:/Users/ronaldo.dupra/Documents/NorieLearning-integrate
-Branch: feat/verified-readiness-adventure
-Version: Flutter 0.5.0+8 / desktop 0.5.0.
-Publication is pending final tests and CI. Consult the PR and release metadata for the exact published SHA; do not assume a local version number proves deployment.
-The original main, launch, and science checkouts are preserved. The imported NORIE_CHATGPT_PROGRESS_2026-10-08.md is historical context, not the current verification record.
+Active worktree: `C:/Users/ronaldo.dupra/Documents/NorieLearning-integrate`. Branch `feat/game-progression-studio`, based on develop `22afa6c00d13c303f172e2fa55c5e561e94d3166`. The original dirty checkout and older WIP worktrees remain preserved.
+
+Before this PR, the published application was v0.5.0 / 0.5.0+8 at `9fc90379f60169cecd0b41f608719e5cefe6d1de`. Version numbers alone do not establish deployment. GitHub release metadata identifies the exact package revision; publication requires green Android and Windows push builds for that exact develop SHA.
 
 ## Implemented scope
 
-- Illustrated Science adventure maps for Grade 1 through College, with five existing lesson nodes per map, winding trail, current Norie marker, mission details, live completion count, grade switching and accessible list view.
-- Completion trophies derived from persistent topic IDs in Profile, without additional or duplicate XP transactions.
-- Real Continue Learning, reading bookmarks, optional short welcome, full guide available on demand.
-- Map positions included in learning backups and account snapshots. Rapid exits preserve captured offsets; learner replacement discards stale pending map saves.
-- Version and App & progress screen, JSON backup export/restore/undo, validated file-picker 13 APIs, recovery-copy checks and session-aware restoration.
-- Cloud generation/ownership guards, atomic progression plus journey restoration, pending-edit follow-up uploads and persistent account-switch recovery markers. Private demo account restrictions remain.
-- Multi-tab-safe downloaded web updates with learner confirmation, version-aware cache cleanup and working download fallback. One-time close/reopen may be needed when upgrading from the old cached 0.4.0 shell.
-- Authored College Science completes the existing 65-lesson Science path; other subject starter coverage is labeled.
-- Durable public download page and release pipeline. Trusted develop CI must succeed at the exact revision before release publication. A release/vMAJOR.MINOR.PATCH branch can trigger gated publication without changing main. Existing version tags must match the checked SHA.
+- 234 authored offline lessons: 78 each in Science, Mathematics and English, six per Grade 1–12 or college course path. These focused units do not claim to replace national curricula or entire college courses.
+- Preserved original lesson IDs, rewards, approved Grade 1 Science content and completion history. Added 39 focused units and replaced 125 generic Math/English previews. New units have objectives, real explanations, useful diagrams/models, worked reasoning, guided solutions, common mistakes, recap and separate practice/mastery questions. Shuffled questions carry required passages and quantities.
+- Illustrated maps for all three subjects; dynamic lesson counts, saved position, grade switching, chapter summaries, optional mixed expeditions and accessible list navigation. Reference anatomy and essential learning remain available.
+- Separate completion, independent-practice and retained-understanding stars. Independence requires at least 80% on five distinct items; retention requires a successful independent review at least 24 hours later. Hints/self-rating cannot certify mastery. Short mistake drills use actual missed concepts.
+- Permanent original/expanded path trophies, chapter emblems, improvement badges, lesson retention badges and whole-path mastery trophies. Durable assessment receipts protect XP from result remounts/retries. Saves complete before reward reveals.
+- Offline appearance studio: original avatars and full-body Norie poses, readable palettes/accents, frames, preview/save/cancel/reset, presets and earned trophy showcases. Existing levels 1, 5, 15, 30 and 50 unlock permanent cosmetic bundles and showcase/preset capacity.
+- Reward/appearance state participates in validated backups and account sync. Explicit recovery-first guest transfer and identity guards isolate restores, results and editor saves. Same-owner merges retain permanent collections and local appearance choices. Conditional database saves reject stale snapshots and refetch before retry.
+- Optional private leagues with nearby ranks, ties, season state, permanent emblems, opt-in display, administrator-approved invitation requests, reporting and display removal. Personal bests work offline; cached standings show their timestamp.
+- Live server-issued five-question attempts use all 234 authored lessons in separate subject-grade groups. At least 80% earns 10 points once per lesson/season; six opportunities per cohort can reach all five cosmetic tiers. Local XP, AI usage, speed and client-submitted scores never certify ranking.
+- Prior offline cache/update safety, backup recovery, Continue Learning, audio/SFX, quiz outro, full-body mascot, anatomy paths/calibration and licenses remain intact.
 
-## Verification record
+## Verification and backend
 
-Baseline ZIP inspection found unverified Dart code and small-screen failures. Integration adds meaningful regression tests rather than assuming the imported note proves readiness.
-Local release web build and actual phone map render passed. Real browser backup export/restore passed. Actual two-tab worker update, saved progress preservation, and offline reload passed. Node worker/update/download tests 14 passed; Python release and music tests 6 passed. College audit reviewed all 115 items and independently checked 40 numerical answers.
-Final local Flutter analysis passes with no issues; all 401 Flutter tests pass, including persistence and account races. The final web release build passes. Package CI and deployment verification remain pending; use GitHub for the final publication state.
+Local Flutter analysis: **no issues**. Full Flutter suite: **512 passed**. Node worker/update/download/release/league tests: **30 passed**. Real PostgreSQL checks: **35+ league assertions and 20 guarded-cloud assertions passed**. Independent review recomputed 105 Math keys and checked 395 numeric distractor sets. Standalone assessment regressions cover 47 data/source cases.
 
-## Remaining product limits
+Actual phone maps and appearance views were inspected. Appearance presets saved and survived reload with external networking blocked. Platform CI supplies final exact-revision package, atlas/audio/offline and release checks; consult Actions/release metadata for their final state.
 
-This is a public preview. Windows remains unsigned; Android uses generated debug signing until production signing is provisioned. Account services remain private-demo gated. No live Supabase migrations or functions were deployed by this integration.
-Cloud learner_state is still a whole-snapshot upsert: simultaneous offline work on different devices can overwrite unrelated state. Backup recovery is available; no conflict-free cross-device merge is claimed.
-Completion stars do not claim delayed mastery. New adaptive difficulty rules, three-stage mastery stars, competitive leaderboards, and broader cosmetic reward economy remain future blueprint work.
+Supabase project `lafuuwoohizgwnrbbgqj`: three league migrations and the owner-bound compare-and-save migration deployed. Edge verified-leagues **v3**, JWT verification enabled, bank **authored-9f41785c**. Live rollback permissions checks passed; unauthenticated POST returns 401 and OPTIONS 200. No groups, eligibility or participants were provisioned. An authenticated participant staging run has not been performed.
 
-## Continue safely
+## Product limits
 
-Read AGENTS.md and the game-progression blueprint. Preserve current source, account gates, earned progress, licenses, full-body mascot, mirrored skeleton and offline asset paths. Do not merge stale branches. Run flutter analyze, flutter test, relevant Node/Python/browser tests and web/Android/Windows builds. Follow PR -> CI -> develop merge -> Pages verification; never promote main without explicit instruction. Include both platform links with exact revision after every release.
+This remains a public preview. Windows is unsigned; Android uses preview/debug signing until production signing is provisioned. Back up progress before replacing an Android installation signed with a different key. Account services retain the private-demo approval gate.
+
+Competition needs trusted administrator setup and invitations. Public discovery, global mixed-subject boards and public child profiles are not enabled. Local photos remain the blueprint's optional later extension. Cross-device XP uses the greater snapshot rather than summing potentially duplicated independent device awards; conflict-free accumulation of every legacy counter is not claimed. Legacy direct-save compatibility remains, so concurrency guarantees apply to cooperating updated clients.
+
+## Downloads and next integration
+
+The [download page](https://eironmoisesdupra-coder.github.io/NorieLearningApp/downloads.html) reads complete verified release metadata. Expected durable 0.6.0 links become available after the trusted publisher succeeds:
+
+- Windows: https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/download/v0.6.0/NorieLearning-Windows.zip
+- Android: https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/download/v0.6.0/NorieLearning-Android.apk
+- Web: https://eironmoisesdupra-coder.github.io/NorieLearningApp/
+
+Continue through PR → green CI → develop merge → preview verification → exact-revision release. Never push or merge main without explicit instruction. Final handoffs must state the real head SHA, CI status, both platform revisions and any unavailable updated package.

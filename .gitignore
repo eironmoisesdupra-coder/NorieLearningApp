@@ -132,3 +132,4 @@ app.*.symbols
 
 # Licensed music fetched and verified before builds.
 assets/audio/music/*.mp3
+supabase/.temp/
