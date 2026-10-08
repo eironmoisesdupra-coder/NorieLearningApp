@@ -636,7 +636,7 @@ For a fair comparison, use the same area, observation duration and time of day w
       'Populations'
     ],
     [
-      'Which is a complete route shown from grass to hawk?',
+      'A meadow web has these links: grass → rabbit, grass → grasshopper, grasshopper → frog, rabbit → hawk, and frog → hawk. Which is a complete route from grass to hawk?',
       'Grass → grasshopper → frog → hawk',
       'Grass → frog → grasshopper → hawk',
       'Hawk → rabbit → grass',
@@ -645,7 +645,7 @@ For a fair comparison, use the same area, observation duration and time of day w
       'Tracing routes'
     ],
     [
-      'Which organisms share grass as a food resource in this model?',
+      'A meadow web includes grass → rabbit and grass → grasshopper; arrows point from food to eater. Which organisms share grass as a food resource?',
       'Rabbits and grasshoppers',
       'Frogs and hawks',
       'Hawks and rabbits',
@@ -654,7 +654,7 @@ For a fair comparison, use the same area, observation duration and time of day w
       'Shared resources'
     ],
     [
-      'Why might a hawk still obtain food after rabbits decline?',
+      'A meadow web includes rabbit → hawk and frog → hawk; arrows point from food to eater. Why might a hawk still obtain food after rabbits decline?',
       'Frogs provide another shown prey route',
       'Grass is a direct hawk food in this model',
       'The rabbit count cannot affect its predators',

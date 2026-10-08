@@ -309,7 +309,7 @@ Record the observed numbers of AA, Aa and aa and compare with 25%, 50% and 25% p
       'Heterozygosity'
     ],
     [
-      'Which genotype category produces white flowers under the stated complete-dominance rule?',
+      'In a one-gene flower model, A is dominant and gives purple flowers; aa is white. Gametes carry either parental allele with equal probability, and successive offspring are independent. Which genotype category produces white flowers under the stated complete-dominance rule?',
       'Homozygous recessive (aa)',
       'Homozygous dominant (AA)',
       'Heterozygous (Aa)',
@@ -363,7 +363,7 @@ Record the observed numbers of AA, Aa and aa and compare with 25%, 50% and 25% p
       'Punnett combinations'
     ],
     [
-      'What is the white-flower probability from Aa × Aa?',
+      'In a one-gene flower model, A is dominant and gives purple flowers; aa is white. Gametes carry either parental allele with equal probability, and successive offspring are independent. What is the white-flower probability from Aa × Aa?',
       '25%',
       '50%',
       '75%',
@@ -372,7 +372,7 @@ Record the observed numbers of AA, Aa and aa and compare with 25%, 50% and 25% p
       'Recessive probability'
     ],
     [
-      'What is the purple-flower probability from Aa × Aa?',
+      'In a one-gene flower model, A is dominant and gives purple flowers; aa is white. Gametes carry either parental allele with equal probability, and successive offspring are independent. What is the purple-flower probability from Aa × Aa?',
       '75%',
       '25%',
       '50%',
@@ -381,7 +381,7 @@ Record the observed numbers of AA, Aa and aa and compare with 25%, 50% and 25% p
       'Dominant phenotype probability'
     ],
     [
-      'Which genotype categories can share purple phenotype in this model?',
+      'In a one-gene flower model, A is dominant and gives purple flowers; aa is white. Gametes carry either parental allele with equal probability, and successive offspring are independent. Which genotype categories can share purple phenotype in this model?',
       'Homozygous dominant and heterozygous',
       'Only homozygous dominant',
       'Only homozygous recessive',
@@ -390,7 +390,7 @@ Record the observed numbers of AA, Aa and aa and compare with 25%, 50% and 25% p
       'Phenotype ambiguity'
     ],
     [
-      'In Aa × aa, what is the white-flower probability?',
+      'In a one-gene flower model, A is dominant and gives purple flowers; aa is white. Gametes carry either parental allele with equal probability, and successive offspring are independent. In Aa × aa, what is the white-flower probability?',
       '50%',
       '25%',
       '12.5%',
@@ -399,7 +399,7 @@ Record the observed numbers of AA, Aa and aa and compare with 25%, 50% and 25% p
       'Different cross'
     ],
     [
-      'For 12 offspring from Aa × Aa, what white count is expected?',
+      'In a one-gene flower model, A is dominant and gives purple flowers; aa is white. Gametes carry either parental allele with equal probability, and successive offspring are independent. For 12 offspring from Aa × Aa, what white count is expected?',
       '3, without guaranteeing exactly that number',
       '3, guaranteed in every set of twelve',
       '9, because white has 75% probability',
@@ -408,7 +408,7 @@ Record the observed numbers of AA, Aa and aa and compare with 25%, 50% and 25% p
       'Expected count'
     ],
     [
-      'An Aa × Aa cross has already produced a white offspring. What is the next white probability under unchanged assumptions?',
+      'In a one-gene flower model, A is dominant and gives purple flowers; aa is white. Gametes carry either parental allele with equal probability, and successive offspring are independent. An Aa × Aa cross has already produced a white offspring. What is the next white probability under unchanged assumptions?',
       '25%, because the next outcome is independent',
       '0%, because the white box has been used',
       '50%, because the previous offspring was white',
@@ -417,7 +417,7 @@ Record the observed numbers of AA, Aa and aa and compare with 25%, 50% and 25% p
       'Independent offspring'
     ],
     [
-      'A purple parent crossed with aa produces a white offspring. Which parental category is supported within the model?',
+      'In a one-gene flower model, A is dominant and gives purple flowers; aa is white. Gametes carry either parental allele with equal probability, and successive offspring are independent. A purple parent crossed with aa produces a white offspring. Which parental category is supported within the model?',
       'Heterozygous (Aa)',
       'Homozygous dominant (AA)',
       'Homozygous recessive (aa)',
@@ -426,7 +426,7 @@ Record the observed numbers of AA, Aa and aa and compare with 25%, 50% and 25% p
       'Inferring a genotype'
     ],
     [
-      'A small sample from a purple × aa cross is all purple. What should a learner conclude?',
+      'In a one-gene flower model, A is dominant and gives purple flowers; aa is white. Gametes carry either parental allele with equal probability, and successive offspring are independent. A small sample from a purple × aa cross is all purple. What should a learner conclude?',
       'AA is possible, but Aa is not excluded by this small sample',
       'AA is proven with complete certainty',
       'Aa is impossible because chance never produces all-purple samples',
@@ -1485,7 +1485,7 @@ Compare two numerical cart models at the same mass but different speeds. Calcula
       'Kinetic arithmetic'
     ],
     [
-      'If that cart’s speed doubles to 4 m/s, what happens to its KE?',
+      'A 1 kg cart initially moves at 2 m/s. If its speed doubles to 4 m/s, what happens to its kinetic energy?',
       'It quadruples to 8 J',
       'It doubles to 4 J',
       'It stays at 2 J',

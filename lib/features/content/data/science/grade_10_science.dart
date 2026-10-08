@@ -1205,7 +1205,7 @@ Next sketch a coil and three magnet positions: approaching, held still, and retr
       'Parallel sum'
     ],
     [
-      'The 12 Ω branch opens in that ideal parallel circuit. What current remains in the 6 Ω branch?',
+      'An ideal 12 V source supplies parallel 6 Ω and 12 Ω branches. The 12 Ω branch opens while the source and common wires remain intact. What current remains in the 6 Ω branch?',
       '2 A',
       '0 A',
       '3 A',

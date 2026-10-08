@@ -10,37 +10,44 @@ void main() {
     expect(NorieFoundationCurriculum.gradeLevels.last.label, 'College');
   });
 
-  test('every subject and grade has exactly five starter lessons', () {
+  test('all subjects provide six authored units per grade/course', () {
     for (final subject in subjects) {
       for (final grade in NorieFoundationCurriculum.gradeLevels) {
-        final topics =
-            NorieFoundationCurriculum.topicsFor(subject, grade.id);
+        final topics = NorieFoundationCurriculum.topicsFor(subject, grade.id);
         expect(
           topics,
-          hasLength(5),
+          hasLength(6),
           reason: '$subject ${grade.label}',
         );
       }
     }
   });
 
-  test('foundation sprint contains 195 pre-generated lessons', () {
+  test(
+      'foundation paths contain the original 195 lessons and 39 authored additions',
+      () {
     var total = 0;
     for (final subject in subjects) {
       for (final grade in NorieFoundationCurriculum.gradeLevels) {
-        total +=
-            NorieFoundationCurriculum.topicsFor(subject, grade.id).length;
+        total += NorieFoundationCurriculum.topicsFor(subject, grade.id).length;
       }
     }
-    expect(total, 195);
+    expect(total, 234);
   });
 
-  test('every foundation lesson includes 20 practice items and a visual', () {
+  test('every foundation lesson has practice, independent mastery and a visual',
+      () {
     for (final subject in subjects) {
       for (final grade in NorieFoundationCurriculum.gradeLevels) {
         for (final topic
             in NorieFoundationCurriculum.topicsFor(subject, grade.id)) {
-          expect(topic.quiz.questions, hasLength(20), reason: topic.id);
+          final legacyBank = topic.order < 6 &&
+              (subject == 'Science' ||
+                  (subject == 'Mathematics' && grade.id == 'g1'));
+          expect(topic.quiz.questions, hasLength(legacyBank ? 20 : 8),
+              reason: topic.id);
+          expect(NorieFoundationCurriculum.isAuthored(topic), isTrue,
+              reason: topic.id);
           expect(topic.challenge.rounds, hasLength(3), reason: topic.id);
           expect(topic.visualType, isNotNull, reason: topic.id);
           expect(topic.lesson.sections, isNotEmpty, reason: topic.id);
@@ -59,6 +66,6 @@ void main() {
         }
       }
     }
-    expect(ids, hasLength(195));
+    expect(ids, hasLength(234));
   });
 }

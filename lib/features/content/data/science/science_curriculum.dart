@@ -1,5 +1,6 @@
 import '../../domain/norie_content_models.dart';
 import 'science_figure.dart';
+import 'science_expansion.dart';
 import 'grade_2_science.dart';
 import 'grade_3_science.dart';
 import 'grade_4_science.dart';
@@ -30,6 +31,7 @@ abstract final class ScienceCurriculum {
     'college': collegeScienceTopics,
   };
   static final Map<String, ScienceFigure> figures = {
+    ...ScienceExpansion.figures,
     ...grade2ScienceFigures,
     ...grade3ScienceFigures,
     ...grade4ScienceFigures,

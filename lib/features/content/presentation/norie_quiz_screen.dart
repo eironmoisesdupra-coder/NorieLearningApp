@@ -1,4 +1,6 @@
 import 'package:uuid/uuid.dart';
+import '../../../core/progression/norie_adventure_progress.dart';
+import '../../../core/account/norie_account_service.dart';
 import '../../../core/audio/norie_audio_manager.dart';
 import '../../../core/quiz/quiz_result_summary.dart';
 import '../../../core/quiz/norie_quiz_outro.dart';
@@ -25,6 +27,8 @@ class NorieQuizScreen extends StatefulWidget {
 }
 
 class _NorieQuizScreenState extends State<NorieQuizScreen> {
+  final _owner = NorieAdventureProgress.instance.ownershipRevision;
+  final _sessionCurrent = NorieAccountService.instance.captureLearnerGuard();
   final _attemptId = const Uuid().v4();
   final List<QuizAnswerRecord> _answers = [];
   late final _questions = NorieItemRandomizer.randomize(
@@ -86,7 +90,15 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
 
     if (_current == _questions.length - 1) {
       setState(() => _finishing = true);
+      if (!await norieRecordPracticeEvidence(
+          context, widget.topic, _attemptId, _answers, _owner,
+          stillCurrent: _sessionCurrent)) {
+        if (mounted) setState(() => _finishing = false);
+        return;
+      }
+      if (!mounted) return;
       final action = await NorieQuizOutro.show(context,
+          stillCurrent: _sessionCurrent,
           summary: QuizResultSummary(
               attemptId: _attemptId,
               historyKey: norieContentHistoryKey(
@@ -99,6 +111,10 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
               answers: List.unmodifiable(_answers)),
           canReviewLesson: true);
       if (!mounted) return;
+      if (!_sessionCurrent()) {
+        Navigator.pop(context);
+        return;
+      }
       if (action == QuizOutroAction.reviewLesson) {
         Navigator.of(context).pop();
         return;
@@ -115,6 +131,8 @@ class _NorieQuizScreenState extends State<NorieQuizScreen> {
             quizScore: _score,
             quizAnswers: List.unmodifiable(_answers),
             attemptId: _attemptId,
+            evidenceOwnershipRevision: _owner,
+            learnerGuard: _sessionCurrent,
           ),
         ),
       );

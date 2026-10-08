@@ -18,6 +18,8 @@ class NorieChallengeScreen extends StatefulWidget {
     this.attemptId,
     this.practiceMode = NorieActivityMode.multipleChoice,
     this.practiceHistoryKey,
+    this.evidenceOwnershipRevision,
+    this.learnerGuard,
     super.key,
   });
 
@@ -27,6 +29,8 @@ class NorieChallengeScreen extends StatefulWidget {
   final String? attemptId;
   final NorieActivityMode practiceMode;
   final String? practiceHistoryKey;
+  final int? evidenceOwnershipRevision;
+  final bool Function()? learnerGuard;
 
   @override
   State<NorieChallengeScreen> createState() => _NorieChallengeScreenState();
@@ -99,6 +103,8 @@ class _NorieChallengeScreenState extends State<NorieChallengeScreen> {
             challengeScore: _challengeScore,
             answers: List.unmodifiable([...widget.quizAnswers, ..._answers]),
             attemptId: _attemptId,
+            evidenceOwnershipRevision: widget.evidenceOwnershipRevision,
+            learnerGuard: widget.learnerGuard,
             practiceMode: widget.practiceMode,
             practiceHistoryKey: widget.practiceHistoryKey,
           ),

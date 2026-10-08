@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/account/norie_account_service.dart';
 import '../../../core/cloud/norie_cloud_sync.dart';
@@ -172,6 +173,33 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  Future<void> _chooseGuest(bool transferLocal) async {
+    final sync = NorieCloudSync.instance;
+    final stillCurrent = sync.captureSessionGuard();
+    final accepted =
+        await sync.resolveGuestTransfer(transferLocal: transferLocal);
+    if (!mounted || !stillCurrent()) return;
+    _show(accepted
+        ? transferLocal
+            ? 'Guest progress transferred. Your recovery backup remains on this device.'
+            : 'Account progress selected. Your guest recovery backup remains on this device.'
+        : sync.message ?? 'The active account changed. Please choose again.');
+  }
+
+  Future<void> _copyGuestRecovery() async {
+    final backup = await NorieCloudSync.instance.readGuestRecovery();
+    if (!mounted) return;
+    if (backup == null) {
+      _show('No guest recovery backup has been saved on this device yet.');
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: backup));
+    if (mounted) {
+      _show(
+          'Guest recovery backup copied. Keep it in a private file for later import.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final account = NorieAccountService.instance;
@@ -204,6 +232,9 @@ class _AccountScreenState extends State<AccountScreen> {
                             sync: sync,
                             onSync: () => sync.syncNow(),
                             onEditName: _editDisplayName,
+                            onTransferGuest: () => _chooseGuest(true),
+                            onUseAccount: () => _chooseGuest(false),
+                            onCopyGuestRecovery: _copyGuestRecovery,
                             onSignOut: () async {
                               await account.signOut();
                               if (mounted) {
@@ -572,6 +603,9 @@ class _SignedInAccount extends StatelessWidget {
     required this.onSync,
     required this.onEditName,
     required this.onSignOut,
+    required this.onTransferGuest,
+    required this.onUseAccount,
+    required this.onCopyGuestRecovery,
   });
 
   final NorieAccountService account;
@@ -579,6 +613,7 @@ class _SignedInAccount extends StatelessWidget {
   final VoidCallback onSync;
   final VoidCallback onEditName;
   final VoidCallback onSignOut;
+  final VoidCallback onTransferGuest, onUseAccount, onCopyGuestRecovery;
 
   @override
   Widget build(BuildContext context) {
@@ -586,6 +621,44 @@ class _SignedInAccount extends StatelessWidget {
 
     return Column(
       children: [
+        if (sync.guestTransferPending) ...[
+          Card(
+              child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Choose where your guest progress belongs',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 10),
+                        const Text(
+                            'This device has learning progress saved before sign-in. Nothing will upload until you choose. Both choices keep a private guest recovery backup on this device.'),
+                        const SizedBox(height: 10),
+                        const Text(
+                            'Transfer combines completed lessons and permanent rewards with this account. Lifetime XP uses the higher saved total rather than adding overlapping rewards.'),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                            onPressed: sync.guestTransferInProgress
+                                ? null
+                                : onTransferGuest,
+                            child: const Text(
+                                'Transfer guest progress to this account')),
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                            onPressed: sync.guestTransferInProgress
+                                ? null
+                                : onUseAccount,
+                            child: const Text(
+                                'Use account progress without guest data')),
+                        if (sync.guestTransferInProgress)
+                          const Padding(
+                              padding: EdgeInsets.only(top: 10),
+                              child: Text(
+                                  'Preserving guest progress and applying your choice…')),
+                      ]))),
+          const SizedBox(height: 14),
+        ],
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(22),
@@ -680,7 +753,8 @@ class _SignedInAccount extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
-            onPressed: sync.isSyncing ? null : onSync,
+            onPressed:
+                sync.isSyncing || sync.guestTransferPending ? null : onSync,
             icon: sync.isSyncing
                 ? const SizedBox(
                     width: 17,
@@ -709,6 +783,11 @@ class _SignedInAccount extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
+        TextButton.icon(
+            onPressed: onCopyGuestRecovery,
+            icon: const Icon(Icons.copy_rounded),
+            label: const Text('Copy guest recovery backup')),
+        const SizedBox(height: 10),
         const _LocalFirstNote(),
       ],
     );

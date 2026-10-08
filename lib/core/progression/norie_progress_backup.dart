@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'norie_lesson_journey.dart';
+import 'norie_adventure_progress.dart';
+import '../../features/profile/data/norie_profile_appearance_store.dart';
 
 /// Portable learning state only. Authentication/session preferences never enter
 /// this format. Decode validates the entire snapshot before the caller imports.
@@ -78,7 +80,10 @@ abstract final class NorieProgressBackup {
       'topic_mastery',
       'onboarding_complete',
       'modified_at',
-      'lesson_journey'
+      'lesson_journey',
+      'adventure_progress',
+      'profile_appearance',
+      'rewarded_assessment_attempts'
     ];
     final allowed = {..._numbers, ..._lists, ..._equipment, ...remaining};
     if (state.keys.any((key) => !allowed.contains(key)) ||
@@ -155,6 +160,19 @@ abstract final class NorieProgressBackup {
     }
     if (state.containsKey('lesson_journey')) {
       NorieLessonJourney.validateState(state['lesson_journey']);
+    }
+    if (state.containsKey('adventure_progress')) {
+      NorieAdventureProgress.validateState(state['adventure_progress']);
+    }
+    if (state.containsKey('profile_appearance')) {
+      NorieProfileAppearanceStore.validateState(state['profile_appearance']);
+    }
+    final attempts = state['rewarded_assessment_attempts'];
+    if (attempts != null &&
+        (attempts is! List ||
+            attempts.length > 100000 ||
+            attempts.any((a) => a is! String || a.isEmpty || a.length > 512))) {
+      throw const FormatException('Invalid assessment reward receipts.');
     }
   }
 }

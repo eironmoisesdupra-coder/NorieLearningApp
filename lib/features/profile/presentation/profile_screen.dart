@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/account/norie_account_service.dart';
-import '../../../core/assets/norie_assets.dart';
 import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
 import '../../../core/mascot/tutorial/norie_tutorial_overlay.dart';
 import '../../../core/cloud/norie_cloud_sync.dart';
 import '../../../core/progression/norie_progression.dart';
+import '../../../core/progression/norie_adventure_progress.dart';
+import '../data/norie_profile_appearance_store.dart';
+import 'norie_appearance_studio.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_ambient_backdrop.dart';
 import '../../commerce/presentation/norie_shop_placeholder_screen.dart';
@@ -52,7 +54,11 @@ class ProfileScreen extends StatelessWidget {
           ),
           SafeArea(
             child: AnimatedBuilder(
-              animation: NorieAccountService.instance,
+              animation: Listenable.merge([
+                NorieAccountService.instance,
+                NorieProfileAppearanceStore.instance,
+                NorieAdventureProgress.instance
+              ]),
               builder: (context, _) {
                 return AnimatedBuilder(
                   animation: NorieProgression.instance,
@@ -121,95 +127,36 @@ class ProfileScreen extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 14),
-                            Container(
-                              padding: const EdgeInsets.all(22),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30),
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFF101F49),
-                                    Color(0xFF25205D),
-                                    Color(0xFF421D58),
-                                  ],
-                                ),
-                                border: Border.all(
-                                  color:
-                                      NorieColors.cyan.withValues(alpha: .34),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: NorieColors.violet
-                                        .withValues(alpha: .12),
-                                    blurRadius: 32,
-                                    offset: const Offset(0, 14),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 104,
-                                    height: 104,
-                                    child: Image.asset(
-                                      NorieAssets.mascotBase,
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          account.displayName?.isNotEmpty ==
-                                                  true
-                                              ? account.displayName!
-                                              : 'Norie Learner',
-                                          style: const TextStyle(
-                                            fontSize: 23,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        const Text(
-                                          'Building knowledge one session at a time.',
-                                          style: TextStyle(
-                                            color: NorieColors.textSecondary,
-                                            fontSize: 11,
-                                            height: 1.35,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Row(
-                                          children: [
-                                            SizedBox(
-                                              width: 42,
-                                              height: 42,
-                                              child: Image.asset(
-                                                NorieAssets.rankForTitle(
-                                                    snapshot.title),
-                                                fit: BoxFit.contain,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                'Level ${snapshot.level} · ${snapshot.title}',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w900,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                            NorieAppearancePreview(
+                              value: NorieProfileAppearanceStore.instance.value,
+                              displayName:
+                                  account.displayName?.isNotEmpty == true
+                                      ? account.displayName!
+                                      : 'Norie Learner',
+                              subtitle:
+                                  'Level ${snapshot.level} ? ${snapshot.title}',
+                              trophyLabels: NorieProfileAppearanceStore
+                                  .instance.value.showcase
+                                  .where(NorieAdventureProgress
+                                      .instance.trophyIds.contains)
+                                  .map(trophyLabel)
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: OutlinedButton.icon(
+                                onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                        builder: (_) => NorieAppearanceStudio(
+                                            displayName: account.displayName
+                                                        ?.isNotEmpty ==
+                                                    true
+                                                ? account.displayName!
+                                                : 'Norie Learner'))),
+                                icon: const Icon(Icons.palette_outlined),
+                                label: const Text(
+                                    'Edit appearance & rank collection'),
                               ),
                             ),
                             const SizedBox(height: 18),
@@ -294,6 +241,28 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 24),
                             _ScienceTrophyShelf(progression: progression),
+                            const SizedBox(height: 18),
+                            const Text('Permanent reward collection',
+                                style: TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.w900)),
+                            const SizedBox(height: 8),
+                            if (NorieAdventureProgress
+                                .instance.trophyIds.isEmpty)
+                              const Text(
+                                  'Complete a subject grade journey to earn your first trophy.',
+                                  style: TextStyle(
+                                      color: NorieColors.textSecondary))
+                            else
+                              Wrap(spacing: 8, runSpacing: 8, children: [
+                                for (final id in NorieAdventureProgress
+                                    .instance.trophyIds)
+                                  Chip(
+                                      avatar: const Icon(
+                                          Icons.emoji_events_rounded,
+                                          color: NorieColors.orange,
+                                          size: 18),
+                                      label: Text(trophyLabel(id))),
+                              ]),
                             const SizedBox(height: 24),
                             Row(
                               children: [
@@ -349,8 +318,10 @@ class _ScienceTrophyShelf extends StatelessWidget {
     final grades = NorieFoundationCurriculum.gradeLevels;
     final completedGrades = grades.where((grade) {
       final topics = NorieFoundationCurriculum.topicsFor('Science', grade.id);
-      return topics.isNotEmpty &&
-          topics.every((topic) => progression.isTopicCompleted(topic.id));
+      return NorieAdventureProgress.instance.trophyIds
+              .contains('grade:science.${grade.id}') ||
+          topics.isNotEmpty &&
+              topics.every((topic) => progression.isTopicCompleted(topic.id));
     }).toSet();
 
     return Column(
@@ -376,7 +347,7 @@ class _ScienceTrophyShelf extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         const Text(
-          'A trophy appears when all required lessons in that Science grade are complete. It is derived from existing lesson progress and does not award duplicate XP.',
+          'Earned Science grade trophies are permanent. Expanding a path never removes the trophy for its original lessons, and trophies do not award duplicate XP.',
           style: TextStyle(
             color: NorieColors.textSecondary,
             fontSize: 10,

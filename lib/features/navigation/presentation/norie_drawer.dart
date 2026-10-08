@@ -19,6 +19,8 @@ import '../../learning/presentation/learn_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../progress/presentation/progress_screen.dart';
 import '../../progress/presentation/weak_topics_screen.dart';
+import '../../content/presentation/norie_review_quest_screen.dart';
+import '../../leaderboards/presentation/norie_leaderboards_screen.dart';
 
 enum NorieDrawerSection { home, learn, challenge, progress, profile }
 
@@ -91,6 +93,18 @@ class NorieDrawer extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     const _SectionLabel('PROGRESS'),
+                    _MenuItem(
+                        icon: Icons.explore_rounded,
+                        label: 'Review quests',
+                        color: NorieColors.green,
+                        onTap: () =>
+                            _open(context, const NorieReviewQuestsHub())),
+                    _MenuItem(
+                        icon: Icons.leaderboard_rounded,
+                        label: 'Leaderboards',
+                        color: NorieColors.orange,
+                        onTap: () =>
+                            _open(context, const NorieLeaderboardsScreen())),
                     _MenuItem(
                       icon: Icons.bar_chart_rounded,
                       label: 'XP & Levels',

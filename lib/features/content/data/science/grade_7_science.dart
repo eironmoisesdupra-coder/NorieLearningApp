@@ -290,7 +290,7 @@ Write the variable table, timing rule and planned repeats before any demonstrati
       'A reliable scientific claim connects a clear question with controlled or well-described evidence, repeated measurements, appropriate summaries and honest limits.',
   questions: [
     [
-      'Which question matches this study’s changed variable and measured outcome?',
+      'A cart study changes the surface and measures travel time over the same marked route, using the same cart and release method. Which question matches the changed variable and measured outcome?',
       'How does surface affect travel time over the same marked route?',
       'How does cart mass affect travel time on one surface?',
       'How does ramp height affect travel time on one surface?',
@@ -407,7 +407,7 @@ Write the variable table, timing rule and planned repeats before any demonstrati
       'Confounding'
     ],
     [
-      'Which conclusion matches the supplied three-trial cart study?',
+      'The same cart travels the same route under matched release conditions. Surface A times are 1.8, 2.0 and 2.2 s; surface B times are 2.8, 3.0 and 3.2 s. Which conclusion matches this three-trial study?',
       'Mean travel time was longer on B under the tested conditions',
       'Every surface B is slower for every possible cart',
       'One result proves surface is the only influence',
@@ -991,7 +991,7 @@ The observation can demonstrate spreading, but tiny currents and the drop's init
       'Mass accounting'
     ],
     [
-      'That open container’s total falls from 140 g to 136 g. Which interpretation fits the example?',
+      'An open container holds water that evaporates, with no other material entering or leaving. Its total measured mass falls from 140 g to 136 g. Which interpretation fits?',
       '4 g of water left the measured system as vapor',
       '4 g of matter was destroyed by evaporation',
       'The container gained 4 g of liquid water',

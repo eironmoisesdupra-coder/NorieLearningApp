@@ -22,6 +22,78 @@ void main() {
     await NorieLessonJourney.instance.load();
   });
 
+  for (final length in [5, 10, 20]) {
+    testWidgets(
+        '$length real missions remain reachable at 320px with large text',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final topics = NorieFoundationCurriculum.gradeLevels
+          .expand((grade) =>
+              NorieFoundationCurriculum.topicsFor('Science', grade.id))
+          .take(length)
+          .toList();
+      await tester.pumpWidget(MaterialApp(
+        theme: NorieTheme.dark,
+        home: MediaQuery(
+          data: const MediaQueryData(
+              size: Size(320, 700), textScaler: TextScaler.linear(1.6)),
+          child: Scaffold(
+              body: NorieScienceAdventureMap(
+            grade: NorieFoundationCurriculum.gradeLevels.first,
+            accent: NorieColors.green,
+            topics: topics,
+          )),
+        ),
+      ));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      final last = find.byKey(ValueKey('map-node-${topics.last.id}'));
+      await tester.scrollUntilVisible(last, 250,
+          scrollable: find.byType(Scrollable).first);
+      await tester.tap(last);
+      await tester.pumpAndSettle();
+      expect(find.text('Chapter ${(length / 5).ceil()} checkpoint'),
+          findsOneWidget);
+      await tester.ensureVisible(find.text('Start mission'));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await _drainPersistence(tester, NorieLessonJourney.instance.flush());
+    });
+  }
+
+  for (final subject in ['Mathematics', 'English']) {
+    testWidgets('$subject offers a map with fully authored coverage',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(MaterialApp(
+        theme: NorieTheme.dark,
+        home: MediaQuery(
+          data: const MediaQueryData(
+              size: Size(320, 700), textScaler: TextScaler.linear(1.6)),
+          child: NorieGradeLessonsScreen(
+              subject: subject,
+              grade: NorieFoundationCurriculum.gradeLevels[1],
+              accent: NorieColors.cyan),
+        ),
+      ));
+      await tester.pump();
+      expect(find.text('$subject Basecamp'), findsOneWidget);
+      expect(
+          find.textContaining('6 authored lessons'),
+          findsOneWidget);
+      expect(find.text('List'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await _drainPersistence(tester, NorieLessonJourney.instance.flush());
+    });
+  }
+
   testWidgets('Science map remains usable on a small phone with large text',
       (tester) async {
     tester.view.physicalSize = const Size(320, 700);

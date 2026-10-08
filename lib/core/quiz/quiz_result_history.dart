@@ -88,6 +88,7 @@ class QuizResultHistory {
     rows.add({
       'id': s.attemptId,
       'key': s.historyKey,
+      'title': s.title,
       'percentage': s.percentage,
       'previous': previous,
       'perfect': s.isPerfect,

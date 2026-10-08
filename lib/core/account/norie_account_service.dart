@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../cloud/supabase_config.dart';
+import 'norie_learner_identity.dart';
 
 enum NorieAccountStatus {
   localOnly,
@@ -19,7 +20,20 @@ class NorieAccountService extends ChangeNotifier {
   static final NorieAccountService instance = NorieAccountService._();
 
   StreamSubscription<AuthState>? _authSubscription;
-  User? _user;
+  User? _userValue;
+  final _identity = NorieLearnerIdentity();
+  User? get _user => _userValue;
+  set _user(User? value) {
+    final switched = _userValue?.id != value?.id;
+    _identity.update(value?.id);
+    _userValue = value;
+    if (switched) {
+      _displayName = null;
+      notifyListeners();
+    }
+  }
+
+  bool Function() captureLearnerGuard() => _identity.capture();
   String? _displayName;
   NorieAccountStatus _status = NorieAccountStatus.localOnly;
   String? _message;
@@ -327,6 +341,7 @@ class NorieAccountService extends ChangeNotifier {
   }
 
   Future<void> _loadProfile() async {
+    final stillCurrent = captureLearnerGuard();
     final client = NorieSupabase.client;
     final currentUser = _user;
     if (client == null || currentUser == null) return;
@@ -340,10 +355,12 @@ class NorieAccountService extends ChangeNotifier {
           .timeout(const Duration(seconds: 5));
 
       final value = row?['display_name'] as String?;
+      if (!stillCurrent()) return;
       _displayName = value?.trim().isNotEmpty == true
           ? value!.trim()
           : (currentUser.userMetadata?['display_name'] as String?);
     } catch (_) {
+      if (!stillCurrent()) return;
       _displayName = currentUser.userMetadata?['display_name'] as String?;
     }
   }

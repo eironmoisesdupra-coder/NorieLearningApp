@@ -23,6 +23,17 @@ class _Backend extends NorieCloudSyncBackend {
   String? userId = 'alice';
   String? owner;
   String? pendingRestore;
+  @override
+  bool requiresGuestTransfer = false;
+  Map<String, dynamic>? guestRecovery;
+  Future<void> Function()? recoveryWrite;
+  @override
+  Future<void> saveGuestRecovery(
+      Map<String, dynamic> state, bool Function() stillCurrent) async {
+    await recoveryWrite?.call();
+    if (stillCurrent()) guestRecovery = Map.of(state);
+  }
+
   int local = 1;
   int imports = 0;
   final uploads = <Map<String, dynamic>>[];
@@ -57,12 +68,13 @@ class _Backend extends NorieCloudSyncBackend {
   }
 
   @override
-  Future<void> importState(Map<String, dynamic> state, DateTime? modified,
+  Future<bool> importState(Map<String, dynamic> state, DateTime? modified,
       bool Function() stillCurrent) async {
-    if (!stillCurrent()) return;
+    if (!stillCurrent()) return false;
     imports++;
     local = state['points'] as int;
     progressionChanges.emit();
+    return true;
   }
 
   @override
@@ -225,7 +237,7 @@ void main() {
     final started = Completer<void>();
     final read = Completer<Map<String, dynamic>?>();
     backend.fetch = (_) {
-      started.complete();
+      if (!started.isCompleted) started.complete();
       return read.future;
     };
     final sync = NorieCloudSync(backend: backend);
@@ -256,5 +268,107 @@ void main() {
     await restarted.initialize();
     expect(backend.local, 22);
     expect(backend.pendingRestore, isNull);
+  });
+  test('guest progress never uploads or claims an owner before a decision',
+      () async {
+    final backend = _Backend()..requiresGuestTransfer = true;
+    final sync = NorieCloudSync(backend: backend);
+    addTearDown(sync.dispose);
+    await sync.initialize();
+    expect(sync.guestTransferPending, true);
+    expect(backend.owner, isNull);
+    expect(backend.uploads, isEmpty);
+    backend.edit(7);
+    await sync.uploadLocal();
+    expect(backend.uploads, isEmpty);
+    expect(await sync.resolveGuestTransfer(transferLocal: true), true);
+    expect(backend.guestRecovery, {'points': 7});
+    expect(backend.owner, 'alice');
+    expect(backend.uploads.last, {'user': 'alice', 'points': 7});
+    expect(sync.guestTransferPending, false);
+  });
+  test('choosing account progress preserves guest recovery and restores remote',
+      () async {
+    final backend = _Backend()
+      ..requiresGuestTransfer = true
+      ..fetch = (_) async => remote(22);
+    final sync = NorieCloudSync(backend: backend);
+    addTearDown(sync.dispose);
+    await sync.initialize();
+    expect(await sync.resolveGuestTransfer(transferLocal: false), true);
+    expect(backend.guestRecovery, {'points': 1});
+    expect(backend.local, 22);
+    expect(backend.owner, 'alice');
+    expect(backend.uploads.where((item) => item['points'] == 1), isEmpty);
+  });
+  test(
+      'account change during guest recovery cannot adopt data for another user',
+      () async {
+    final backend = _Backend()..requiresGuestTransfer = true;
+    final started = Completer<void>(), release = Completer<void>();
+    backend.recoveryWrite = () async {
+      started.complete();
+      await release.future;
+    };
+    final sync = NorieCloudSync(backend: backend);
+    addTearDown(sync.dispose);
+    await sync.initialize();
+    final choice = sync.resolveGuestTransfer(transferLocal: true);
+    await started.future;
+    backend.userId = 'bob';
+    backend.accountChanges.emit();
+    release.complete();
+    expect(await choice, false);
+    await sync.syncNow();
+    expect(backend.owner, isNull);
+    expect(backend.uploads, isEmpty);
+    expect(backend.local, 1);
+    expect(sync.guestTransferPending, true);
+  });
+  test('remote-account choice discards the old read after switching accounts',
+      () async {
+    final backend = _Backend()..requiresGuestTransfer = true;
+    final started = Completer<void>();
+    final release = Completer<Map<String, dynamic>?>();
+    backend.fetch = (id) {
+      if (id == 'alice') {
+        started.complete();
+        return release.future;
+      }
+      return Future.value(remote(22));
+    };
+    final sync = NorieCloudSync(backend: backend);
+    addTearDown(sync.dispose);
+    await sync.initialize();
+    final choice = sync.resolveGuestTransfer(transferLocal: false);
+    await started.future;
+    backend.userId = 'bob';
+    backend.accountChanges.emit();
+    release.complete(remote(99));
+    expect(await choice, false);
+    expect(backend.guestRecovery, {'points': 1});
+    expect(backend.local, 22);
+    expect(backend.owner, 'bob');
+    expect(
+        backend.uploads
+            .any((item) => item['user'] == 'bob' && item['points'] == 99),
+        false);
+  });
+  test(
+      'interrupted guest discard resets unowned data before an offline restore',
+      () async {
+    final backend = _Backend()
+      ..requiresGuestTransfer = true
+      ..pendingRestore = 'alice'
+      ..local = 13
+      ..fetch = (_) => Future.error(StateError('offline'));
+    final sync = NorieCloudSync(backend: backend);
+    addTearDown(sync.dispose);
+    await sync.initialize();
+    expect(backend.local, 0);
+    expect(backend.owner, 'alice');
+    expect(backend.pendingRestore, 'alice');
+    expect(backend.uploads, isEmpty);
+    expect(sync.status, NorieCloudSyncStatus.error);
   });
 }

@@ -12,7 +12,7 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   test('materials completes the same Grade 1 progression with approved scope',
       () {
-    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1').last;
+    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1')[4];
     expect(topic.id, 'science.g1.materials-around-us');
     expect(topic.prerequisiteTopicId, 'science.g1.weather');
     expect(topic.order, 5);
@@ -52,7 +52,7 @@ void main() {
   });
 
   testWidgets('materials practice offers only multiple choice', (tester) async {
-    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1').last;
+    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1')[4];
     await tester
         .pumpWidget(MaterialApp(home: NoriePracticeModeScreen(topic: topic)));
     expect(find.text('Multiple Choice'), findsOneWidget);
@@ -125,7 +125,7 @@ void main() {
   testWidgets(
       'materials quick check reveals its explanation after learner action',
       (tester) async {
-    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1').last;
+    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1')[4];
     final json = topic.toJson();
     final lesson = Map<String, dynamic>.from(json['lesson'] as Map);
     lesson['sections'] = topic.lesson.sections
@@ -226,7 +226,8 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    for (final topic in NorieFoundationCurriculum.topicsFor('Science', 'g1')) {
+    for (final topic
+        in NorieFoundationCurriculum.topicsFor('Science', 'g1').take(5)) {
       await tester
           .pumpWidget(MaterialApp(home: NorieLessonScreen(topic: topic)));
       await tester.pump();
@@ -247,7 +248,7 @@ void main() {
 
   test('approved Grade 1 science contains real lesson prose and independent MC',
       () {
-    final topics = NorieFoundationCurriculum.topicsFor('Science', 'g1');
+    final topics = NorieFoundationCurriculum.topicsFor('Science', 'g1').take(5);
     for (final topic in topics) {
       expect(topic.lesson.sections.length, greaterThan(15));
       expect(topic.lesson.sections.map((s) => s.title),

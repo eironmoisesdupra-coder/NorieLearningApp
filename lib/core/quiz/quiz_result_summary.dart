@@ -37,6 +37,7 @@ class QuizResultSummary {
       required this.xpEarned,
       required List<QuizAnswerRecord> answers,
       this.gradeLevel,
+      this.earnedRewards = const [],
       this.isComplete = true})
       : answers = List.unmodifiable(answers),
         assert(totalCount >= 0),
@@ -44,6 +45,7 @@ class QuizResultSummary {
   final String attemptId, historyKey, title;
   final int correctCount, totalCount, xpEarned;
   final int? gradeLevel;
+  final List<String> earnedRewards;
   final bool isComplete;
   final List<QuizAnswerRecord> answers;
   double get percentage =>

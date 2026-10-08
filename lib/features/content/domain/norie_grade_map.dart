@@ -30,6 +30,15 @@ class NorieGradeMapProgress {
 
   bool get complete => nodes.isNotEmpty && completedCount == nodes.length;
 
+  /// Chapters organize real lessons, without adding locks or synthetic tests.
+  List<NorieGradeMapChapter> get chapters => [
+        for (var start = 0; start < nodes.length; start += 5)
+          NorieGradeMapChapter(
+            number: start ~/ 5 + 1,
+            nodes: List.unmodifiable(nodes.skip(start).take(5)),
+          ),
+      ];
+
   static NorieGradeMapProgress derive({
     required List<NorieTopicContent> topics,
     required Set<String> completedTopicIds,
@@ -72,4 +81,17 @@ class NorieGradeMapProgress {
       currentIndex: currentIndex,
     );
   }
+}
+
+class NorieGradeMapChapter {
+  const NorieGradeMapChapter({required this.number, required this.nodes});
+
+  final int number;
+  final List<NorieGradeMapNode> nodes;
+  int get completedCount => nodes.where((node) => node.completed).length;
+  String get description =>
+      'Missions ${nodes.first.index + 1}–${nodes.last.index + 1}: '
+      '${nodes.map((node) => node.topic.title).join('; ')}. '
+      'Practice within each lesson, then use its authored mastery questions. '
+      'This checkpoint is a progress summary.';
 }

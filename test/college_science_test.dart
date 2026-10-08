@@ -17,11 +17,11 @@ void main() {
       'earth-science',
       'scientific-research',
     ];
-    expect(NorieFoundationCurriculum.topicsFor('Science', 'college'),
-        same(collegeScienceTopics));
+    expect(NorieFoundationCurriculum.topicsFor('Science', 'college').take(5),
+        orderedEquals(collegeScienceTopics));
     expect(ScienceCurriculum.grades['college'], same(collegeScienceTopics));
     expect(collegeScienceTopics.map((topic) => topic.title),
-        NorieFoundationCurriculum.lessonTitles('Science', 'college'));
+        NorieFoundationCurriculum.lessonTitles('Science', 'college').take(5));
     expect(collegeScienceTopics, hasLength(5));
     for (var i = 0; i < slugs.length; i++) {
       final topic = collegeScienceTopics[i];

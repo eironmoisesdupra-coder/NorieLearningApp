@@ -27,7 +27,8 @@ class NorieGradeLessonsScreen extends StatefulWidget {
 class _NorieGradeLessonsScreenState extends State<NorieGradeLessonsScreen> {
   late bool _showMap;
 
-  bool get _supportsMap => widget.subject.toLowerCase() == 'science';
+  bool get _supportsMap => const ['science', 'mathematics', 'english']
+      .contains(widget.subject.toLowerCase());
 
   @override
   void initState() {
@@ -118,9 +119,8 @@ class _NorieGradeLessonsScreenState extends State<NorieGradeLessonsScreen> {
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
-                                  _supportsMap
-                                      ? 'Explore five Science missions. Choose a stop on the trail or use the lesson list.'
-                                      : 'Explore five foundation lessons in order, or choose an available lesson.',
+                                  'Explore ${NorieFoundationCurriculum.coverageLabel(widget.subject, widget.grade.id)}. '
+                                  'This focused path is not a complete ${widget.grade.label} curriculum.',
                                   style: const TextStyle(
                                     color: NorieColors.textSecondary,
                                     height: 1.4,
@@ -149,7 +149,7 @@ class _NorieGradeLessonsScreenState extends State<NorieGradeLessonsScreen> {
                         ),
                         const SizedBox(height: 12),
                         Semantics(
-                          label: 'Choose Science journey view',
+                          label: 'Choose ${widget.subject} journey view',
                           child: SegmentedButton<bool>(
                             segments: const [
                               ButtonSegment<bool>(
@@ -176,6 +176,7 @@ class _NorieGradeLessonsScreenState extends State<NorieGradeLessonsScreen> {
                 Expanded(
                   child: _supportsMap && _showMap
                       ? NorieScienceAdventureMap(
+                          subject: widget.subject,
                           grade: widget.grade,
                           accent: widget.accent,
                         )
@@ -288,6 +289,15 @@ class _LessonTile extends StatelessWidget {
                           fontSize: 10,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                          NorieFoundationCurriculum.isAuthored(topic)
+                              ? 'Authored lesson'
+                              : 'Foundation starter',
+                          style: TextStyle(
+                              color: accent,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ),
