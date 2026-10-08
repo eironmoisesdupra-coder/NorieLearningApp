@@ -36,13 +36,12 @@ jobs:
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
           RELEASE_REF: ${{ github.ref }}
-          RELEASE_REVISION: ${{ github.sha }}
         shell: bash
         run: |
           RELEASE_TAG=${RELEASE_TAG#release/}
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
           if [[ "$RELEASE_REF" == refs/heads/release/* ]]; then
-            revision=$(git rev-parse "$RELEASE_REVISION^{commit}")
+            revision=$(git rev-parse "origin/develop^{commit}")
           else
             revision=$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")
           fi
@@ -104,8 +103,7 @@ jobs:
           RELEASE_SHA: ${{ needs.packages.outputs.revision }}
         shell: bash
         run: |
-          existing_tag=$(gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" --jq '.object.sha' 2>/dev/null || true)
-          if [[ -n "$existing_tag" ]]; then
+          if existing_tag=$(gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" --jq '.object.sha' 2>/dev/null); then
             resolved=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq '.sha')
             [[ "$resolved" == "$RELEASE_SHA" ]] || { echo 'Version tag points to a different revision'; exit 1; }
           fi
