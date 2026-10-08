@@ -103,7 +103,8 @@ abstract final class NorieItemRandomizer {
 /// one-word identification exercise. Other subject policies remain unchanged.
 abstract final class NorieSciencePracticePolicy {
   static bool usesTiers(NorieTopicContent topic) =>
-      topic.subject.toLowerCase() == 'science' && topic.gradeLevel != 'g1';
+      (topic.subject.toLowerCase() == 'science' && topic.gradeLevel != 'g1') ||
+      topic.quiz.questions.map((q) => q.difficulty).toSet().length > 1;
 
   static bool canIdentify(NorieQuestionContent question) {
     final answers = question.resolvedAcceptedAnswers;
@@ -119,12 +120,26 @@ abstract final class NorieSciencePracticePolicy {
           : requested;
 }
 
-String norieNormalizeAnswer(String value) => value
-    .trim()
-    .toLowerCase()
-    .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
-    .replaceAll(RegExp(r'\s+'), ' ')
-    .trim();
+String norieNormalizeAnswer(String value) {
+  final normalized = value
+      .trim()
+      .toLowerCase()
+      .replaceAll('−', '-')
+      .replaceAll('×', '*')
+      .replaceAll('÷', '/');
+  // A decimal point, negative sign or fraction bar changes the answer.
+  // Word recall retains its existing case/punctuation tolerance.
+  final numeric = RegExp(r'[0-9⁰¹²³⁴⁵⁶⁷⁸⁹]').hasMatch(normalized);
+  return normalized
+      .replaceAll(
+          numeric
+              ? RegExp(
+                  r'[^a-z0-9+*/=().\-\u00b2\u00b3\u2070-\u2079\u03b1-\u03c9]+')
+              : RegExp(r'[^a-z0-9]+'),
+          ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
 
 bool norieAnswerMatches(String input, String expected) =>
     norieNormalizeAnswer(input) == norieNormalizeAnswer(expected);

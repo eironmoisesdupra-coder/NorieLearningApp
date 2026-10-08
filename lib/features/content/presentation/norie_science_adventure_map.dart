@@ -6,21 +6,28 @@ import 'package:flutter/material.dart';
 import '../../../core/assets/norie_assets.dart';
 import '../../../core/progression/norie_lesson_journey.dart';
 import '../../../core/progression/norie_progression.dart';
+import '../../../core/progression/norie_adventure_progress.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../data/norie_foundation_curriculum.dart';
 import '../domain/norie_content_models.dart';
 import '../domain/norie_grade_map.dart';
 import 'norie_lesson_screen.dart';
+import 'norie_review_quest_screen.dart';
+import '../domain/norie_review_quest.dart';
 
 class NorieScienceAdventureMap extends StatefulWidget {
   const NorieScienceAdventureMap({
     required this.grade,
     required this.accent,
+    this.subject = 'Science',
+    this.topics,
     super.key,
   });
 
   final NorieGradeLevel grade;
   final Color accent;
+  final String subject;
+  final List<NorieTopicContent>? topics;
 
   @override
   State<NorieScienceAdventureMap> createState() =>
@@ -34,7 +41,11 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
   bool _restored = false;
   late int _ownershipRevision;
 
-  String get _positionKey => 'science.${widget.grade.id}';
+  String get _positionKey =>
+      '${widget.subject.toLowerCase()}.${widget.grade.id}';
+  List<NorieTopicContent> get _topics =>
+      widget.topics ??
+      NorieFoundationCurriculum.topicsFor(widget.subject, widget.grade.id);
   double? _pendingOffset;
 
   @override
@@ -50,7 +61,7 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
     if (!mounted || !_scrollController.hasClients) return;
     final journey = NorieLessonJourney.instance;
     final progress = NorieGradeMapProgress.derive(
-      topics: NorieFoundationCurriculum.topicsFor('Science', widget.grade.id),
+      topics: _topics,
       completedTopicIds: NorieProgression.instance.completedTopicIds,
       lastTopicId: journey.lastTopicId,
     );
@@ -103,13 +114,17 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
   @override
   void didUpdateWidget(covariant NorieScienceAdventureMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.grade.id == widget.grade.id) return;
+    if (oldWidget.grade.id == widget.grade.id &&
+        oldWidget.subject == widget.subject &&
+        identical(oldWidget.topics, widget.topics)) {
+      return;
+    }
     _saveDebounce?.cancel();
     final offset = _pendingOffset;
     if (offset != null &&
         _ownershipRevision == NorieLessonJourney.instance.ownershipRevision) {
-      unawaited(NorieLessonJourney.instance
-          .saveMapOffset('science.${oldWidget.grade.id}', offset));
+      unawaited(NorieLessonJourney.instance.saveMapOffset(
+          '${oldWidget.subject.toLowerCase()}.${oldWidget.grade.id}', offset));
     }
     _pendingOffset = null;
     _restored = false;
@@ -210,6 +225,17 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
                     height: 1.45,
                   ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  'Chapter ${node.index ~/ 5 + 1} checkpoint',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  progress.chapters[node.index ~/ 5].description,
+                  style: const TextStyle(
+                      color: NorieColors.textSecondary, height: 1.4),
+                ),
                 const SizedBox(height: 14),
                 Wrap(
                   spacing: 8,
@@ -253,6 +279,26 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
                     ),
                 ],
                 const SizedBox(height: 18),
+                NorieLessonStarCard(topic: topic),
+                if (progress.nodes.any(
+                    (node) => NorieFoundationCurriculum.isAuthored(node.topic)))
+                  TextButton.icon(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        Navigator.of(context).push(MaterialPageRoute<void>(
+                            builder: (_) => NorieReviewQuestScreen(
+                                topic: progress.nodes
+                                    .firstWhere((node) =>
+                                        NorieFoundationCurriculum.isAuthored(
+                                            node.topic))
+                                    .topic,
+                                kind: NorieReviewQuestKind.chapter,
+                                chapterTopics: progress.nodes
+                                    .map((n) => n.topic)
+                                    .toList())));
+                      },
+                      icon: const Icon(Icons.explore_rounded),
+                      label: const Text('Optional grade expedition')),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -286,12 +332,12 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
 
   @override
   Widget build(BuildContext context) {
-    final topics =
-        NorieFoundationCurriculum.topicsFor('Science', widget.grade.id);
+    final topics = _topics;
     return AnimatedBuilder(
       animation: Listenable.merge([
         NorieProgression.instance,
         NorieLessonJourney.instance,
+        NorieAdventureProgress.instance,
       ]),
       builder: (context, _) {
         final progress = NorieGradeMapProgress.derive(
@@ -312,6 +358,7 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
                   width: width,
                   height: mapHeight,
                   child: _AdventureTrail(
+                    subject: widget.subject,
                     nodes: progress.nodes,
                     rowHeight: rowHeight,
                     currentIndex: progress.currentIndex,
@@ -331,7 +378,7 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
 double _rowHeight(
     BuildContext context, double width, List<NorieGradeMapNode> nodes) {
   var height =
-      math.max(200.0, 162 + MediaQuery.textScalerOf(context).scale(20));
+      math.max(240.0, 202 + MediaQuery.textScalerOf(context).scale(20));
   for (final node in nodes) {
     final painter = TextPainter(
       text: TextSpan(
@@ -350,12 +397,14 @@ double _rowHeight(
 
 class _AdventureTrail extends StatelessWidget {
   const _AdventureTrail(
-      {required this.nodes,
+      {required this.subject,
+      required this.nodes,
       required this.currentIndex,
       required this.accent,
       required this.onNodeTap,
       required this.rowHeight});
   final List<NorieGradeMapNode> nodes;
+  final String subject;
   final int currentIndex;
   final Color accent;
   final ValueChanged<NorieGradeMapNode> onNodeTap;
@@ -383,12 +432,12 @@ class _AdventureTrail extends StatelessWidget {
                 child: CustomPaint(
                     painter:
                         _TrailPainter(positions: positions, accent: accent))),
-            const Positioned(
+            Positioned(
                 top: 14,
                 left: 14,
                 right: 14,
                 child: _Landmark(
-                    icon: Icons.wb_sunny_rounded, label: 'Science Basecamp')),
+                    icon: Icons.wb_sunny_rounded, label: '$subject Basecamp')),
             Positioned(
                 bottom: 14,
                 left: 14,
@@ -570,6 +619,24 @@ class _NodeLabel extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          const SizedBox(height: 4),
+          Text(
+              '${[
+                state == NorieGradeMapNodeState.completed,
+                NorieAdventureProgress.instance
+                        .evidenceFor(topic.id)
+                        ?.firstPassedAt !=
+                    null,
+                NorieAdventureProgress.instance
+                        .evidenceFor(topic.id)
+                        ?.retainedAt !=
+                    null
+              ].map((earned) => earned ? '★' : '☆').join(' ')}${NorieAdventureProgress.instance.isReviewDue(topic.id) ? ' • Review ready' : ''}',
+              textAlign: alignRight ? TextAlign.right : TextAlign.left,
+              style: const TextStyle(
+                  color: NorieColors.orange,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800)),
         ],
       );
 }

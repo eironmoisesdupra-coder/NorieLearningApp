@@ -4,6 +4,41 @@ import 'package:uuid/uuid.dart';
 import '../../../core/quiz/norie_quiz_outro.dart';
 import '../../../core/quiz/quiz_result_summary.dart';
 import '../domain/norie_content_models.dart';
+import '../../../core/progression/norie_adventure_progress.dart';
+import '../data/norie_foundation_curriculum.dart';
+
+Future<bool> norieRecordPracticeEvidence(
+    BuildContext context,
+    NorieTopicContent topic,
+    String attemptId,
+    List<QuizAnswerRecord> answers,
+    int ownershipRevision,
+    {bool Function()? stillCurrent}) async {
+  if (stillCurrent?.call() == false) return false;
+  // Starter completion stays valid, but generic preview items cannot certify
+  // independent understanding of the real subject.
+  if (!NorieFoundationCurriculum.isAuthored(topic)) return true;
+  try {
+    final recorded = await NorieAdventureProgress.instance.recordAttempt(
+        topicId: topic.id,
+        attemptId: attemptId,
+        answers: answers,
+        expectedRevision: ownershipRevision);
+    if (!recorded && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'This attempt belongs to a previous learner. Return to the lesson to start again.')));
+    }
+    return recorded && stillCurrent?.call() != false;
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Your evidence could not be saved. Please try again before leaving.')));
+    }
+    return false;
+  }
+}
 
 int? norieQuizGrade(NorieTopicContent topic) =>
     int.tryParse((topic.gradeLevel ?? '').replaceFirst('g', ''));

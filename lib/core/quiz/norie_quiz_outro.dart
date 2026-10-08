@@ -8,8 +8,15 @@ import '../mascot/norie_mascot_state.dart';
 import '../mascot/norie_mascot_view.dart';
 import 'quiz_result_history.dart';
 import 'quiz_result_summary.dart';
+import '../account/norie_account_service.dart';
 
-enum QuizOutroAction { continueLearning, retry, reviewLesson, viewDetails }
+enum QuizOutroAction {
+  continueLearning,
+  retry,
+  reviewLesson,
+  viewDetails,
+  viewProfile
+}
 
 typedef QuizReviewVisualBuilder = Widget Function(
     BuildContext, QuizAnswerRecord);
@@ -20,7 +27,10 @@ class NorieQuizOutro {
       bool canRetry = true,
       bool canViewDetails = false,
       bool canReviewLesson = false,
+      bool canViewProfile = false,
+      bool Function()? stillCurrent,
       QuizReviewVisualBuilder? reviewVisualBuilder}) async {
+    if (stillCurrent?.call() == false) return QuizOutroAction.continueLearning;
     final media = MediaQuery.of(context);
     QuizHistoryComparison comparison;
     try {
@@ -29,7 +39,9 @@ class NorieQuizOutro {
       comparison = QuizHistoryComparison(
           percentage: summary.percentage, isNew: false, specialPerfect: false);
     }
-    if (!context.mounted) return QuizOutroAction.continueLearning;
+    if (!context.mounted || stillCurrent?.call() == false) {
+      return QuizOutroAction.continueLearning;
+    }
     return await showDialog<QuizOutroAction>(
             context: context,
             barrierDismissible: false,
@@ -42,6 +54,8 @@ class NorieQuizOutro {
                     canRetry: canRetry,
                     canViewDetails: canViewDetails,
                     canReviewLesson: canReviewLesson,
+                    canViewProfile: canViewProfile,
+                    stillCurrent: stillCurrent,
                     reviewVisualBuilder: reviewVisualBuilder))) ??
         QuizOutroAction.continueLearning;
   }
@@ -54,10 +68,13 @@ class _ResultDialog extends StatefulWidget {
       required this.canRetry,
       required this.canViewDetails,
       required this.canReviewLesson,
+      required this.canViewProfile,
+      this.stillCurrent,
       this.reviewVisualBuilder});
   final QuizResultSummary summary;
   final QuizHistoryComparison comparison;
-  final bool canRetry, canReviewLesson, canViewDetails;
+  final bool canRetry, canReviewLesson, canViewDetails, canViewProfile;
+  final bool Function()? stillCurrent;
   final QuizReviewVisualBuilder? reviewVisualBuilder;
   @override
   State<_ResultDialog> createState() => _ResultDialogState();
@@ -69,6 +86,30 @@ class _ResultDialogState extends State<_ResultDialog>
   late final _reveal = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 1800));
   bool _started = false;
+  bool _invalidated = false;
+  @override
+  void initState() {
+    super.initState();
+    NorieAccountService.instance.addListener(_checkLearner);
+  }
+
+  void _checkLearner() {
+    if (!mounted || _invalidated || widget.stillCurrent?.call() != false) {
+      return;
+    }
+    _invalidated = true;
+    final route = ModalRoute.of(context), navigator = Navigator.of(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      navigator.popUntil(
+          (candidate) => identical(candidate, route) || candidate.isFirst);
+      if (route?.isCurrent == true) {
+        navigator.pop(QuizOutroAction.continueLearning);
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
   bool get _calm =>
       MediaQuery.of(context).disableAnimations ||
       MediaQuery.of(context).accessibleNavigation;
@@ -105,6 +146,7 @@ class _ResultDialogState extends State<_ResultDialog>
 
   @override
   void dispose() {
+    NorieAccountService.instance.removeListener(_checkLearner);
     _reveal.dispose();
     _mascot.dispose();
     super.dispose();
@@ -272,6 +314,14 @@ class _ResultDialogState extends State<_ResultDialog>
                                                 s.reviewConcepts
                                                     .join(' \u2022 ')),
                                           const SizedBox(height: 18),
+                                          if (s.earnedRewards.isNotEmpty)
+                                            _detail('Added to your collection',
+                                                s.earnedRewards.join(' • ')),
+                                          if (widget.canViewProfile)
+                                            _button(
+                                                'View Profile',
+                                                () => _finish(QuizOutroAction
+                                                    .viewProfile)),
                                           if (widget.canReviewLesson)
                                             _button(
                                                 'Review Lesson',

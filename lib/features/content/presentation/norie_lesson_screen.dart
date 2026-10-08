@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'norie_review_quest_screen.dart';
 import '../../../core/progression/norie_lesson_journey.dart';
 import '../../../core/audio/norie_audio_host.dart';
 import '../../../core/audio/norie_audio_manager.dart';
@@ -12,6 +13,8 @@ import 'norie_lesson_visual.dart';
 import 'norie_grade1_science_visual.dart';
 import '../data/science/science_curriculum.dart';
 import 'science_figure_view.dart';
+import '../data/authored/authored_subject_curriculum.dart';
+import 'authored_lesson_visual_view.dart';
 import 'norie_practice_mode_screen.dart';
 
 class NorieLessonScreen extends StatefulWidget {
@@ -135,7 +138,8 @@ class _NorieLessonScreenState extends State<NorieLessonScreen>
                     ),
                     if (topic.visualType != null &&
                         topic.visualType != 'g1-science' &&
-                        topic.visualType != 'science-path') ...[
+                        topic.visualType != 'science-path' &&
+                        topic.visualType != 'authored-path') ...[
                       const SizedBox(height: 20),
                       NorieLessonVisual(
                         type: topic.visualType!,
@@ -194,6 +198,8 @@ class _NorieLessonScreenState extends State<NorieLessonScreen>
                         ),
                       ),
                     const SizedBox(height: 24),
+                    NorieLessonStarCard(topic: topic),
+                    const SizedBox(height: 16),
                     FilledButton.icon(
                       onPressed: topic.quiz.questions.isEmpty
                           ? null
@@ -277,7 +283,20 @@ class _ConceptCard extends StatelessWidget {
                   fontSize: 20, height: 1.35, fontWeight: FontWeight.w900)),
           const SizedBox(height: 12),
           if (section.visualType != null)
-            if (ScienceCurriculum.figures.containsKey(section.visualType))
+            if (AuthoredSubjectCurriculum.visuals
+                .containsKey(section.visualType))
+              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                AuthoredLessonVisualView(
+                    visual:
+                        AuthoredSubjectCurriculum.visuals[section.visualType]!,
+                    accent: color),
+                if (section.visualCaption?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 12),
+                  Text(section.visualCaption!,
+                      style: const TextStyle(height: 1.5)),
+                ],
+              ])
+            else if (ScienceCurriculum.figures.containsKey(section.visualType))
               Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 ScienceFigureView(
                     figure: ScienceCurriculum.figures[section.visualType]!),

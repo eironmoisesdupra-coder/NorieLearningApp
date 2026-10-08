@@ -7,6 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/commerce/domain/norie_shop_models.dart';
 import 'norie_lesson_journey.dart';
 import 'norie_progress_backup.dart';
+import 'norie_adventure_progress.dart';
+import '../../features/profile/data/norie_profile_appearance_store.dart';
+import '../../features/profile/domain/norie_profile_appearance.dart';
+import '../../features/content/data/norie_foundation_curriculum.dart';
 
 class NorieLevelSnapshot {
   const NorieLevelSnapshot({
@@ -320,6 +324,8 @@ class NorieProgression extends ChangeNotifier {
   static const _equippedThemeKey = 'norie.equippedTheme';
   static const _streakShieldsKey = 'norie.streakShields';
   static const _creditTransactionsKey = 'norie.creditTransactions';
+  static const _assessmentAttemptsKey = 'norie.rewardedAssessmentAttempts';
+  Set<String> _rewardedAssessmentAttempts = {};
 
   int _totalXp = 0;
   int _credits = 0;
@@ -486,6 +492,9 @@ class NorieProgression extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
+    _rewardedAssessmentAttempts =
+        (prefs.getStringList(_assessmentAttemptsKey) ?? const <String>[])
+            .toSet();
     _totalXp = prefs.getInt(_xpKey) ?? _totalXp;
     _credits = prefs.getInt(_creditsKey) ?? _credits;
     _completedLessons = prefs.getInt(_lessonsKey) ?? 0;
@@ -909,12 +918,47 @@ class NorieProgression extends ChangeNotifier {
     if (_journeyRestores == 0) _changed();
   }
 
+  /// A replayed completed route cannot award its quiz XP a second time.
+  bool claimAssessmentAttempt(String receipt) {
+    if (receipt.isEmpty || receipt.length > 512) return false;
+    return _rewardedAssessmentAttempts.add(receipt);
+  }
+
+  void refreshGradeTrophies() {
+    for (final subject in ['Science', 'Mathematics', 'English']) {
+      for (final grade in NorieFoundationCurriculum.gradeLevels) {
+        final topics = NorieFoundationCurriculum.topicsFor(subject, grade.id);
+        NorieAdventureProgress.instance.registerGradeCompletions(
+            subject: subject,
+            gradeId: grade.id,
+            originalTopicIds: topics.take(5).map((t) => t.id).toList(),
+            currentTopicIds: topics.map((t) => t.id).toList(),
+            completedTopicIds: _completedTopicIds);
+      }
+    }
+  }
+
   void _changed({bool touchModified = true}) {
     if (touchModified) {
       _lastModifiedAt = DateTime.now().toUtc();
     }
     notifyListeners();
+    unawaited(NorieProfileAppearanceStore.instance
+        .unlockRank(snapshot.level)
+        .catchError((Object _) {}));
     unawaited(_save());
+  }
+
+  Future<void> flushPendingSaves({bool retry = false}) async {
+    if (retry) {
+      await _save();
+    } else {
+      await _saves;
+    }
+    await Future.wait([
+      NorieAdventureProgress.instance.flush(retry: retry),
+      NorieProfileAppearanceStore.instance.flush()
+    ]);
   }
 
   Future<void> _saves = Future<void>.value();
@@ -923,17 +967,27 @@ class NorieProgression extends ChangeNotifier {
   @visibleForTesting
   void resetAsyncQueuesForTesting() {
     _saves = Future<void>.value();
+    // This annotated test-only wrapper coordinates the other stores' fixtures.
+    // ignore: invalid_use_of_visible_for_testing_member
+    NorieAdventureProgress.instance.resetAsyncQueuesForTesting();
+    // ignore: invalid_use_of_visible_for_testing_member
+    NorieProfileAppearanceStore.instance.resetAsyncQueuesForTesting();
   }
 
   Future<void> _save() {
     final operation = _saves.catchError((Object _) {}).then((_) => _persist());
     _saves = operation;
+    // Automatic writes may fail, but explicit flush still reports that failure.
+    // Handle the background listener so failure cannot crash the active lesson.
+    unawaited(operation.catchError((Object _) {}));
     return operation;
   }
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    await Future.wait([
+    final saved = await Future.wait<bool>([
+      prefs.setStringList(
+          _assessmentAttemptsKey, _rewardedAssessmentAttempts.toList()..sort()),
       prefs.setInt(_xpKey, _totalXp),
       prefs.setInt(_creditsKey, _credits),
       prefs.setInt(_lessonsKey, _completedLessons),
@@ -997,6 +1051,9 @@ class NorieProgression extends ChangeNotifier {
       prefs.setBool(_onboardingKey, _onboardingComplete),
       prefs.setString(_lastModifiedKey, _lastModifiedAt.toIso8601String()),
     ]);
+    if (saved.any((success) => !success)) {
+      throw StateError('Learning progress could not be saved on this device.');
+    }
   }
 
   Future<bool> resetForNewAccount({bool Function()? stillCurrent}) async {
@@ -1005,6 +1062,11 @@ class NorieProgression extends ChangeNotifier {
       final applied = await NorieLessonJourney.instance.reset(
         stillCurrent: stillCurrent,
         onApply: () {
+          _rewardedAssessmentAttempts = {};
+          NorieAdventureProgress.instance
+              .applyValidatedState(NorieAdventureProgress.emptyState);
+          NorieProfileAppearanceStore.instance.applyValidatedState(
+              {'appearance': const NorieProfileAppearance().toJson()});
           _totalXp = 0;
           _credits = 0;
           _completedLessons = 0;
@@ -1036,6 +1098,12 @@ class NorieProgression extends ChangeNotifier {
         },
       );
       await _saves;
+      if (applied) {
+        await Future.wait([
+          NorieAdventureProgress.instance.flush(),
+          NorieProfileAppearanceStore.instance.flush()
+        ]);
+      }
       return applied;
     } finally {
       _journeyRestores--;
@@ -1043,6 +1111,11 @@ class NorieProgression extends ChangeNotifier {
   }
 
   Map<String, dynamic> exportCloudState() => {
+        'adventure_progress': NorieAdventureProgress.instance.exportState(),
+        'profile_appearance':
+            NorieProfileAppearanceStore.instance.exportState(),
+        'rewarded_assessment_attempts': _rewardedAssessmentAttempts.toList()
+          ..sort(),
         'lesson_journey': NorieLessonJourney.instance.exportState(),
         'schema_version': 1,
         'total_xp': _totalXp,
@@ -1076,6 +1149,49 @@ class NorieProgression extends ChangeNotifier {
         'modified_at': _lastModifiedAt.toIso8601String(),
       };
 
+  /// Used only for the same authenticated owner, never guest/account transfers.
+  /// XP remains a snapshot maximum; independent offline XP is not summed.
+  static Map<String, dynamic> mergePermanentCollections(
+      Map<String, dynamic> primary, Map<String, dynamic> secondary) {
+    NorieProgressBackup.validateState(primary);
+    NorieProgressBackup.validateState(secondary);
+    final result = Map<String, dynamic>.from(primary);
+    for (final key in [
+      'completed_topic_ids',
+      'rewarded_lesson_topics',
+      'rewarded_perfect_lesson_topics',
+      'owned_shop_items',
+      'rewarded_assessment_attempts'
+    ]) {
+      result[key] = {
+        ..._readStringSet(primary[key]),
+        ..._readStringSet(secondary[key])
+      }.toList()
+        ..sort();
+    }
+    for (final key in ['total_xp', 'completed_lessons']) {
+      if ((secondary[key] as int) > (primary[key] as int)) {
+        result[key] = secondary[key];
+      }
+    }
+    result['adventure_progress'] = NorieAdventureProgress.mergePermanent(
+        Map<String, dynamic>.from(
+            primary['adventure_progress'] ?? NorieAdventureProgress.emptyState),
+        Map<String, dynamic>.from(secondary['adventure_progress'] ??
+            NorieAdventureProgress.emptyState));
+    final defaults = {'appearance': const NorieProfileAppearance().toJson()};
+    final appearance = NorieProfileAppearanceStore.validateState(
+        primary['profile_appearance'] ?? defaults);
+    final other = NorieProfileAppearanceStore.validateState(
+        secondary['profile_appearance'] ?? defaults);
+    if ((other['rankLevel'] as int) > (appearance['rankLevel'] as int)) {
+      appearance['rankLevel'] = other['rankLevel'];
+    }
+    result['profile_appearance'] = appearance;
+    NorieProgressBackup.validateState(result);
+    return result;
+  }
+
   Future<bool> importCloudState(
     Map<String, dynamic> state, {
     DateTime? remoteModifiedAt,
@@ -1085,12 +1201,21 @@ class NorieProgression extends ChangeNotifier {
     NorieProgressBackup.validateState(state);
     final journey = NorieLessonJourney.validateState(
         state['lesson_journey'] ?? NorieLessonJourney.emptyState);
+    final adventure = NorieAdventureProgress.validateState(
+        state['adventure_progress'] ?? NorieAdventureProgress.emptyState);
+    final appearance = NorieProfileAppearanceStore.validateState(
+        state['profile_appearance'] ??
+            {'appearance': const NorieProfileAppearance().toJson()});
     _journeyRestores++;
     try {
       final applied = await NorieLessonJourney.instance.replaceState(
         journey,
         stillCurrent: stillCurrent,
         onApply: () {
+          _rewardedAssessmentAttempts =
+              _readStringSet(state['rewarded_assessment_attempts']);
+          NorieAdventureProgress.instance.applyValidatedState(adventure);
+          NorieProfileAppearanceStore.instance.applyValidatedState(appearance);
           _totalXp = _readInt(state['total_xp'], fallback: _totalXp);
           _credits = _readInt(state['credits'], fallback: _credits);
           _streakShields =
@@ -1155,11 +1280,18 @@ class NorieProgression extends ChangeNotifier {
           _lastModifiedAt =
               (remoteModifiedAt ?? stateModified ?? DateTime.now()).toUtc();
           _migrateLegacyTopicCompletion();
+          refreshGradeTrophies();
 
           _changed(touchModified: false);
         },
       );
       await _saves;
+      if (applied) {
+        await Future.wait([
+          NorieAdventureProgress.instance.flush(),
+          NorieProfileAppearanceStore.instance.flush()
+        ]);
+      }
       return applied;
     } finally {
       _journeyRestores--;

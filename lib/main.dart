@@ -9,6 +9,8 @@ import 'core/cloud/norie_cloud_sync.dart';
 import 'core/cloud/supabase_config.dart';
 import 'core/progression/norie_progression.dart';
 import 'core/progression/norie_lesson_journey.dart';
+import 'core/progression/norie_adventure_progress.dart';
+import 'features/profile/data/norie_profile_appearance_store.dart';
 import 'features/study/data/norie_study_service.dart';
 
 Future<void> main() async {
@@ -16,7 +18,17 @@ Future<void> main() async {
 
   await NorieProgression.instance.load();
   await NorieLessonJourney.instance.load();
+  await NorieAdventureProgress.instance.load();
+  await NorieProfileAppearanceStore.instance.load();
+  await NorieProfileAppearanceStore.instance
+      .unlockRank(NorieProgression.instance.snapshot.level);
+  NorieProgression.instance.refreshGradeTrophies();
+  await NorieAdventureProgress.instance.flush();
   NorieLessonJourney.instance
+      .addListener(NorieProgression.instance.recordJourneyChange);
+  NorieAdventureProgress.instance
+      .addListener(NorieProgression.instance.recordJourneyChange);
+  NorieProfileAppearanceStore.instance
       .addListener(NorieProgression.instance.recordJourneyChange);
 
   // Lessons and local progress must be available before any network work.

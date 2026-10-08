@@ -1,0 +1,3 @@
+# CLI-local connection state. Never ship project refs or local CLI secrets.
+.temp/
+!functions/verified-leagues/deno.lock
