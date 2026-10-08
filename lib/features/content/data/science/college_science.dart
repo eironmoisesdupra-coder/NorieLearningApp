@@ -1177,7 +1177,7 @@ Quick check: Delta H = -20 kJ/mol, Delta S = -50 J/(mol K), T = 300 K. What is D
       'Energy calculation'
     ],
     [
-      'For the same +30 and +0.100 model, where is the temperature crossover?',
+      'For constant Delta H = +30 kJ/mol and Delta S = +0.100 kJ/(mol K), at what temperature does Delta G change sign?',
       '300 K',
       '3 K',
       '3000 K',

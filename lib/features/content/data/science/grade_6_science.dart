@@ -364,7 +364,7 @@ If a photograph hides a needed structure, write uncertain and request a clearer 
       'Evidence limits'
     ],
     [
-      'Our four-animal key receives an organism with a backbone and feathers. Which endpoint follows?',
+      'A key for pigeon, frog, ant and earthworm first separates animals with a backbone, then separates those with feathers. An organism has a backbone and feathers. Which endpoint follows?',
       'Pigeon',
       'Frog',
       'Ant',
@@ -373,7 +373,7 @@ If a photograph hides a needed structure, write uncertain and request a clearer 
       'Using a key'
     ],
     [
-      'Our key receives an organism with no backbone and six jointed legs. Which route is correct?',
+      'Key for pigeon, frog, ant and earthworm: 1: backbone present? Yes → 2; no → 3. 2: feathers present? Yes → pigeon; no → frog. 3: six jointed legs present? Yes → ant; no → earthworm. An organism has no backbone and six jointed legs. Which route is correct?',
       'Step 1 no, then step 3 yes: ant',
       'Step 1 yes, then step 2 yes: pigeon',
       'Step 1 yes, then step 2 no: frog',
@@ -409,7 +409,7 @@ If a photograph hides a needed structure, write uncertain and request a clearer 
       'Archaea'
     ],
     [
-      'A learner identifies a snail as an earthworm using our key. What is the best correction?',
+      'An identification key is designed only for pigeon, frog, ant and earthworm. A learner follows its choices and identifies a snail as an earthworm. What is the best correction?',
       'The snail is outside the stated set, so use an appropriate key',
       'Remove the backbone question to guarantee accuracy',
       'Treat every legless invertebrate as an earthworm',
@@ -670,7 +670,7 @@ A faster disappearance supports a rate difference under these conditions. It doe
       'Separation methods'
     ],
     [
-      'The example limit is 12 g per 100 mL water. Adding 16 g at that temperature leaves how much undissolved?',
+      'A solute has a dissolving limit of 12 g per 100 mL water. Adding 16 g to 100 mL water at that temperature leaves how much undissolved after equilibration?',
       '4 g',
       '12 g',
       '16 g',
