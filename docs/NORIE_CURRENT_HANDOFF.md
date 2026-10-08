@@ -23,7 +23,7 @@ Before this PR, the published application was v0.5.0 / 0.5.0+8 at `9fc90379f6016
 
 ## Verification and backend
 
-Local Flutter analysis: **no issues**. Full Flutter suite: **512 passed**. Node worker/update/download/release/league tests: **30 passed**. Real PostgreSQL checks: **35+ league assertions and 20 guarded-cloud assertions passed**. Independent review recomputed 105 Math keys and checked 395 numeric distractor sets. Standalone assessment regressions cover 47 data/source cases.
+Local Flutter analysis: **no issues**. Full Flutter suite: **513 passed**. Node worker/update/download/release/league tests: **30 passed**. Real PostgreSQL checks: **35+ league assertions and 20 guarded-cloud assertions passed**. Independent review recomputed 105 Math keys and checked 395 numeric distractor sets. Standalone assessment regressions cover 47 data/source cases. The final review's full-storage startup regression is fixed: failed optional collection writes retain in-memory milestones and allow the offline library to open; explicit retry persists them.
 
 Actual phone maps and appearance views were inspected. Appearance presets saved and survived reload with external networking blocked. Platform CI supplies final exact-revision package, atlas/audio/offline and release checks; consult Actions/release metadata for their final state.
 
