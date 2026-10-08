@@ -48,6 +48,9 @@ jobs:
           cp branding/web/manifest.json web/manifest.json
           cp branding/web/norie-logo.svg web/norie-logo.svg
           cp branding/web/norie-sw.js web/norie-sw.js
+          cp branding/web/norie-updates.mjs web/norie-updates.mjs
+          cp branding/web/downloads.html web/downloads.html
+          cp branding/web/downloads.mjs web/downloads.mjs
           mkdir -p android/app/src/main/res/drawable
           cp branding/android/norie_launcher_icon.xml android/app/src/main/res/drawable/norie_launcher_icon.xml
           cp branding/android/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
@@ -84,7 +87,9 @@ jobs:
         run: flutter test
 
       - name: Test offline web cache
-        run: node --test test/norie_service_worker_test.mjs
+        run: |
+          node --test test/norie_service_worker_test.mjs test/norie_updates_test.mjs test/downloads_test.mjs
+          python -m unittest discover -s test -p release_tools_test.py
 
       - name: Install local AI test dependencies
         working-directory: local-ai
@@ -121,7 +126,7 @@ jobs:
 
       - name: Verify offline web configuration
         run: |
-          grep -q 'norie-sw.js' branding/web/index.html
+          grep -q 'norie-updates.mjs' branding/web/index.html
           grep -q 'overview-skeleton.glb' branding/web/norie-sw.js
           if grep -q 'registration.unregister' branding/web/index.html; then
             echo "Offline mode must not unregister service workers" >&2

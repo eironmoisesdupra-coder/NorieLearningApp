@@ -1,0 +1,1 @@
+bool checkNorieWebUpdate() => false;

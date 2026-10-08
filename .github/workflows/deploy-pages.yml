@@ -48,6 +48,9 @@ jobs:
           cp branding/web/manifest.json web/manifest.json
           cp branding/web/norie-logo.svg web/norie-logo.svg
           cp branding/web/norie-sw.js web/norie-sw.js
+          cp branding/web/norie-updates.mjs web/norie-updates.mjs
+          cp branding/web/downloads.html web/downloads.html
+          cp branding/web/downloads.mjs web/downloads.mjs
 
       - name: Remove generated default test
         run: rm -f test/widget_test.dart

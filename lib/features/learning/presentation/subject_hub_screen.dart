@@ -40,7 +40,7 @@ class SubjectHubScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 _SubjectTile(
                   title: 'Mathematics',
-                  subtitle: 'Algebra · Geometry · Calculus · Statistics',
+                  subtitle: 'Subject lessons in development',
                   icon: Icons.calculate_rounded,
                   color: NorieColors.primary,
                   progress: .68,
@@ -69,7 +69,7 @@ class SubjectHubScreen extends StatelessWidget {
                 const SizedBox(height: 13),
                 _SubjectTile(
                   title: 'English',
-                  subtitle: 'Grammar · Vocabulary · Reading · Communication',
+                  subtitle: 'Subject lessons in development',
                   icon: Icons.menu_book_rounded,
                   color: NorieColors.orange,
                   progress: .45,

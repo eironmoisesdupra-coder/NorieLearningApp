@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html data-norie-build="__NORIE_BUILD_SHA__">
 <head>
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
@@ -57,46 +57,9 @@
     </div>
   </div>
 
+  <script type="module" src="norie-updates.mjs?v=__NORIE_BUILD_SHA__"></script>
   <script>
     (() => {
-      const startOfflineCache = () => {
-        if (!('serviceWorker' in navigator)) return;
-        const notice = document.createElement('div');
-        notice.setAttribute('role', 'status');
-        notice.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:9999;max-width:260px;padding:10px 14px;border-radius:12px;background:#142641;color:#e5f5ff;font:12px system-ui;pointer-events:none';
-        notice.textContent = 'Saving the offline learning library…';
-        document.body.appendChild(notice);
-        const watch = (worker) => {
-          if (!worker) return;
-          const changed = () => {
-            if (worker.state === 'activated') {
-              notice.textContent = 'Offline learning library ready';
-              setTimeout(() => notice.remove(), 5000);
-            } else if (worker.state === 'redundant') {
-              notice.textContent = 'Offline setup incomplete. Reopen while connected to retry.';
-            }
-          };
-          worker.addEventListener('statechange', changed);
-          changed();
-        };
-
-        navigator.serviceWorker.register(
-          'norie-sw.js?v=__NORIE_BUILD_SHA__',
-          { scope: './' },
-        ).then((registration) => {
-          watch(registration.installing || registration.waiting || registration.active);
-          registration.addEventListener('updatefound', () => watch(registration.installing));
-          registration.update().catch(() => {});
-        }).catch((error) => {
-          notice.textContent = 'Offline setup unavailable. Reopen while connected to retry.';
-          console.warn('Norie offline cache registration warning:', error);
-        });
-      };
-
-      // Start offline setup as soon as the HTML shell arrives. Do not wait for
-      // Flutter to finish loading first.
-      startOfflineCache();
-
       const script = document.createElement('script');
       script.src = 'flutter_bootstrap.js?v=__NORIE_BUILD_SHA__';
       script.async = true;

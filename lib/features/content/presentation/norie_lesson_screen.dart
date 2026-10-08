@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../../../core/progression/norie_lesson_journey.dart';
 import '../../../core/audio/norie_audio_host.dart';
 import '../../../core/audio/norie_audio_manager.dart';
 
@@ -11,13 +14,77 @@ import '../data/science/science_curriculum.dart';
 import 'science_figure_view.dart';
 import 'norie_practice_mode_screen.dart';
 
-class NorieLessonScreen extends StatelessWidget {
+class NorieLessonScreen extends StatefulWidget {
   const NorieLessonScreen({
     required this.topic,
     super.key,
   });
 
   final NorieTopicContent topic;
+
+  @override
+  State<NorieLessonScreen> createState() => _NorieLessonScreenState();
+}
+
+class _NorieLessonScreenState extends State<NorieLessonScreen>
+    with WidgetsBindingObserver {
+  final _scroll = ScrollController();
+  final _journey = NorieLessonJourney.instance;
+  bool _restored = false;
+  NorieTopicContent get topic => widget.topic;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _scroll.addListener(_savePosition);
+    _restorePosition();
+  }
+
+  @override
+  void didUpdateWidget(covariant NorieLessonScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.topic.id == topic.id) return;
+    if (_restored && _scroll.hasClients) {
+      _journey.recordOffset(oldWidget.topic.id, _scroll.offset);
+      unawaited(_journey.flush());
+    }
+    _restored = false;
+    _restorePosition();
+  }
+
+  void _restorePosition() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      final saved = _journey.offsetFor(topic.id);
+      _scroll.jumpTo(saved.clamp(0.0, _scroll.position.maxScrollExtent));
+      _restored = true;
+      _journey.openTopic(topic.id);
+    });
+  }
+
+  void _savePosition() {
+    if (_restored && _scroll.hasClients) {
+      _journey.recordOffset(topic.id, _scroll.offset);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      _savePosition();
+      unawaited(_journey.flush());
+    }
+  }
+
+  @override
+  void dispose() {
+    _savePosition();
+    unawaited(_journey.flush());
+    WidgetsBinding.instance.removeObserver(this);
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +103,7 @@ class NorieLessonScreen extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 760),
                 child: ListView(
+                  controller: _scroll,
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
                   children: [
                     Row(

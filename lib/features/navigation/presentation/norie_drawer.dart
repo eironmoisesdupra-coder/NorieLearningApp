@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/account/norie_account_service.dart';
+import '../../../core/release/norie_app_progress_screen.dart';
 import '../../../core/mascot/norie_mascot_scope.dart';
 import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
 import '../../../core/audio/norie_audio_settings_screen.dart';
@@ -54,204 +55,217 @@ class NorieDrawer extends StatelessWidget {
                 final progression = NorieProgression.instance.snapshot;
 
                 return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              children: [
-                _ProfileHeader(progression: progression),
-                const SizedBox(height: 20),
-                const _SectionLabel('MAIN'),
-                _MenuItem(
-                  icon: Icons.home_rounded,
-                  label: 'Home',
-                  color: NorieColors.cyan,
-                  selected: selectedSection == NorieDrawerSection.home,
-                  onTap: () => _switchTab(context, 0),
-                ),
-                _MenuItem(
-                  icon: Icons.menu_book_rounded,
-                  label: 'Learn',
-                  color: NorieColors.primary,
-                  selected: selectedSection == NorieDrawerSection.learn,
-                  onTap: () => _switchTab(context, 1, const LearnScreen()),
-                ),
-                _MenuItem(
-                  icon: Icons.route_rounded,
-                  label: 'My Learning Path',
-                  color: NorieColors.green,
-                  onTap: () => _open(context, const ChemistryScreen()),
-                ),
-                const SizedBox(height: 14),
-                const _SectionLabel('AI TOOLS'),
-                _MenuItem(
-                  icon: Icons.auto_awesome_rounded,
-                  label: 'AI-Based Q&A',
-                  color: NorieColors.violet,
-                  trailing: const _SampleBadge(),
-                  onTap: () => _switchTab(context, 1, const LearnScreen()),
-                ),
-                const SizedBox(height: 14),
-                const _SectionLabel('PROGRESS'),
-                _MenuItem(
-                  icon: Icons.bar_chart_rounded,
-                  label: 'XP & Levels',
-                  color: NorieColors.violet,
-                  selected: selectedSection == NorieDrawerSection.progress,
-                  onTap: () => _switchTab(context, 3, const ProgressScreen()),
-                ),
-                _MenuItem(
-                  icon: Icons.psychology_alt_rounded,
-                  label: 'Mastery & Weak Topics',
-                  color: NorieColors.cyan,
-                  onTap: () => _open(
-                    context,
-                    const WeakTopicsScreen(),
-                  ),
-                ),
-                _MenuItem(
-                  icon: Icons.workspace_premium_rounded,
-                  label: 'Achievements',
-                  color: NorieColors.orange,
-                  onTap: () =>
-                      _switchTab(context, 3, const ProgressScreen()),
-                ),
-                _MenuItem(
-                  icon: Icons.local_fire_department_rounded,
-                  label: 'Streaks',
-                  color: NorieColors.orange,
-                  trailing: _CountBadge('${NorieProgression.instance.currentStreak}'),
-                  onTap: () => _openUpcoming(
-                    context,
-                    title: 'Streaks',
-                    subtitle:
-                        'Daily learning streak history and streak protection will appear here.',
-                    icon: Icons.local_fire_department_rounded,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const _SectionLabel('CHALLENGES'),
-                _MenuItem(
-                  icon: Icons.track_changes_rounded,
-                  label: 'Daily Challenge',
-                  color: NorieColors.magenta,
-                  selected: selectedSection == NorieDrawerSection.challenge,
-                  onTap: () => _switchTab(
-                    context,
-                    2,
-                    const ChallengeScreen(),
-                  ),
-                ),
-                _MenuItem(
-                  icon: Icons.emoji_events_rounded,
-                  label: 'Weekly Goals',
-                  color: NorieColors.cyan,
-                  onTap: () => _switchTab(
-                    context,
-                    2,
-                    const ChallengeScreen(),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _QuickActions(onTabSelected: onTabSelected),
-                const SizedBox(height: 18),
-                const _SectionLabel('ACCOUNT'),
-                _MenuItem(
-                  icon: Icons.cloud_sync_rounded,
-                  label: NorieAccountService.instance.isSignedIn
-                      ? 'Cloud Account'
-                      : 'Sign In / Cloud Sync',
-                  color: NorieColors.violet,
-                  onTap: () => _open(
-                    context,
-                    const AccountScreen(),
-                  ),
-                ),
-                _MenuItem(
-                  icon: Icons.person_rounded,
-                  label: 'Profile',
-                  color: NorieColors.cyan,
-                  selected: selectedSection == NorieDrawerSection.profile,
-                  onTap: () => _switchTab(
-                    context,
-                    4,
-                    const ProfileScreen(),
-                  ),
-                ),
-                _MenuItem(
-                  icon: Icons.workspace_premium_rounded,
-                  label: 'Membership',
-                  color: NorieColors.violet,
-                  trailing: const _SampleBadge(),
-                  onTap: () => _open(
-                    context,
-                    const SubscriptionPlaceholderScreen(),
-                  ),
-                ),
-                _MenuItem(
-                  icon: Icons.storefront_rounded,
-                  label: 'Norie Shop',
-                  color: NorieColors.orange,
-                  trailing: const _SampleBadge(),
-                  onTap: () => _open(
-                    context,
-                    const NorieShopPlaceholderScreen(),
-                  ),
-                ),
-                _MenuItem(
-                  icon: Icons.tune_rounded,
-                  label: 'Learning Preferences',
-                  color: NorieColors.primary,
-                  onTap: () => _openUpcoming(
-                    context,
-                    title: 'Learning Preferences',
-                    subtitle:
-                        'Adjust difficulty, recommendations, study pace, and learning interests here.',
-                    icon: Icons.tune_rounded,
-                  ),
-                ),
-                _MenuItem(
-                  icon: Icons.settings_rounded,
-                  label: 'Settings',
-                  color: NorieColors.textSecondary,
-                  onTap: () => _open(context, const NorieAudioSettingsScreen()),
-                ),
-                const Divider(
-                  height: 28,
-                  color: NorieColors.border,
-                ),
-                _MenuItem(
-                  icon: Icons.play_circle_outline_rounded,
-                  label: 'Start Tutorial',
-                  color: NorieColors.cyan,
-                  onTap: () async {
-                    final coordinator = NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
-                    Navigator.of(context).pop();
-                    await coordinator?.replay(NorieTutorialCatalog.complete);
-                  },
-                ),
-                _MenuItem(
-                  icon: Icons.help_outline_rounded,
-                  label: 'Help & Support',
-                  color: NorieColors.textSecondary,
-                  compact: true,
-                  onTap: () {
-                    final coordinator = NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
-                    Navigator.of(context).pop();
-                    coordinator?.browse();
-                  },
-                ),
-                _MenuItem(
-                  icon: Icons.info_outline_rounded,
-                  label: 'About Norie',
-                  color: NorieColors.textSecondary,
-                  compact: true,
-                  onTap: () => _openUpcoming(
-                    context,
-                    title: 'About Norie',
-                    subtitle:
-                        'Norie Learning · Play · Learn · Grow Further.',
-                    icon: Icons.info_outline_rounded,
-                  ),
-                ),
-              ],
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  children: [
+                    _ProfileHeader(progression: progression),
+                    const SizedBox(height: 20),
+                    const _SectionLabel('MAIN'),
+                    _MenuItem(
+                      icon: Icons.home_rounded,
+                      label: 'Home',
+                      color: NorieColors.cyan,
+                      selected: selectedSection == NorieDrawerSection.home,
+                      onTap: () => _switchTab(context, 0),
+                    ),
+                    _MenuItem(
+                      icon: Icons.menu_book_rounded,
+                      label: 'Learn',
+                      color: NorieColors.primary,
+                      selected: selectedSection == NorieDrawerSection.learn,
+                      onTap: () => _switchTab(context, 1, const LearnScreen()),
+                    ),
+                    _MenuItem(
+                      icon: Icons.route_rounded,
+                      label: 'My Learning Path',
+                      color: NorieColors.green,
+                      onTap: () => _open(context, const ChemistryScreen()),
+                    ),
+                    const SizedBox(height: 14),
+                    const _SectionLabel('AI TOOLS'),
+                    _MenuItem(
+                      icon: Icons.auto_awesome_rounded,
+                      label: 'AI-Based Q&A',
+                      color: NorieColors.violet,
+                      trailing: const _SampleBadge(),
+                      onTap: () => _switchTab(context, 1, const LearnScreen()),
+                    ),
+                    const SizedBox(height: 14),
+                    const _SectionLabel('PROGRESS'),
+                    _MenuItem(
+                      icon: Icons.bar_chart_rounded,
+                      label: 'XP & Levels',
+                      color: NorieColors.violet,
+                      selected: selectedSection == NorieDrawerSection.progress,
+                      onTap: () =>
+                          _switchTab(context, 3, const ProgressScreen()),
+                    ),
+                    _MenuItem(
+                      icon: Icons.psychology_alt_rounded,
+                      label: 'Mastery & Weak Topics',
+                      color: NorieColors.cyan,
+                      onTap: () => _open(
+                        context,
+                        const WeakTopicsScreen(),
+                      ),
+                    ),
+                    _MenuItem(
+                      icon: Icons.workspace_premium_rounded,
+                      label: 'Achievements',
+                      color: NorieColors.orange,
+                      onTap: () =>
+                          _switchTab(context, 3, const ProgressScreen()),
+                    ),
+                    _MenuItem(
+                      icon: Icons.local_fire_department_rounded,
+                      label: 'Streaks',
+                      color: NorieColors.orange,
+                      trailing: _CountBadge(
+                          '${NorieProgression.instance.currentStreak}'),
+                      onTap: () => _openUpcoming(
+                        context,
+                        title: 'Streaks',
+                        subtitle:
+                            'Daily learning streak history and streak protection will appear here.',
+                        icon: Icons.local_fire_department_rounded,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const _SectionLabel('CHALLENGES'),
+                    _MenuItem(
+                      icon: Icons.track_changes_rounded,
+                      label: 'Daily Challenge',
+                      color: NorieColors.magenta,
+                      selected: selectedSection == NorieDrawerSection.challenge,
+                      onTap: () => _switchTab(
+                        context,
+                        2,
+                        const ChallengeScreen(),
+                      ),
+                    ),
+                    _MenuItem(
+                      icon: Icons.emoji_events_rounded,
+                      label: 'Weekly Goals',
+                      color: NorieColors.cyan,
+                      onTap: () => _switchTab(
+                        context,
+                        2,
+                        const ChallengeScreen(),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _QuickActions(onTabSelected: onTabSelected),
+                    const SizedBox(height: 18),
+                    const _SectionLabel('ACCOUNT'),
+                    _MenuItem(
+                      icon: Icons.save_alt_rounded,
+                      label: 'App & progress',
+                      color: NorieColors.cyan,
+                      onTap: () =>
+                          _open(context, const NorieAppProgressScreen()),
+                    ),
+                    _MenuItem(
+                      icon: Icons.cloud_sync_rounded,
+                      label: NorieAccountService.instance.isSignedIn
+                          ? 'Cloud Account'
+                          : 'Sign In / Cloud Sync',
+                      color: NorieColors.violet,
+                      onTap: () => _open(
+                        context,
+                        const AccountScreen(),
+                      ),
+                    ),
+                    _MenuItem(
+                      icon: Icons.person_rounded,
+                      label: 'Profile',
+                      color: NorieColors.cyan,
+                      selected: selectedSection == NorieDrawerSection.profile,
+                      onTap: () => _switchTab(
+                        context,
+                        4,
+                        const ProfileScreen(),
+                      ),
+                    ),
+                    _MenuItem(
+                      icon: Icons.workspace_premium_rounded,
+                      label: 'Membership',
+                      color: NorieColors.violet,
+                      trailing: const _SampleBadge(),
+                      onTap: () => _open(
+                        context,
+                        const SubscriptionPlaceholderScreen(),
+                      ),
+                    ),
+                    _MenuItem(
+                      icon: Icons.storefront_rounded,
+                      label: 'Norie Shop',
+                      color: NorieColors.orange,
+                      trailing: const _SampleBadge(),
+                      onTap: () => _open(
+                        context,
+                        const NorieShopPlaceholderScreen(),
+                      ),
+                    ),
+                    _MenuItem(
+                      icon: Icons.tune_rounded,
+                      label: 'Learning Preferences',
+                      color: NorieColors.primary,
+                      onTap: () => _openUpcoming(
+                        context,
+                        title: 'Learning Preferences',
+                        subtitle:
+                            'Adjust difficulty, recommendations, study pace, and learning interests here.',
+                        icon: Icons.tune_rounded,
+                      ),
+                    ),
+                    _MenuItem(
+                      icon: Icons.settings_rounded,
+                      label: 'Settings',
+                      color: NorieColors.textSecondary,
+                      onTap: () =>
+                          _open(context, const NorieAudioSettingsScreen()),
+                    ),
+                    const Divider(
+                      height: 28,
+                      color: NorieColors.border,
+                    ),
+                    _MenuItem(
+                      icon: Icons.play_circle_outline_rounded,
+                      label: 'Start Tutorial',
+                      color: NorieColors.cyan,
+                      onTap: () async {
+                        final coordinator = NorieMascotScope.maybeOf(context)
+                            ?.tutorialCoordinator;
+                        Navigator.of(context).pop();
+                        await coordinator
+                            ?.replay(NorieTutorialCatalog.complete);
+                      },
+                    ),
+                    _MenuItem(
+                      icon: Icons.help_outline_rounded,
+                      label: 'Help & Support',
+                      color: NorieColors.textSecondary,
+                      compact: true,
+                      onTap: () {
+                        final coordinator = NorieMascotScope.maybeOf(context)
+                            ?.tutorialCoordinator;
+                        Navigator.of(context).pop();
+                        coordinator?.browse();
+                      },
+                    ),
+                    _MenuItem(
+                      icon: Icons.info_outline_rounded,
+                      label: 'About Norie',
+                      color: NorieColors.textSecondary,
+                      compact: true,
+                      onTap: () => _openUpcoming(
+                        context,
+                        title: 'About Norie',
+                        subtitle:
+                            'Norie Learning · Play · Learn · Grow Further.',
+                        icon: Icons.info_outline_rounded,
+                      ),
+                    ),
+                  ],
                 );
               },
             );
@@ -511,8 +525,7 @@ class _MenuItem extends StatelessWidget {
                     label,
                     style: TextStyle(
                       fontSize: compact ? 13 : 14,
-                      fontWeight:
-                          selected ? FontWeight.w900 : FontWeight.w700,
+                      fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                       color: selected
                           ? NorieColors.textPrimary
                           : NorieColors.textSecondary,
@@ -706,4 +719,3 @@ class _QuickAction extends StatelessWidget {
     );
   }
 }
-
