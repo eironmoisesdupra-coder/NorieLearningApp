@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' blob: data:; worker-src 'self' blob:">
+<title>NorieLearning 3D Anatomy</title>
+<style>
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#0b1629;color:#dce8f5;font:14px system-ui,sans-serif}
+canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+#status{position:absolute;top:16px;left:16px;right:16px;padding:12px 16px;background:#142641ed;border:1px solid #31506e;border-radius:12px;pointer-events:none}
+</style></head><body>
+<canvas id="anatomy" aria-label="Interactive 3D anatomy model" tabindex="0"></canvas>
+<div id="status" role="status">Starting offline atlas…</div>
+<script type="module" src="atlas-viewer.js"></script>
+</body></html>

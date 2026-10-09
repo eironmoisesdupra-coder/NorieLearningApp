@@ -1,0 +1,19 @@
+{
+  "name": "NorieLearning",
+  "short_name": "NorieLearning",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#071126",
+  "theme_color": "#071126",
+  "description": "A modern gamified learning platform.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "norie-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
