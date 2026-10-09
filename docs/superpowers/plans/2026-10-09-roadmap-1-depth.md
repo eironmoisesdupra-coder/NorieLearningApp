@@ -35,3 +35,5 @@
 - Web update/download/release regressions: 16 passed; desktop asset/audio boundaries: 7 passed.
 - Independent review: no blocking findings; added variable-length saved/current/completed assertions.
 - Release web build passed (151.7 seconds); existing Wasm dry-run compatibility warnings do not prevent the JavaScript release.
+- Phone inspection found stale Math/English starter labels in existing UI. Three new grade-card tests failed before correction; coverage now derives from the actual registry for all current subjects. No new content or subjects added.
+- Final label-change analysis clean and full suite: 523 passed. Follow-up independent review has no blocking findings; release web rebuilding before final publication.

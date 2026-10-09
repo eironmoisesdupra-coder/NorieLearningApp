@@ -9,6 +9,7 @@ Active worktree: `C:/Users/ronaldo.dupra/Documents/NorieLearning-integrate`. Bra
 ## Roadmap Part 1
 
 - Production curriculum paths validate 6?20 authored missions; future authored additions retain dynamic counts/maps/chapters instead of padding to a fixed size.
+- Grade cards derive displayed coverage from the registry; Mathematics/English no longer advertise authored lessons as starter previews.
 - Long-term per-subject/grade targets are developer guidance only. All 234 current lessons remain unchanged, six in each of 39 paths. This release does not claim expanded content already exists.
 - Unknown subjects/grades return no curriculum, rather than fabricating a Science path.
 - Existing legacy five-mission rewards, IDs, maps, local saves and account hooks remain unchanged.
@@ -30,7 +31,7 @@ Active worktree: `C:/Users/ronaldo.dupra/Documents/NorieLearning-integrate`. Bra
 
 ## Verification and backend
 
-Prior 0.6.0 baseline: Flutter analysis clean and **513 tests passed**. Part 1: analysis has no issues, all 520 Flutter tests pass, 16 web update/download/release regressions and seven desktop asset/audio tests pass, and the release web build passes. Final platform/deployment evidence is in exact-revision Actions runs. Node worker/update/download/release/league tests: **30 passed**. Real PostgreSQL checks: **35+ league assertions and 20 guarded-cloud assertions passed**. Independent review recomputed 105 Math keys and checked 395 numeric distractor sets. Standalone assessment regressions cover 47 data/source cases. The final review's full-storage startup regression is fixed: failed optional collection writes retain in-memory milestones and allow the offline library to open; explicit retry persists them.
+Prior 0.6.0 baseline: Flutter analysis clean and **513 tests passed**. Part 1: analysis has no issues, all 523 Flutter tests pass, 16 web update/download/release regressions and seven desktop asset/audio tests pass, and the release web build passes. Final platform/deployment evidence is in exact-revision Actions runs. Node worker/update/download/release/league tests: **30 passed**. Real PostgreSQL checks: **35+ league assertions and 20 guarded-cloud assertions passed**. Independent review recomputed 105 Math keys and checked 395 numeric distractor sets. Standalone assessment regressions cover 47 data/source cases. The final review's full-storage startup regression is fixed: failed optional collection writes retain in-memory milestones and allow the offline library to open; explicit retry persists them.
 
 Actual phone maps and appearance views were inspected. Appearance presets saved and survived reload with external networking blocked. The packaged Windows app passed cold offline launch, real anatomy interaction, 20 Math quiz answers, three challenge rounds and XP persistence after closing/reopening. Native audio decoding, disable/re-enable and persisted mute tests passed. Its smoke navigation now presses Start mission after opening a map node. Platform CI supplies final exact-revision package and release checks; consult Actions/release metadata for their final state.
 
