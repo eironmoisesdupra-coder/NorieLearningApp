@@ -22,7 +22,7 @@ void main() {
     await NorieLessonJourney.instance.load();
   });
 
-  for (final length in [5, 10, 20]) {
+  for (final length in [5, 6, 7, 8, 10, 19, 20]) {
     testWidgets(
         '$length real missions remain reachable at 320px with large text',
         (tester) async {
@@ -84,9 +84,7 @@ void main() {
       ));
       await tester.pump();
       expect(find.text('$subject Basecamp'), findsOneWidget);
-      expect(
-          find.textContaining('6 authored lessons'),
-          findsOneWidget);
+      expect(find.textContaining('6 authored lessons'), findsOneWidget);
       expect(find.text('List'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
