@@ -1,4 +1,5 @@
 import '../domain/norie_content_models.dart';
+import '../domain/norie_curriculum_depth.dart';
 import 'norie_grade1_science_curriculum.dart';
 import 'science/science_curriculum.dart';
 import 'science/science_expansion.dart';
@@ -346,7 +347,8 @@ abstract final class NorieFoundationCurriculum {
     final source = switch (subject.toLowerCase()) {
       'mathematics' => _math,
       'english' => _english,
-      _ => _science,
+      'science' => _science,
+      _ => const <String, List<String>>{},
     };
     return List.unmodifiable([
       ...?source[gradeId],
@@ -359,12 +361,17 @@ abstract final class NorieFoundationCurriculum {
   }
 
   static List<NorieTopicContent> topicsFor(String subject, String gradeId) {
+    if (!const ['science', 'mathematics', 'english']
+            .contains(subject.toLowerCase()) ||
+        !gradeLevels.any((grade) => grade.id == gradeId)) {
+      return const [];
+    }
     if (subject.toLowerCase() == 'science') {
       final original = gradeId == 'g1'
           ? NorieGrade1ScienceCurriculum.topics
           : ScienceCurriculum.grades[gradeId];
       if (original != null) {
-        return List.unmodifiable([
+        return _finalizePath(subject, gradeId, [
           ...original,
           if (ScienceExpansion.lessons[gradeId] case final lesson?) lesson,
         ]);
@@ -373,7 +380,7 @@ abstract final class NorieFoundationCurriculum {
     final level = gradeLevels.firstWhere((item) => item.id == gradeId);
     final titles = lessonTitles(subject, gradeId);
     final originalTitles = titles.take(5).toList();
-    return List.unmodifiable([
+    return _finalizePath(subject, gradeId, [
       if (subject.toLowerCase() == 'mathematics' && gradeId == 'g1')
         ...NorieGrade1MathCurriculum.topics
       else if (subject.toLowerCase() == 'mathematics' &&
@@ -388,6 +395,24 @@ abstract final class NorieFoundationCurriculum {
       if (AuthoredSubjectCurriculum.lesson(subject, gradeId) case final lesson?)
         lesson,
     ]);
+  }
+
+  /// Validate the published registry, not legacy references or planning targets.
+  static List<NorieTopicContent> _finalizePath(
+    String subject,
+    String gradeId,
+    List<NorieTopicContent> topics,
+  ) {
+    NorieCurriculumDepth.validate(
+      subject: subject,
+      gradeId: gradeId,
+      count: topics.length,
+    );
+    if (topics.any((topic) => !isAuthored(topic))) {
+      throw StateError(
+          '$subject/$gradeId contains unpublished lesson content.');
+    }
+    return List.unmodifiable(topics);
   }
 
   static NorieTopicContent _topic(

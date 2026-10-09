@@ -8,6 +8,7 @@ import 'package:norie_learning/features/content/presentation/norie_science_adven
 import 'package:norie_learning/features/content/presentation/norie_lesson_screen.dart';
 import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
 import 'package:norie_learning/features/content/presentation/norie_grade_lessons_screen.dart';
+import 'package:norie_learning/features/content/presentation/norie_grade_select_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +23,7 @@ void main() {
     await NorieLessonJourney.instance.load();
   });
 
-  for (final length in [5, 10, 20]) {
+  for (final length in [5, 6, 7, 8, 10, 19, 20]) {
     testWidgets(
         '$length real missions remain reachable at 320px with large text',
         (tester) async {
@@ -64,6 +65,22 @@ void main() {
     });
   }
 
+  for (final subject in ['Science', 'Mathematics', 'English']) {
+    testWidgets('$subject grade cards report real authored coverage',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+          theme: NorieTheme.dark,
+          home: NorieGradeSelectScreen(
+              subject: subject, icon: Icons.school, accent: NorieColors.cyan)));
+      await tester.pump();
+      expect(find.textContaining('6 authored lessons'), findsWidgets);
+      expect(find.textContaining('starter previews'), findsNothing);
+      expect(find.textContaining('lessons are in development'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   for (final subject in ['Mathematics', 'English']) {
     testWidgets('$subject offers a map with fully authored coverage',
         (tester) async {
@@ -84,9 +101,7 @@ void main() {
       ));
       await tester.pump();
       expect(find.text('$subject Basecamp'), findsOneWidget);
-      expect(
-          find.textContaining('6 authored lessons'),
-          findsOneWidget);
+      expect(find.textContaining('6 authored lessons'), findsOneWidget);
       expect(find.text('List'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

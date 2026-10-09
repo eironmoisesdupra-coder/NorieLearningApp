@@ -90,7 +90,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Science has authored Grade 1–College modules. Mathematics and English are starter previews.',
+                    'Science, Mathematics and English have authored Grade 1–College journeys. Each path shows its published lessons.',
                     style: TextStyle(
                       color: NorieColors.textSecondary,
                       height: 1.45,
@@ -101,12 +101,11 @@ class _LearnScreenState extends State<LearnScreen> {
                     id: 'learn.subjects',
                     child: _SubjectTile(
                       title: 'Mathematics',
-                      subtitle:
-                          'Starter preview · Subject lessons in development',
+                      subtitle: 'Grade 1–College · Authored lessons',
                       icon: Icons.calculate_rounded,
                       color: NorieColors.primary,
                       progress: .68,
-                      badge: 'STARTER',
+                      badge: 'LIVE',
                       onTap: () {
                         NorieProgression.instance
                             .recordSubjectExplored('Mathematics');
@@ -166,12 +165,11 @@ class _LearnScreenState extends State<LearnScreen> {
                   const SizedBox(height: 12),
                   _SubjectTile(
                     title: 'English',
-                    subtitle:
-                        'Starter preview · Subject lessons in development',
+                    subtitle: 'Grade 1–College · Authored lessons',
                     icon: Icons.menu_book_rounded,
                     color: NorieColors.orange,
                     progress: .45,
-                    badge: 'STARTER',
+                    badge: 'LIVE',
                     onTap: () {
                       NorieProgression.instance
                           .recordSubjectExplored('English');

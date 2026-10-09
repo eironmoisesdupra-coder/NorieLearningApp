@@ -60,12 +60,13 @@ void main() {
     );
   });
 
-  test('variable chapter ranges cover 5, 10 and 20 missions once', () {
+  test('variable chapter ranges cover legacy and six-to-twenty missions once',
+      () {
     final path = NorieFoundationCurriculum.gradeLevels
         .expand(
             (grade) => NorieFoundationCurriculum.topicsFor('Science', grade.id))
         .toList();
-    for (final length in [5, 10, 20]) {
+    for (final length in [5, 6, 7, 8, 10, 19, 20]) {
       final map = NorieGradeMapProgress.derive(
         topics: path.take(length).toList(),
         completedTopicIds: const {},
@@ -73,6 +74,18 @@ void main() {
       expect(map.chapters.expand((chapter) => chapter.nodes),
           orderedEquals(map.nodes));
       expect(map.chapters.length, (length / 5).ceil());
+      final saved = NorieGradeMapProgress.derive(
+        topics: path.take(length).toList(),
+        completedTopicIds:
+            path.take(length - 1).map((topic) => topic.id).toSet(),
+        lastTopicId: path[length - 1].id,
+      );
+      expect(saved.completedCount, length - 1);
+      expect(saved.currentIndex, length - 1);
+      expect(saved.nodes.last.state, NorieGradeMapNodeState.current);
+      expect(saved.chapters.last.nodes.length, (length - 1) % 5 + 1);
+      expect(saved.complete, isFalse);
+
       expect(map.chapters.every((chapter) => chapter.description.isNotEmpty),
           isTrue);
       expect(map.nodes.every((node) => node.canOpen), isTrue);

@@ -1,12 +1,20 @@
 # NorieLearning Current Integration Handoff
 
-Updated 2026-10-08. Current source prepares Flutter **0.6.0+9** and desktop **0.6.0**, implementing the user's updated game-progression blueprint. Historical design-only wording in the attachment is superseded by the explicit implementation request.
+Updated 2026-10-09. Current source prepares Flutter **0.6.1+10** and desktop **0.6.1**, integrating Roadmap Part 1 from the supplied 0.6.0+9 WIP ZIP.
 
 ## Workspace and publication
 
-Active worktree: `C:/Users/ronaldo.dupra/Documents/NorieLearning-integrate`. Branch `feat/game-progression-studio`, based on develop `22afa6c00d13c303f172e2fa55c5e561e94d3166`. The original dirty checkout and older WIP worktrees remain preserved.
+Active worktree: `C:/Users/ronaldo.dupra/Documents/NorieLearning-integrate`. Branch `feat/roadmap-1-curriculum-depth`, based on develop `9b0ddb12246180eaac81c04751d92d1a0dde4fef` (published 0.6.0+9, PR #39). The original dirty checkout and older WIP worktrees remain preserved. GitHub release metadata identifies the exact package revision; publication requires green Android and Windows push builds for that exact develop SHA.
 
-Before this PR, the published application was v0.5.0 / 0.5.0+8 at `9fc90379f60169cecd0b41f608719e5cefe6d1de`. Version numbers alone do not establish deployment. GitHub release metadata identifies the exact package revision; publication requires green Android and Windows push builds for that exact develop SHA.
+## Roadmap Part 1
+
+- Production curriculum paths validate 6?20 authored missions; future authored additions retain dynamic counts/maps/chapters instead of padding to a fixed size.
+- Grade cards derive displayed coverage from the registry; Mathematics/English no longer advertise authored lessons as starter previews.
+- Long-term per-subject/grade targets are developer guidance only. All 234 current lessons remain unchanged, six in each of 39 paths. This release does not claim expanded content already exists.
+- Unknown subjects/grades return no curriculum, rather than fabricating a Science path.
+- Existing legacy five-mission rewards, IDs, maps, local saves and account hooks remain unchanged.
+- Parts 2 (additional subjects) and 3 (skill graph) are outside the user's current request. The ZIP installer was not executed; its missing patch/stale UI anchors were integrated manually only where Part 1 required them.
+- New policy/registry regressions and expanded map checks exercise 6, 7, 8, 19 and 20 missions, including 320px with enlarged text; legacy five-mission behavior remains covered.
 
 ## Implemented scope
 
@@ -23,7 +31,7 @@ Before this PR, the published application was v0.5.0 / 0.5.0+8 at `9fc90379f6016
 
 ## Verification and backend
 
-Local Flutter analysis: **no issues**. Full Flutter suite: **513 passed**. Node worker/update/download/release/league tests: **30 passed**. Real PostgreSQL checks: **35+ league assertions and 20 guarded-cloud assertions passed**. Independent review recomputed 105 Math keys and checked 395 numeric distractor sets. Standalone assessment regressions cover 47 data/source cases. The final review's full-storage startup regression is fixed: failed optional collection writes retain in-memory milestones and allow the offline library to open; explicit retry persists them.
+Prior 0.6.0 baseline: Flutter analysis clean and **513 tests passed**. Part 1: analysis has no issues, all 523 Flutter tests pass, 16 web update/download/release regressions and seven desktop asset/audio tests pass, and the release web build passes. Final platform/deployment evidence is in exact-revision Actions runs. Node worker/update/download/release/league tests: **30 passed**. Real PostgreSQL checks: **35+ league assertions and 20 guarded-cloud assertions passed**. Independent review recomputed 105 Math keys and checked 395 numeric distractor sets. Standalone assessment regressions cover 47 data/source cases. The final review's full-storage startup regression is fixed: failed optional collection writes retain in-memory milestones and allow the offline library to open; explicit retry persists them.
 
 Actual phone maps and appearance views were inspected. Appearance presets saved and survived reload with external networking blocked. The packaged Windows app passed cold offline launch, real anatomy interaction, 20 Math quiz answers, three challenge rounds and XP persistence after closing/reopening. Native audio decoding, disable/re-enable and persisted mute tests passed. Its smoke navigation now presses Start mission after opening a map node. Platform CI supplies final exact-revision package and release checks; consult Actions/release metadata for their final state.
 
@@ -37,10 +45,10 @@ Competition needs trusted administrator setup and invitations. Public discovery,
 
 ## Downloads and next integration
 
-The [download page](https://eironmoisesdupra-coder.github.io/NorieLearningApp/downloads.html) reads complete verified release metadata. Expected durable 0.6.0 links become available after the trusted publisher succeeds:
+The [download page](https://eironmoisesdupra-coder.github.io/NorieLearningApp/downloads.html) reads complete verified release metadata. Expected durable 0.6.1 links become available after the trusted publisher succeeds:
 
-- Windows: https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/download/v0.6.0/NorieLearning-Windows.zip
-- Android: https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/download/v0.6.0/NorieLearning-Android.apk
+- Windows: https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/download/v0.6.1/NorieLearning-Windows.zip
+- Android: https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/download/v0.6.1/NorieLearning-Android.apk
 - Web: https://eironmoisesdupra-coder.github.io/NorieLearningApp/
 
 Continue through PR → green CI → develop merge → preview verification → exact-revision release. Never push or merge main without explicit instruction. Final handoffs must state the real head SHA, CI status, both platform revisions and any unavailable updated package.
