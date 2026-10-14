@@ -90,7 +90,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Science, Mathematics and English have authored Grade 1–College journeys. Each path shows its published lessons.',
+                    'Science, Mathematics and English have authored journeys. Filipino and Araling Panlipunan begin with Grade 1 pilot lessons.',
                     style: TextStyle(
                       color: NorieColors.textSecondary,
                       height: 1.45,
@@ -182,6 +182,46 @@ class _LearnScreenState extends State<LearnScreen> {
                           ),
                         ),
                       );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _SubjectTile(
+                    title: 'Filipino',
+                    subtitle: 'Grade 1: Wika, Pagbasa, Pakikipag-usap',
+                    icon: Icons.translate_rounded,
+                    color: NorieColors.violet,
+                    progress: 0,
+                    badge: 'PILOT',
+                    onTap: () {
+                      NorieProgression.instance
+                          .recordSubjectExplored('Filipino');
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => const NorieGradeSelectScreen(
+                          subject: 'Filipino',
+                          icon: Icons.translate_rounded,
+                          accent: NorieColors.violet,
+                        ),
+                      ));
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _SubjectTile(
+                    title: 'Araling Panlipunan',
+                    subtitle: 'Grade 1: Sarili, Pamilya, Pamayanan, Mapa',
+                    icon: Icons.public_rounded,
+                    color: NorieColors.cyan,
+                    progress: 0,
+                    badge: 'PILOT',
+                    onTap: () {
+                      NorieProgression.instance
+                          .recordSubjectExplored('Araling Panlipunan');
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => const NorieGradeSelectScreen(
+                          subject: 'Araling Panlipunan',
+                          icon: Icons.public_rounded,
+                          accent: NorieColors.cyan,
+                        ),
+                      ));
                     },
                   ),
                   const SizedBox(height: 28),
