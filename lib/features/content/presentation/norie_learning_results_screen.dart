@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 import '../../../core/progression/norie_adventure_progress.dart';
 import '../../profile/presentation/profile_screen.dart';
 import 'norie_review_quest_screen.dart';
+import 'norie_adaptive_practice_card.dart';
+import '../domain/norie_review_quest.dart';
 import '../../../core/quiz/quiz_result_summary.dart';
 import '../../../core/quiz/norie_quiz_outro.dart';
 import '../application/norie_quiz_adapter.dart';
@@ -13,6 +15,7 @@ import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_reward_feedback.dart';
 import '../domain/norie_content_models.dart';
+import '../domain/norie_adaptive_learning.dart';
 import 'norie_content_theme.dart';
 
 class NorieLearningResultsScreen extends StatefulWidget {
@@ -396,6 +399,30 @@ class _NorieLearningResultsScreenState
                 ),
                 const SizedBox(height: 24),
                 NorieLessonStarCard(topic: widget.topic),
+                if (_owner ==
+                        NorieAdventureProgress.instance.ownershipRevision &&
+                    widget.learnerGuard?.call() != false)
+                  NorieAdaptivePracticeCard(
+                    recommendation: NorieAdaptiveLearningPolicy.recommend(
+                      topic: widget.topic,
+                      evidence: NorieAdventureProgress.instance
+                          .evidenceFor(widget.topic.id),
+                    ),
+                    accent: accent,
+                    onStart: () {
+                      if (_owner !=
+                              NorieAdventureProgress
+                                  .instance.ownershipRevision ||
+                          widget.learnerGuard?.call() == false) {
+                        return;
+                      }
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => NorieReviewQuestScreen(
+                            topic: widget.topic,
+                            kind: NorieReviewQuestKind.adaptivePractice),
+                      ));
+                    },
+                  ),
                 TextButton(
                     onPressed: _showOutro,
                     child: const Text('Save and view rewards')),
