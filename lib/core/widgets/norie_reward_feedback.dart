@@ -7,6 +7,9 @@ import '../mascot/norie_mascot_controller.dart';
 import '../mascot/norie_mascot_view.dart';
 import '../theme/norie_theme.dart';
 import 'norie_credit_coin.dart';
+import 'norie_rank_motif.dart';
+import '../../features/profile/data/norie_profile_appearance_store.dart';
+import '../../features/profile/domain/norie_profile_appearance.dart';
 
 class NorieRewardBanner extends StatelessWidget {
   const NorieRewardBanner({
@@ -217,13 +220,19 @@ class _NorieRewardPopupCardState extends State<_NorieRewardPopupCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (widget.correctAnswer)
-                NorieMascotView(controller: _mascot, size: 110)
-              else if (widget.credits > 0)
-                const NorieCreditCoin(size: 78)
-              else
-                const Icon(Icons.star_rounded,
-                    size: 68, color: NorieColors.orange),
+              _NorieRankCelebration(
+                child: SizedBox(
+                    width: 132,
+                    height: 132,
+                    child: Center(
+                      child: widget.correctAnswer
+                          ? NorieMascotView(controller: _mascot, size: 110)
+                          : widget.credits > 0
+                              ? const NorieCreditCoin(size: 78)
+                              : const Icon(Icons.star_rounded,
+                                  size: 68, color: NorieColors.orange),
+                    )),
+              ),
               const SizedBox(height: 10),
               Text(
                 widget.title,
@@ -264,4 +273,24 @@ class _NorieRewardPopupCardState extends State<_NorieRewardPopupCard> {
       ),
     );
   }
+}
+
+class _NorieRankCelebration extends StatelessWidget {
+  const _NorieRankCelebration({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: NorieProfileAppearanceStore.instance,
+        child: child,
+        builder: (context, child) {
+          final bundle = NorieAppearanceCatalog.bundleForLevel(
+              NorieProfileAppearanceStore.instance.rankLevel);
+          return CustomPaint(
+            key: ValueKey('rank-celebration-${bundle.id}'),
+            painter: NorieRankMotifPainter(bundle: bundle),
+            child: child,
+          );
+        },
+      );
 }

@@ -135,6 +135,53 @@ class _NorieAppearanceStudioState extends State<NorieAppearanceStudio> {
                         () => change(draft.copyWith(frameId: b.id)),
                         icon: Icons.filter_frames_rounded)
                 ]),
+                _section('Frame effect',
+                    'Rank-earned visual effects decorate your profile only. They never affect learning rewards.'),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  _choice('None', draft.frameEffectId == 'none', 1,
+                      () => change(draft.copyWith(frameEffectId: 'none')),
+                      icon: Icons.circle_outlined),
+                  _choice('Glow', draft.frameEffectId == 'glow', 5,
+                      () => change(draft.copyWith(frameEffectId: 'glow')),
+                      icon: Icons.flare_rounded),
+                  _choice('Orbit halo', draft.frameEffectId == 'orbit', 30,
+                      () => change(draft.copyWith(frameEffectId: 'orbit')),
+                      icon: Icons.blur_circular_rounded),
+                  _choice('Prismatic aura', draft.frameEffectId == 'prism', 50,
+                      () => change(draft.copyWith(frameEffectId: 'prism')),
+                      icon: Icons.auto_awesome_rounded)
+                ]),
+                _section('Profile background',
+                    'Choose an offline background treatment for your profile card.'),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  _choice('Classic navy', draft.backgroundId == 'plain', 1,
+                      () => change(draft.copyWith(backgroundId: 'plain')),
+                      icon: Icons.crop_square_rounded),
+                  _choice('Star field', draft.backgroundId == 'stars', 5,
+                      () => change(draft.copyWith(backgroundId: 'stars')),
+                      icon: Icons.star_border_rounded),
+                  _choice('Aurora', draft.backgroundId == 'aurora', 15,
+                      () => change(draft.copyWith(backgroundId: 'aurora')),
+                      icon: Icons.gradient_rounded),
+                  _choice(
+                      'Constellation',
+                      draft.backgroundId == 'constellation',
+                      30,
+                      () =>
+                          change(draft.copyWith(backgroundId: 'constellation')),
+                      icon: Icons.hub_outlined)
+                ]),
+                _section('Nameplate',
+                    'Choose how your learner name is presented on the profile card.'),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final b in NorieAppearanceCatalog.bundles)
+                    _choice(
+                        b.nameplateStyle,
+                        draft.nameplateId == b.id,
+                        b.level,
+                        () => change(draft.copyWith(nameplateId: b.id)),
+                        icon: Icons.badge_outlined)
+                ]),
                 _section('Theme & accent',
                     'Choose a palette, then edit its accent using one of three readable colors.'),
                 Wrap(spacing: 8, runSpacing: 8, children: [
@@ -277,6 +324,12 @@ class _NorieAppearanceStudioState extends State<NorieAppearanceStudio> {
                                     const SizedBox(height: 6),
                                     Text(
                                         '${b.showcaseCapacity} showcase slots · ${b.presetCapacity} saved looks'),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                        '${b.mapTrailStyle} / ${b.celebrationStyle} / ${b.nameplateStyle} \u00b7 ${b.profileEffect}',
+                                        style: const TextStyle(
+                                            color: NorieColors.textSecondary,
+                                            height: 1.35)),
                                     const SizedBox(height: 8),
                                     OutlinedButton(
                                         onPressed: () => showModalBottomSheet<
@@ -303,17 +356,27 @@ class _NorieAppearanceStudioState extends State<NorieAppearanceStudio> {
                                                               height: 12),
                                                           NorieAppearancePreview(
                                                               value: NorieProfileAppearance(
-                                                                  avatarId:
-                                                                      b.avatar,
+                                                                  avatarId: b.avatar,
                                                                   frameId: b.id,
-                                                                  paletteId:
-                                                                      b.id,
-                                                                  poseId:
-                                                                      b.pose),
-                                                              displayName: widget
-                                                                  .displayName,
-                                                              subtitle:
-                                                                  'Unlocks at level ${b.level}'),
+                                                                  paletteId: b.id,
+                                                                  poseId: b.pose,
+                                                                  nameplateId: b.id,
+                                                                  backgroundId: b.level >= 30
+                                                                      ? 'constellation'
+                                                                      : b.level >= 15
+                                                                          ? 'aurora'
+                                                                          : b.level >= 5
+                                                                              ? 'stars'
+                                                                              : 'plain',
+                                                                  frameEffectId: b.level >= 50
+                                                                      ? 'prism'
+                                                                      : b.level >= 30
+                                                                          ? 'orbit'
+                                                                          : b.level >= 5
+                                                                              ? 'glow'
+                                                                              : 'none'),
+                                                              displayName: widget.displayName,
+                                                              subtitle: 'Unlocks at level ${b.level}'),
                                                           const SizedBox(
                                                               height: 12),
                                                           const Text(
@@ -398,7 +461,13 @@ String trophyLabel(String id) {
       _ => 'Earned trophy',
     };
   }
-  final subject = parts.first;
+  final subjectName = NorieFoundationCurriculum.supportedSubjects.firstWhere(
+    (name) =>
+        name.toLowerCase().replaceAll(' ', '-') == parts.first ||
+        name.toLowerCase() == parts.first,
+    orElse: () => parts.first,
+  );
+  final subject = subjectName.toLowerCase();
   final gradeId = parts[1].split(':').first;
   final grade = gradeId == 'college'
       ? 'College'
@@ -409,11 +478,14 @@ String trophyLabel(String id) {
     'mastery' => 'Retained mastery',
     'path-mastery' => 'Whole-path mastery',
     'chapter' => 'Chapter challenge',
-    _ => 'Original map complete',
+    _ => const ['science', 'mathematics', 'english'].contains(subject)
+        ? 'Original map complete'
+        : 'Grade complete',
   };
-  final prefix = '$grade ${subject[0].toUpperCase()}${subject.substring(1)}';
+  final prefix =
+      '$grade ${subjectName[0].toUpperCase()}${subjectName.substring(1)}';
   if ((kind == 'mastery' || kind == 'improvement') &&
-      const ['science', 'mathematics', 'english'].contains(subject) &&
+      NorieFoundationCurriculum.supportsAdventureMap(subject) &&
       NorieFoundationCurriculum.gradeLevels
           .any((grade) => grade.id == gradeId)) {
     final topicId = id.substring(id.indexOf(':') + 1);
@@ -446,13 +518,24 @@ class NorieAppearancePreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = NorieAppearanceCatalog.accent(value);
     final frame = NorieAppearanceCatalog.bundle(value.frameId);
+    final backgroundTail = switch (value.backgroundId) {
+      'stars' => const Color(0xFF202A55),
+      'aurora' => const Color(0xFF173D46),
+      'constellation' => const Color(0xFF2A2148),
+      _ => const Color(0xFF171632),
+    };
+    final effectStrength = switch (value.frameEffectId) {
+      'glow' => .28,
+      'orbit' => .38,
+      'prism' => .5,
+      _ => .16,
+    };
     final poseAsset = switch (value.poseId) {
       'study' => NorieAssets.mascotStudying,
       'celebrate' => NorieAssets.mascotCelebrating,
       _ => NorieAssets.mascotBase,
     };
     return Container(
-        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(26),
             gradient: LinearGradient(
@@ -460,71 +543,230 @@ class NorieAppearancePreview extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [
                   color.withValues(alpha: .18),
-                  const Color(0xFF171632),
+                  backgroundTail,
                   frame.colors.last.withValues(alpha: .12)
                 ]),
-            border: Border.all(color: color.withValues(alpha: .6))),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Wrap(
-              spacing: 18,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Semantics(
-                    label:
-                        '${NorieAppearanceCatalog.avatars[value.avatarId]} avatar, ${frame.title} frame',
-                    child: Container(
-                        width: 88,
-                        height: 88,
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                            shape: frame.level >= 15
-                                ? BoxShape.rectangle
-                                : BoxShape.circle,
-                            borderRadius: frame.level >= 15
-                                ? BorderRadius.circular(
-                                    frame.level >= 50 ? 16 : 28)
-                                : null,
-                            border: Border.all(
-                                color: frame.colors.first,
-                                width: frame.level >= 30 ? 4 : 2),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: color.withValues(alpha: .16),
-                                  blurRadius: 20)
-                            ],
-                            color: const Color(0xFF121B35)),
-                        child: value.avatarId == 'norie'
-                            ? Image.asset(NorieAssets.mascotBase,
-                                fit: BoxFit.contain)
-                            : CustomPaint(
-                                painter: _NorieSymbolPainter(
-                                    value.avatarId, color)))),
-                Semantics(
-                    label:
-                        'Norie ${NorieAppearanceCatalog.poses[value.poseId]} pose',
-                    child: Image.asset(poseAsset,
-                        width: 96, height: 110, fit: BoxFit.contain)),
-              ]),
-          const SizedBox(height: 12),
-          Text(displayName,
-              style: TextStyle(
-                  color: color, fontSize: 23, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          Text(subtitle,
-              style: const TextStyle(color: NorieColors.textSecondary)),
-          if (trophyLabels.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(spacing: 6, runSpacing: 6, children: [
-              for (final label in trophyLabels)
-                Chip(
-                    avatar: Icon(Icons.emoji_events_outlined,
-                        size: 18, color: color),
-                    label: Text(label))
+            border: Border.all(color: color.withValues(alpha: .6)),
+            boxShadow: [
+              BoxShadow(
+                  color: frame.colors.first.withValues(alpha: effectStrength),
+                  blurRadius: value.frameEffectId == 'none' ? 8 : 28,
+                  spreadRadius: value.frameEffectId == 'prism' ? 2 : 0)
             ]),
-          ],
-        ]));
+        child: CustomPaint(
+            painter: _NorieProfileSurfacePainter(
+                value.backgroundId, value.frameEffectId, color),
+            child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                          spacing: 18,
+                          runSpacing: 12,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Semantics(
+                                label:
+                                    '${NorieAppearanceCatalog.avatars[value.avatarId]} avatar, ${frame.title} frame',
+                                child: Container(
+                                    width: 88,
+                                    height: 88,
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                        shape: frame.level >= 15
+                                            ? BoxShape.rectangle
+                                            : BoxShape.circle,
+                                        borderRadius: frame.level >= 15
+                                            ? BorderRadius.circular(
+                                                frame.level >= 50 ? 16 : 28)
+                                            : null,
+                                        border: Border.all(
+                                            color: frame.colors.first,
+                                            width: frame.level >= 30 ? 4 : 2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                              color:
+                                                  color.withValues(alpha: .16),
+                                              blurRadius: 20)
+                                        ],
+                                        color: const Color(0xFF121B35)),
+                                    child: value.avatarId == 'norie'
+                                        ? Image.asset(NorieAssets.mascotBase,
+                                            fit: BoxFit.contain)
+                                        : CustomPaint(
+                                            painter: _NorieSymbolPainter(
+                                                value.avatarId, color)))),
+                            Semantics(
+                                label:
+                                    'Norie ${NorieAppearanceCatalog.poses[value.poseId]} pose',
+                                child: Image.asset(poseAsset,
+                                    width: 96,
+                                    height: 110,
+                                    fit: BoxFit.contain)),
+                          ]),
+                      const SizedBox(height: 12),
+                      _NorieNameplate(
+                          id: value.nameplateId,
+                          color: color,
+                          name: displayName),
+                      const SizedBox(height: 4),
+                      Text(subtitle,
+                          style: const TextStyle(
+                              color: NorieColors.textSecondary)),
+                      if (trophyLabels.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Wrap(spacing: 6, runSpacing: 6, children: [
+                          for (final label in trophyLabels)
+                            Chip(
+                                avatar: Icon(Icons.emoji_events_outlined,
+                                    size: 18, color: color),
+                                label: Text(label))
+                        ]),
+                      ],
+                    ]))));
   }
+}
+
+class _NorieNameplate extends StatelessWidget {
+  const _NorieNameplate(
+      {required this.id, required this.color, required this.name});
+  final String id, name;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = switch (id) {
+      'curious' => Icons.auto_awesome_outlined,
+      'scholar' => Icons.school_outlined,
+      'specialist' => Icons.verified_outlined,
+      'master' => Icons.workspace_premium_outlined,
+      _ => Icons.explore_outlined,
+    };
+    final radius = switch (id) {
+      'curious' => const BorderRadius.horizontal(right: Radius.circular(24)),
+      'scholar' => BorderRadius.circular(4),
+      'specialist' => const BorderRadius.vertical(bottom: Radius.circular(20)),
+      'master' => BorderRadius.circular(10),
+      _ => const BorderRadius.horizontal(right: Radius.circular(10)),
+    };
+    return Semantics(
+      label: NorieAppearanceCatalog.nameplates[id],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .10),
+          borderRadius: radius,
+          border: Border.all(
+              color: color.withValues(alpha: .4),
+              width: id == 'master' ? 2 : 1),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 8),
+          Flexible(
+              child: Text(name,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 23,
+                      fontWeight: FontWeight.w900))),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Static decorations remain offline and do not introduce motion behind text.
+class _NorieProfileSurfacePainter extends CustomPainter {
+  const _NorieProfileSurfacePainter(this.background, this.effect, this.color);
+  final String background, effect;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipRRect(
+        RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(26)));
+    final paint = Paint()..color = color.withValues(alpha: .24);
+    if (background == 'stars' || background == 'constellation') {
+      final points = <Offset>[
+        Offset(size.width * .72, 24),
+        Offset(size.width * .89, 51),
+        Offset(size.width * .78, 93),
+        Offset(size.width * .95, 123),
+        Offset(size.width * .64, 139),
+      ];
+      if (background == 'constellation') {
+        paint
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1;
+        final path = Path()..moveTo(points.first.dx, points.first.dy);
+        for (final point in points.skip(1)) {
+          path.lineTo(point.dx, point.dy);
+        }
+        canvas.drawPath(path, paint);
+        paint.style = PaintingStyle.fill;
+      }
+      for (final point in points) {
+        canvas.drawCircle(point, 2.5, paint);
+        if (background == 'stars') {
+          canvas.drawLine(point - const Offset(5, 0),
+              point + const Offset(5, 0), paint..strokeWidth = 1);
+          canvas.drawLine(
+              point - const Offset(0, 5), point + const Offset(0, 5), paint);
+        }
+      }
+    } else if (background == 'aurora') {
+      paint
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 14;
+      for (var i = 0; i < 3; i++) {
+        paint.color = [
+          color,
+          const Color(0xFF82E8C7),
+          const Color(0xFFA6BCFF)
+        ][i]
+            .withValues(alpha: .10);
+        final y = 25.0 + i * 29;
+        canvas.drawPath(
+            Path()
+              ..moveTo(size.width * .60, y)
+              ..cubicTo(size.width * .75, y - 30, size.width * .8, y + 45,
+                  size.width + 15, y - 8),
+            paint);
+      }
+    }
+    if (effect == 'orbit') {
+      paint
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = color.withValues(alpha: .65);
+      canvas.drawOval(const Rect.fromLTWH(8, 29, 108, 66), paint);
+      canvas.drawCircle(const Offset(109, 42), 4,
+          Paint()..color = color.withValues(alpha: .85));
+    } else if (effect == 'prism') {
+      final bounds = (Offset.zero & size).deflate(4);
+      paint
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..shader = const SweepGradient(colors: [
+          Color(0xFFFFE39E),
+          Color(0xFFD7BEFF),
+          Color(0xFFFFBAD6),
+          Color(0xFF65DBEF),
+          Color(0xFFFFE39E),
+        ]).createShader(bounds);
+      canvas.drawRRect(
+          RRect.fromRectAndRadius(bounds, const Radius.circular(22)), paint);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_NorieProfileSurfacePainter oldDelegate) =>
+      background != oldDelegate.background ||
+      effect != oldDelegate.effect ||
+      color != oldDelegate.color;
 }
 
 /// Original code-native avatar artwork, bundled with the app and usable offline.

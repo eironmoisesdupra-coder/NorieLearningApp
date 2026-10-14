@@ -63,7 +63,17 @@ class NorieProfileAppearanceStore extends ChangeNotifier {
     }
     final allowed = raw.containsKey('appearance')
         ? const {'version', 'rankLevel', 'appearance', 'presets'}
-        : const {'avatar', 'frame', 'palette', 'pose', 'accent', 'showcase'};
+        : const {
+            'avatar',
+            'frame',
+            'palette',
+            'pose',
+            'background',
+            'nameplate',
+            'frame_effect',
+            'accent',
+            'showcase'
+          };
     if (raw.keys.any((key) => key is! String || !allowed.contains(key))) {
       throw const FormatException('Unknown appearance snapshot fields.');
     }
