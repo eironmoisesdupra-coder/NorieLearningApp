@@ -8,9 +8,13 @@ import '../../../core/progression/norie_lesson_journey.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/progression/norie_adventure_progress.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../../../core/widgets/norie_rank_motif.dart';
+import '../../profile/data/norie_profile_appearance_store.dart';
+import '../../profile/domain/norie_profile_appearance.dart';
 import '../data/norie_foundation_curriculum.dart';
 import '../domain/norie_content_models.dart';
 import '../domain/norie_grade_map.dart';
+import '../domain/norie_skill_graph.dart';
 import 'norie_lesson_screen.dart';
 import 'norie_review_quest_screen.dart';
 import '../domain/norie_review_quest.dart';
@@ -148,6 +152,29 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
     final topic = node.topic;
     final journey = NorieLessonJourney.instance;
     final offset = journey.offsetFor(topic.id);
+    final skillGraph = NorieSkillGraph.fromTopics(_topics);
+    String skillLabel(String id, String fallback) {
+      final label = skillGraph.nodes[id]?.label.trim();
+      return label == null || label.isEmpty ? fallback : label;
+    }
+
+    final skillLabels = (skillGraph.topicSkills[topic.id] ?? const <String>{})
+        .map((id) => skillLabel(id, topic.title))
+        .toSet()
+        .take(3)
+        .toList();
+    if (skillLabels.isEmpty) {
+      skillLabels
+          .add(topic.title.trim().isEmpty ? 'Core lesson skill' : topic.title);
+    }
+    final coveredSkills = skillGraph.masteredSkillsFromCompletedTopics(
+        NorieProgression.instance.completedTopicIds);
+    final reviewLabels = skillGraph
+        .unmetPrerequisitesForTopic(topic.id, coveredSkills)
+        .map((id) => skillLabel(id, 'Earlier lesson skill'))
+        .toSet()
+        .take(2)
+        .toList();
     NorieTopicContent? prerequisite;
     for (final candidate in progress.nodes) {
       if (candidate.topic.id == topic.prerequisiteTopicId) {
@@ -225,6 +252,26 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
                     height: 1.45,
                   ),
                 ),
+                const SizedBox(height: 12),
+                const Text('Skills in this mission',
+                    style: TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 6),
+                Column(
+                  key: const ValueKey('mission-skill-labels'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [for (final label in skillLabels) Text(label)],
+                ),
+                if (reviewLabels.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text('Suggested review first: ${reviewLabels.join('; ')}',
+                      style: const TextStyle(color: NorieColors.textSecondary)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Review suggestions are optional. You can start this mission now.',
+                    style: TextStyle(
+                        color: NorieColors.textSecondary, fontSize: 12),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Text(
                   'Chapter ${node.index ~/ 5 + 1} checkpoint',
@@ -338,6 +385,7 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
         NorieProgression.instance,
         NorieLessonJourney.instance,
         NorieAdventureProgress.instance,
+        NorieProfileAppearanceStore.instance,
       ]),
       builder: (context, _) {
         final progress = NorieGradeMapProgress.derive(
@@ -420,6 +468,8 @@ class _AdventureTrail extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       LayoutBuilder(builder: (context, constraints) {
+        final bundle = NorieAppearanceCatalog.bundleForLevel(
+            NorieProfileAppearanceStore.instance.rankLevel);
         final positions = [
           for (var i = 0; i < nodes.length; i++)
             Offset(
@@ -430,8 +480,9 @@ class _AdventureTrail extends StatelessWidget {
           child: Stack(children: [
             Positioned.fill(
                 child: CustomPaint(
-                    painter:
-                        _TrailPainter(positions: positions, accent: accent))),
+                    key: ValueKey('rank-trail-${bundle.id}'),
+                    painter: _TrailPainter(
+                        positions: positions, accent: accent, bundle: bundle))),
             Positioned(
                 top: 14,
                 left: 14,
@@ -642,10 +693,12 @@ class _NodeLabel extends StatelessWidget {
 }
 
 class _TrailPainter extends CustomPainter {
-  const _TrailPainter({required this.positions, required this.accent});
+  const _TrailPainter(
+      {required this.positions, required this.accent, required this.bundle});
 
   final List<Offset> positions;
   final Color accent;
+  final NorieRankBundle bundle;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -726,11 +779,31 @@ class _TrailPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 3,
     );
+
+    // Marks follow the real route without changing mission positions or taps.
+    final motif = NorieRankMotifPainter(bundle: bundle);
+    for (final metric in path.computeMetrics()) {
+      for (var distance = 58.0; distance < metric.length; distance += 38) {
+        final tangent = metric.getTangentForOffset(distance);
+        if (tangent != null) {
+          if (bundle.id == 'explorer') {
+            canvas.drawOval(
+                Rect.fromCenter(center: tangent.position, width: 7, height: 5),
+                Paint()..color = bundle.colors.first);
+          } else {
+            motif.paintMotif(
+                canvas, tangent.position, 6, (distance / 38).floor());
+          }
+        }
+      }
+    }
   }
 
   @override
   bool shouldRepaint(covariant _TrailPainter oldDelegate) =>
-      oldDelegate.positions != positions || oldDelegate.accent != accent;
+      oldDelegate.positions != positions ||
+      oldDelegate.accent != accent ||
+      oldDelegate.bundle.id != bundle.id;
 }
 
 class _Landmark extends StatelessWidget {

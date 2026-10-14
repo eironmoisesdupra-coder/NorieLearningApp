@@ -55,9 +55,14 @@ class NorieGradeSelectScreen extends StatelessWidget {
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const Text(
-                            'Authored learning journeys. Choose a grade or course level.',
-                            style: TextStyle(
+                          Text(
+                            NorieFoundationCurriculum.availableGradeLevels(
+                                            subject)
+                                        .length ==
+                                    NorieFoundationCurriculum.gradeLevels.length
+                                ? 'Authored learning journeys. Choose a grade or course level.'
+                                : 'Grade 1 pilot lessons. More grades will appear as lessons are published.',
+                            style: const TextStyle(
                               color: NorieColors.textSecondary,
                               fontSize: 11,
                             ),
@@ -68,7 +73,9 @@ class NorieGradeSelectScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 22),
-                for (final grade in NorieFoundationCurriculum.gradeLevels) ...[
+                for (final grade
+                    in NorieFoundationCurriculum.availableGradeLevels(
+                        subject)) ...[
                   _GradeCard(
                     subject: subject,
                     grade: grade,

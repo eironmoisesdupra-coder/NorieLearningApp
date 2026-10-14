@@ -43,8 +43,12 @@ class _NorieReviewQuestScreenState extends State<NorieReviewQuestScreen> {
   String get _title => switch (widget.kind) {
         NorieReviewQuestKind.mistakeDrill => 'Mistake drill',
         NorieReviewQuestKind.retainedReview => 'Later review',
+        NorieReviewQuestKind.adaptivePractice => 'Adaptive practice',
         NorieReviewQuestKind.chapter => 'Chapter expedition'
       };
+  bool get _stillCurrent =>
+      _sessionCurrent() &&
+      _owner == NorieAdventureProgress.instance.ownershipRevision;
   Future<void> _submit() async {
     if (_selected == null || _finishing) return;
     final question = _items[_current];
@@ -67,35 +71,40 @@ class _NorieReviewQuestScreenState extends State<NorieReviewQuestScreen> {
       return;
     }
     setState(() => _finishing = true);
-    if (!_sessionCurrent()) {
+    if (!_stillCurrent) {
       Navigator.pop(context);
       return;
     }
     try {
       final beforeTrophies = NorieAdventureProgress.instance.trophyIds;
-      final accepted = await NorieAdventureProgress.instance.recordAttempt(
-          topicId: widget.kind == NorieReviewQuestKind.chapter
-              ? 'chapter:${widget.topic.subject.toLowerCase()}.${widget.topic.gradeLevel}'
-              : widget.topic.id,
-          attemptId: _attempt,
-          answers: _answers,
-          delayedReview: widget.kind == NorieReviewQuestKind.retainedReview,
-          expectedRevision: _owner);
+      final recordsEvidence =
+          widget.kind != NorieReviewQuestKind.adaptivePractice;
+      final accepted = !recordsEvidence ||
+          await NorieAdventureProgress.instance.recordAttempt(
+              topicId: widget.kind == NorieReviewQuestKind.chapter
+                  ? 'chapter:${widget.topic.subject.toLowerCase()}.${widget.topic.gradeLevel}'
+                  : widget.topic.id,
+              attemptId: _attempt,
+              answers: _answers,
+              delayedReview: widget.kind == NorieReviewQuestKind.retainedReview,
+              expectedRevision: _owner);
       if (!mounted) return;
-      if (!accepted || !_sessionCurrent()) {
+      if (!accepted || !_stillCurrent) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text(
                 'The active learner changed. This practice was not added to another profile.')));
         Navigator.pop(context);
         return;
       }
-      NorieProgression.instance.refreshGradeTrophies();
-      await NorieAdventureProgress.instance.flush();
-      if (!mounted || !_sessionCurrent()) return;
+      if (recordsEvidence) {
+        NorieProgression.instance.refreshGradeTrophies();
+        await NorieAdventureProgress.instance.flush();
+      }
+      if (!mounted || !_stillCurrent) return;
       final rewards =
           NorieAdventureProgress.instance.trophyIds.difference(beforeTrophies);
       final action = await NorieQuizOutro.show(context,
-          stillCurrent: _sessionCurrent,
+          stillCurrent: () => _stillCurrent,
           summary: QuizResultSummary(
               attemptId: _attempt,
               historyKey: norieContentHistoryKey(
@@ -170,9 +179,13 @@ class _NorieReviewQuestScreenState extends State<NorieReviewQuestScreen> {
                                           NorieReviewQuestKind.mistakeDrill
                                       ? 'A short return to the concepts you missed. No lives, timer or extra XP farming.'
                                       : widget.kind ==
-                                              NorieReviewQuestKind.chapter
-                                          ? 'Connect ideas across real lessons. This optional expedition earns a chapter badge at 80%; lessons stay open.'
-                                          : 'Answer independently. Five distinct items at 80% earn the retained-understanding star when at least 24 hours have passed since your first independent pass.',
+                                              NorieReviewQuestKind
+                                                  .adaptivePractice
+                                          ? 'Feedback-only authored practice. No XP, stars, trophies, league points or access changes. Use a lesson assessment or later review to demonstrate mastery.'
+                                          : widget.kind ==
+                                                  NorieReviewQuestKind.chapter
+                                              ? 'Connect ideas across real lessons. This optional expedition earns a chapter badge at 80%; lessons stay open.'
+                                              : 'Answer independently. Five distinct items at 80% earn the retained-understanding star when at least 24 hours have passed since your first independent pass.',
                                   style: const TextStyle(
                                       color: NorieColors.textSecondary,
                                       height: 1.4)),
@@ -239,8 +252,9 @@ class NorieReviewQuestsHub extends StatelessWidget {
           builder: (context, _) {
             final progress = NorieAdventureProgress.instance;
             final topics = [
-              for (final subject in ['Science', 'Mathematics', 'English'])
-                for (final grade in NorieFoundationCurriculum.gradeLevels)
+              for (final subject in NorieFoundationCurriculum.supportedSubjects)
+                for (final grade
+                    in NorieFoundationCurriculum.availableGradeLevels(subject))
                   ...NorieFoundationCurriculum.topicsFor(subject, grade.id)
             ];
             final weak = topics
@@ -313,13 +327,11 @@ class NorieReviewQuestsHub extends StatelessWidget {
                       const SizedBox(height: 18),
                       const Text('Authored chapter expeditions',
                           style: TextStyle(fontWeight: FontWeight.w900)),
-                      for (final subject in [
-                        'Science',
-                        'Mathematics',
-                        'English'
-                      ])
+                      for (final subject
+                          in NorieFoundationCurriculum.supportedSubjects)
                         for (final grade
-                            in NorieFoundationCurriculum.gradeLevels)
+                            in NorieFoundationCurriculum.availableGradeLevels(
+                                subject))
                           Builder(builder: (context) {
                             final lessons = NorieFoundationCurriculum.topicsFor(
                                     subject, grade.id)

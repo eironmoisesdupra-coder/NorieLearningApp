@@ -2,6 +2,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
 
 void main() {
+  test('published Grade 1 pilots are authored registry content', () {
+    expect(NorieFoundationCurriculum.topicsFor('Filipino', 'g1'), hasLength(8));
+    expect(NorieFoundationCurriculum.topicsFor('Araling Panlipunan', 'g1'),
+        hasLength(7));
+    for (final subject in ['Filipino', 'Araling Panlipunan']) {
+      expect(
+          NorieFoundationCurriculum.topicsFor(subject, 'g1')
+              .every(NorieFoundationCurriculum.isAuthored),
+          isTrue);
+      expect(NorieFoundationCurriculum.topicsFor(subject, 'g2'), isEmpty);
+    }
+  });
+
   const subjects = ['Mathematics', 'Science', 'English'];
 
   test('foundation curriculum exposes Grade 1 through College', () {

@@ -2,8 +2,14 @@ import 'dart:math';
 import '../../../core/progression/norie_adventure_progress.dart';
 import 'norie_content_models.dart';
 import '../data/norie_foundation_curriculum.dart';
+import 'norie_adaptive_learning.dart';
 
-enum NorieReviewQuestKind { mistakeDrill, retainedReview, chapter }
+enum NorieReviewQuestKind {
+  mistakeDrill,
+  retainedReview,
+  adaptivePractice,
+  chapter
+}
 
 abstract final class NorieReviewQuestPolicy {
   static List<NorieQuestionContent> select(
@@ -27,6 +33,17 @@ abstract final class NorieReviewQuestPolicy {
             !repeats.any((a) => a.id == q.id))
         .toList()
       ..shuffle(random);
+    if (kind == NorieReviewQuestKind.adaptivePractice) {
+      final plan = NorieAdaptiveLearningPolicy.recommend(
+        topic: topic,
+        evidence: evidence,
+      );
+      return NorieAdaptiveLearningPolicy.selectQuestions(
+        topic,
+        plan,
+        random: random,
+      );
+    }
     final candidates = kind == NorieReviewQuestKind.mistakeDrill
         ? [...fresh, ...repeats]
         : [...rest, ...fresh, ...repeats];

@@ -27,8 +27,8 @@ class NorieGradeLessonsScreen extends StatefulWidget {
 class _NorieGradeLessonsScreenState extends State<NorieGradeLessonsScreen> {
   late bool _showMap;
 
-  bool get _supportsMap => const ['science', 'mathematics', 'english']
-      .contains(widget.subject.toLowerCase());
+  bool get _supportsMap =>
+      NorieFoundationCurriculum.supportsAdventureMap(widget.subject);
 
   @override
   void initState() {
@@ -64,7 +64,9 @@ class _NorieGradeLessonsScreenState extends State<NorieGradeLessonsScreen> {
               );
             },
             itemBuilder: (context) => [
-              for (final grade in NorieFoundationCurriculum.gradeLevels)
+              for (final grade
+                  in NorieFoundationCurriculum.availableGradeLevels(
+                      widget.subject))
                 PopupMenuItem<NorieGradeLevel>(
                   value: grade,
                   child: Row(

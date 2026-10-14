@@ -925,13 +925,19 @@ class NorieProgression extends ChangeNotifier {
   }
 
   void refreshGradeTrophies() {
-    for (final subject in ['Science', 'Mathematics', 'English']) {
-      for (final grade in NorieFoundationCurriculum.gradeLevels) {
+    for (final subject in NorieFoundationCurriculum.supportedSubjects) {
+      for (final grade
+          in NorieFoundationCurriculum.availableGradeLevels(subject)) {
         final topics = NorieFoundationCurriculum.topicsFor(subject, grade.id);
         NorieAdventureProgress.instance.registerGradeCompletions(
             subject: subject,
             gradeId: grade.id,
-            originalTopicIds: topics.take(5).map((t) => t.id).toList(),
+            originalTopicIds:
+                (const ['Science', 'Mathematics', 'English'].contains(subject)
+                        ? topics.take(5)
+                        : topics)
+                    .map((t) => t.id)
+                    .toList(),
             currentTopicIds: topics.map((t) => t.id).toList(),
             completedTopicIds: _completedTopicIds);
       }

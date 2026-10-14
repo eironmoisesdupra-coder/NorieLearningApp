@@ -7,6 +7,7 @@ import 'norie_grade1_math_curriculum.dart';
 import 'authored/authored_subject_curriculum.dart';
 import 'authored/core_english_curriculum.dart';
 import 'authored/core_mathematics_curriculum.dart';
+import 'additional_subjects/norie_additional_subject_curriculum.dart';
 
 class NorieGradeLevel {
   const NorieGradeLevel(this.id, this.label, this.shortLabel);
@@ -31,6 +32,7 @@ abstract final class NorieFoundationCurriculum {
     ...CoreMathematicsCurriculum.grades.values
         .expand((topics) => topics)
         .map((topic) => topic.id),
+    ...NorieAdditionalSubjectCurriculum.allTopics.map((topic) => topic.id),
   };
 
   static bool isAuthored(NorieTopicContent topic) =>
@@ -60,6 +62,28 @@ abstract final class NorieFoundationCurriculum {
     NorieGradeLevel('g12', 'Grade 12', 'G12'),
     NorieGradeLevel('college', 'College', 'College'),
   ];
+
+  static const supportedSubjects = [
+    'Mathematics',
+    'Science',
+    'English',
+    'Filipino',
+    'Araling Panlipunan'
+  ];
+
+  static List<NorieGradeLevel> availableGradeLevels(String subject) {
+    final normalized = subject.toLowerCase();
+    if (!supportedSubjects.any((item) => item.toLowerCase() == normalized)) {
+      return const [];
+    }
+    final additionalGrades =
+        NorieAdditionalSubjectCurriculum.gradeIdsFor(subject);
+    return List.unmodifiable(gradeLevels.where((grade) =>
+        additionalGrades.isEmpty || additionalGrades.contains(grade.id)));
+  }
+
+  static bool supportsAdventureMap(String subject) => supportedSubjects
+      .any((item) => item.toLowerCase() == subject.toLowerCase());
 
   static const _math = <String, List<String>>{
     'g1': [
@@ -344,6 +368,14 @@ abstract final class NorieFoundationCurriculum {
   };
 
   static List<String> lessonTitles(String subject, String gradeId) {
+    if (!availableGradeLevels(subject).any((grade) => grade.id == gradeId)) {
+      return const [];
+    }
+    final additional =
+        NorieAdditionalSubjectCurriculum.topicsFor(subject, gradeId);
+    if (additional.isNotEmpty) {
+      return List.unmodifiable(additional.map((topic) => topic.title));
+    }
     final source = switch (subject.toLowerCase()) {
       'mathematics' => _math,
       'english' => _english,
@@ -361,10 +393,13 @@ abstract final class NorieFoundationCurriculum {
   }
 
   static List<NorieTopicContent> topicsFor(String subject, String gradeId) {
-    if (!const ['science', 'mathematics', 'english']
-            .contains(subject.toLowerCase()) ||
-        !gradeLevels.any((grade) => grade.id == gradeId)) {
+    if (!availableGradeLevels(subject).any((grade) => grade.id == gradeId)) {
       return const [];
+    }
+    final additional =
+        NorieAdditionalSubjectCurriculum.topicsFor(subject, gradeId);
+    if (additional.isNotEmpty) {
+      return _finalizePath(subject, gradeId, additional);
     }
     if (subject.toLowerCase() == 'science') {
       final original = gradeId == 'g1'
