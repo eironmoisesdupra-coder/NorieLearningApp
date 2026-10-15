@@ -8,6 +8,7 @@ import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../common/presentation/coming_soon_screen.dart';
 import '../../content/presentation/norie_grade_select_screen.dart';
+import '../../content/presentation/norie_subject_world_map.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 import '../../progress/presentation/progress_screen.dart';
 import '../../study/presentation/study_generator_screen.dart';
@@ -80,6 +81,25 @@ class _LearnScreenState extends State<LearnScreen> {
                     ),
                   ),
                   const SizedBox(height: 28),
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: const Icon(Icons.map_rounded,
+                          color: NorieColors.cyan, size: 32),
+                      title: const Text('Subject World Map',
+                          style: TextStyle(fontWeight: FontWeight.w900)),
+                      subtitle: const Text(
+                          'Explore five islands · Choose a grade · Track real progress'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const NorieSubjectWorldMap(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   const Text(
                     'Explore Subjects',
                     style: TextStyle(
