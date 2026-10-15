@@ -11,6 +11,8 @@ import 'norie_welcome_card.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_credit_coin.dart';
 import '../../../core/widgets/norie_logo_mark.dart';
+import '../../../core/widgets/norie_mentor_card.dart';
+import '../../accessibility/presentation/norie_accessibility_scope.dart';
 import '../../common/presentation/coming_soon_screen.dart';
 import '../../learning/presentation/learn_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
@@ -83,6 +85,8 @@ class HomeScreen extends StatelessWidget {
                                 _ContinueLearningCard(
                                     onLearnTap: () => _openLearning(context)),
                                 const SizedBox(height: 16),
+                                const NorieMentorCard(),
+                                const SizedBox(height: 16),
                                 _HomeActionGrid(
                                   onChallengeTap: () => onTabSelected?.call(2),
                                   onStudyTap: () => onTabSelected?.call(1),
@@ -120,53 +124,72 @@ class _Header extends StatelessWidget {
       builder: (context, _) {
         final progression = NorieProgression.instance.snapshot;
 
-        return Row(
-          children: [
-            NorieTutorialTarget(
-              id: 'home.menu',
-              child: IconButton(
-                onPressed: onMenuPressed,
-                tooltip: 'Open menu',
-                style: IconButton.styleFrom(
-                  backgroundColor: NorieColors.surface,
-                  foregroundColor: NorieColors.textPrimary,
-                  side: const BorderSide(color: NorieColors.border),
-                  minimumSize: const Size(42, 42),
+        return LayoutBuilder(builder: (context, constraints) {
+          final compact = constraints.maxWidth < 400 ||
+              MediaQuery.textScalerOf(context).scale(16) > 20;
+          final header = Row(
+            children: [
+              NorieTutorialTarget(
+                id: 'home.menu',
+                child: IconButton(
+                  onPressed: onMenuPressed,
+                  tooltip: 'Open menu',
+                  style: IconButton.styleFrom(
+                    backgroundColor: NorieColors.surface,
+                    foregroundColor: NorieColors.textPrimary,
+                    side: const BorderSide(color: NorieColors.border),
+                    minimumSize: const Size(42, 42),
+                  ),
+                  icon: const Icon(Icons.menu_rounded),
                 ),
-                icon: const Icon(Icons.menu_rounded),
               ),
-            ),
-            const SizedBox(width: 8),
-            const NorieLogoMark(size: 42, showGlow: false),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Norie Learning',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-                  ),
-                  Text(
-                    'PLAY · LEARN · GROW FURTHER',
-                    style: TextStyle(
-                      fontSize: 8,
-                      letterSpacing: 1.2,
-                      color: NorieColors.textSecondary,
+              const SizedBox(width: 8),
+              const NorieLogoMark(size: 42, showGlow: false),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Norie Learning',
+                      style:
+                          TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
                     ),
-                  ),
-                ],
+                    Text(
+                      'PLAY · LEARN · GROW FURTHER',
+                      style: TextStyle(
+                        fontSize: 8,
+                        letterSpacing: 1.2,
+                        color: NorieColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const NorieTutorialReplayButton(
-              definition: NorieTutorialCatalog.home,
-            ),
-            _HomeBalancePill(
-              xp: progression.totalXp,
-              credits: NorieProgression.instance.credits,
-            ),
-          ],
-        );
+              const NorieTutorialReplayButton(
+                definition: NorieTutorialCatalog.home,
+              ),
+              if (!compact)
+                _HomeBalancePill(
+                  xp: progression.totalXp,
+                  credits: NorieProgression.instance.credits,
+                ),
+            ],
+          );
+          return compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                      header,
+                      const SizedBox(height: 8),
+                      Align(
+                          alignment: Alignment.centerRight,
+                          child: _HomeBalancePill(
+                              xp: progression.totalXp,
+                              credits: NorieProgression.instance.credits)),
+                    ])
+              : header;
+        });
       },
     );
   }
@@ -232,6 +255,10 @@ class _HomeBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (NorieAccessibilityScope.readingFocusOf(context) ||
+        MediaQuery.highContrastOf(context)) {
+      return const ColoredBox(color: NorieColors.background);
+    }
     return const DecoratedBox(
       decoration: BoxDecoration(
         color: NorieColors.background,
@@ -475,14 +502,15 @@ class _HeroStat extends StatelessWidget {
           color: Colors.white.withValues(alpha: .08),
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 3,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           if (leading != null)
             leading!
           else if (icon != null)
             Icon(icon, size: 14, color: color),
-          const SizedBox(width: 5),
           Text(
             value,
             style: const TextStyle(
@@ -490,7 +518,6 @@ class _HeroStat extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(width: 3),
           Text(
             label,
             style: const TextStyle(

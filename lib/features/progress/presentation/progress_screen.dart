@@ -8,6 +8,7 @@ import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_ambient_backdrop.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 import 'weak_topics_screen.dart';
+import 'norie_mastery_dashboard_screen.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({
@@ -31,7 +32,10 @@ class ProgressScreen extends StatelessWidget {
           ? null
           : AppBar(
               title: const Text('Progress'),
-              actions: const [NorieTutorialReplayButton(definition: NorieTutorialCatalog.progress)],
+              actions: const [
+                NorieTutorialReplayButton(
+                    definition: NorieTutorialCatalog.progress)
+              ],
               backgroundColor: Colors.transparent,
               leading: Builder(
                 builder: (drawerContext) => IconButton(
@@ -52,140 +56,155 @@ class ProgressScreen extends StatelessWidget {
           SafeArea(
             top: false,
             child: AnimatedBuilder(
-          animation: NorieProgression.instance,
-          builder: (context, _) {
-            final snapshot = NorieProgression.instance.snapshot;
+              animation: NorieProgression.instance,
+              builder: (context, _) {
+                final snapshot = NorieProgression.instance.snapshot;
 
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-                  children: [
-                    if (embedded)
-                      Builder(
-                        builder: (drawerContext) => Row(
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+                      children: [
+                        if (embedded)
+                          Builder(
+                            builder: (drawerContext) => Row(
+                              children: [
+                                IconButton(
+                                  onPressed: () =>
+                                      Scaffold.of(drawerContext).openDrawer(),
+                                  tooltip: 'Open menu',
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: NorieColors.surface,
+                                    side: const BorderSide(
+                                      color: NorieColors.border,
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.menu_rounded),
+                                ),
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                    child: Text(
+                                  'Progress',
+                                  style: TextStyle(
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                )),
+                                const NorieTutorialReplayButton(
+                                    definition: NorieTutorialCatalog.progress),
+                              ],
+                            ),
+                          ),
+                        if (embedded) const SizedBox(height: 22),
+                        FilledButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    const NorieMasteryDashboardScreen()),
+                          ),
+                          icon: const Icon(Icons.insights_rounded),
+                          label: const Text('Open learning dashboard'),
+                        ),
+                        const SizedBox(height: 14),
+                        _CurrentRankCard(snapshot: snapshot),
+                        const SizedBox(height: 14),
+                        _ProgressPulse(
+                          streak: NorieProgression.instance.currentStreak,
+                          accuracy:
+                              NorieProgression.instance.questionsAnswered == 0
+                                  ? null
+                                  : (NorieProgression.instance.quizAccuracy *
+                                          100)
+                                      .round(),
+                          mastered:
+                              NorieProgression.instance.masteredTopicCount,
+                        ),
+                        const SizedBox(height: 28),
+                        const Text(
+                          'Rank journey',
+                          style: TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Keep learning to unlock the next Norie rank.',
+                          style: TextStyle(
+                            color: NorieColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const _RankRow(
+                          level: 1,
+                          title: 'Explorer',
+                          asset: NorieAssets.rankExplorer,
+                        ),
+                        const _RankRow(
+                          level: 5,
+                          title: 'Curious Mind',
+                          asset: NorieAssets.rankCuriousMind,
+                        ),
+                        const _RankRow(
+                          level: 15,
+                          title: 'Scholar',
+                          asset: NorieAssets.rankScholar,
+                        ),
+                        const _RankRow(
+                          level: 30,
+                          title: 'Specialist',
+                          asset: NorieAssets.rankSpecialist,
+                        ),
+                        const _RankRow(
+                          level: 50,
+                          title: 'Master',
+                          asset: NorieAssets.rankMaster,
+                        ),
+                        const SizedBox(height: 26),
+                        _MasterySummaryCard(
+                          progression: NorieProgression.instance,
+                        ),
+                        const SizedBox(height: 26),
+                        Row(
                           children: [
-                            IconButton(
-                              onPressed: () =>
-                                  Scaffold.of(drawerContext).openDrawer(),
-                              tooltip: 'Open menu',
-                              style: IconButton.styleFrom(
-                                backgroundColor: NorieColors.surface,
-                                side: const BorderSide(
-                                  color: NorieColors.border,
+                            const Expanded(
+                              child: Text(
+                                'Achievements',
+                                style: TextStyle(
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.w900,
                                 ),
                               ),
-                              icon: const Icon(Icons.menu_rounded),
                             ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'Progress',
+                            Text(
+                              '${NorieProgression.instance.unlockedAchievementCount} / 4 unlocked',
                               style: TextStyle(
-                                fontSize: 21,
-                                fontWeight: FontWeight.w900,
+                                color: NorieColors.cyan.withValues(alpha: .9),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
-                            const Spacer(),
-                            const NorieTutorialReplayButton(definition: NorieTutorialCatalog.progress),
                           ],
                         ),
-                      ),
-                    if (embedded) const SizedBox(height: 22),
-                    _CurrentRankCard(snapshot: snapshot),
-                    const SizedBox(height: 14),
-                    _ProgressPulse(
-                      streak: NorieProgression.instance.currentStreak,
-                      accuracy: NorieProgression.instance.questionsAnswered == 0
-                          ? null
-                          : (NorieProgression.instance.quizAccuracy * 100).round(),
-                      mastered: NorieProgression.instance.masteredTopicCount,
-                    ),
-                    const SizedBox(height: 28),
-                    const Text(
-                      'Rank journey',
-                      style: TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Keep learning to unlock the next Norie rank.',
-                      style: TextStyle(
-                        color: NorieColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    const _RankRow(
-                      level: 1,
-                      title: 'Explorer',
-                      asset: NorieAssets.rankExplorer,
-                    ),
-                    const _RankRow(
-                      level: 5,
-                      title: 'Curious Mind',
-                      asset: NorieAssets.rankCuriousMind,
-                    ),
-                    const _RankRow(
-                      level: 15,
-                      title: 'Scholar',
-                      asset: NorieAssets.rankScholar,
-                    ),
-                    const _RankRow(
-                      level: 30,
-                      title: 'Specialist',
-                      asset: NorieAssets.rankSpecialist,
-                    ),
-                    const _RankRow(
-                      level: 50,
-                      title: 'Master',
-                      asset: NorieAssets.rankMaster,
-                    ),
-                    const SizedBox(height: 26),
-                    _MasterySummaryCard(
-                      progression: NorieProgression.instance,
-                    ),
-                    const SizedBox(height: 26),
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Achievements',
-                            style: TextStyle(
-                              fontSize: 21,
-                              fontWeight: FontWeight.w900,
-                            ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Your learning milestones now use the official Norie 3D badge set.',
+                          style: TextStyle(
+                            color: NorieColors.textSecondary,
+                            fontSize: 12,
                           ),
                         ),
-                        Text(
-                          '${NorieProgression.instance.unlockedAchievementCount} / 4 unlocked',
-                          style: TextStyle(
-                            color: NorieColors.cyan.withValues(alpha: .9),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
+                        const SizedBox(height: 14),
+                        _AchievementsGrid(
+                          achievements: NorieProgression.instance.achievements,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Your learning milestones now use the official Norie 3D badge set.',
-                      style: TextStyle(
-                        color: NorieColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _AchievementsGrid(
-                      achievements: NorieProgression.instance.achievements,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -627,9 +646,7 @@ class _AchievementCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            achievement.unlocked
-                ? 'Unlocked'
-                : achievement.progressLabel,
+            achievement.unlocked ? 'Unlocked' : achievement.progressLabel,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
@@ -644,7 +661,6 @@ class _AchievementCard extends StatelessWidget {
     );
   }
 }
-
 
 class _MasterySummaryCard extends StatelessWidget {
   const _MasterySummaryCard({required this.progression});
