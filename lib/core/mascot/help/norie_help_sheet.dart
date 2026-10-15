@@ -37,7 +37,11 @@ class _NorieHelpSheetState extends State<NorieHelpSheet> {
   void initState() {
     super.initState();
     _voiceEnabled = widget.voiceController.enabled;
-    widget.controller.searching();
+    // The host and full-body mascot also listen to this controller. Notify
+    // after the sheet is mounted so they can rebuild outside this build pass.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.controller.searching();
+    });
   }
 
   @override
@@ -189,7 +193,8 @@ class _NorieHelpSheetState extends State<NorieHelpSheet> {
                           textInputAction: TextInputAction.send,
                           onSubmitted: (_) => _ask(),
                           decoration: InputDecoration(
-                            hintText: 'Ask about this screen or Norie Learning…',
+                            hintText:
+                                'Ask about this screen or Norie Learning…',
                             prefixIcon: const Icon(Icons.search_rounded),
                             suffixIcon: IconButton(
                               onPressed: _working ? null : _ask,
@@ -215,8 +220,7 @@ class _NorieHelpSheetState extends State<NorieHelpSheet> {
                               color: NorieColors.cyan.withValues(alpha: .07),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color:
-                                    NorieColors.cyan.withValues(alpha: .22),
+                                color: NorieColors.cyan.withValues(alpha: .22),
                               ),
                             ),
                             child: Text(

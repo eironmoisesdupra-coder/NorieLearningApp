@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/norie_theme.dart';
+import '../../accessibility/presentation/norie_accessibility_scope.dart';
 
 class AnatomyAnimatedBackdrop extends StatefulWidget {
   const AnatomyAnimatedBackdrop({
@@ -13,7 +14,8 @@ class AnatomyAnimatedBackdrop extends StatefulWidget {
   final bool particlesEnabled;
 
   @override
-  State<AnatomyAnimatedBackdrop> createState() => _AnatomyAnimatedBackdropState();
+  State<AnatomyAnimatedBackdrop> createState() =>
+      _AnatomyAnimatedBackdropState();
 }
 
 class _AnatomyAnimatedBackdropState extends State<AnatomyAnimatedBackdrop>
@@ -21,7 +23,36 @@ class _AnatomyAnimatedBackdropState extends State<AnatomyAnimatedBackdrop>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 16),
-  )..repeat();
+  );
+  bool _reducedMotion = false;
+  bool _hideDecoration = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final media = MediaQuery.maybeOf(context);
+    _reducedMotion = (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
+    _hideDecoration = NorieAccessibilityScope.readingFocusOf(context) ||
+        (media?.highContrast ?? false);
+    _syncAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant AnatomyAnimatedBackdrop oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncAnimation();
+  }
+
+  void _syncAnimation() {
+    if (!_reducedMotion && !_hideDecoration && widget.particlesEnabled) {
+      if (!_controller.isAnimating) _controller.repeat();
+    } else {
+      _controller
+        ..stop()
+        ..value = 0;
+    }
+  }
 
   @override
   void dispose() {
@@ -31,6 +62,9 @@ class _AnatomyAnimatedBackdropState extends State<AnatomyAnimatedBackdrop>
 
   @override
   Widget build(BuildContext context) {
+    if (_hideDecoration) {
+      return const ColoredBox(color: NorieColors.background);
+    }
     return RepaintBoundary(
       child: AnimatedBuilder(
         animation: _controller,
@@ -118,8 +152,8 @@ class _AnatomyBackdropPainter extends CustomPainter {
       final baseY = rng.nextDouble();
       final speed = .18 + rng.nextDouble() * .45;
       final drift = (progress * speed + baseY) % 1;
-      final x = (baseX * size.width) +
-          math.sin((progress * math.pi * 2) + i) * 8;
+      final x =
+          (baseX * size.width) + math.sin((progress * math.pi * 2) + i) * 8;
       final y = size.height * (1 - drift);
       final radius = 1.2 + rng.nextDouble() * 2.2;
       final color = i % 3 == 0

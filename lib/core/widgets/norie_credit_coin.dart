@@ -30,21 +30,26 @@ class _NorieCreditCoinState extends State<NorieCreditCoin>
     duration: const Duration(milliseconds: 2400),
   );
 
+  bool _reducedMotion = false;
+
   @override
-  void initState() {
-    super.initState();
-    if (widget.animate) {
-      _controller.repeat();
-    }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final media = MediaQuery.maybeOf(context);
+    _reducedMotion = (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
+    _syncAnimation();
   }
 
   @override
   void didUpdateWidget(covariant NorieCreditCoin oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.animate == widget.animate) return;
+    _syncAnimation();
+  }
 
-    if (widget.animate) {
-      _controller.repeat();
+  void _syncAnimation() {
+    if (widget.animate && !_reducedMotion) {
+      if (!_controller.isAnimating) _controller.repeat();
     } else {
       _controller
         ..stop()
