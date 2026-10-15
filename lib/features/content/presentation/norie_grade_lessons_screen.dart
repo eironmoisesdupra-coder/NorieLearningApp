@@ -6,6 +6,7 @@ import '../data/norie_foundation_curriculum.dart';
 import '../domain/norie_content_models.dart';
 import 'norie_lesson_screen.dart';
 import 'norie_science_adventure_map.dart';
+import 'norie_boss_missions_screen.dart';
 
 class NorieGradeLessonsScreen extends StatefulWidget {
   const NorieGradeLessonsScreen({
@@ -48,6 +49,15 @@ class _NorieGradeLessonsScreenState extends State<NorieGradeLessonsScreen> {
         title: Text('${widget.subject} · ${widget.grade.label}'),
         backgroundColor: Colors.transparent,
         actions: [
+          if (_supportsMap)
+            IconButton(
+              tooltip: 'Boss Missions',
+              icon: const Icon(Icons.flag_rounded),
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => NorieBossMissionsScreen(
+                          subject: widget.subject, gradeId: widget.grade.id))),
+            ),
           PopupMenuButton<NorieGradeLevel>(
             tooltip: 'Switch grade',
             icon: const Icon(Icons.swap_vert_rounded),

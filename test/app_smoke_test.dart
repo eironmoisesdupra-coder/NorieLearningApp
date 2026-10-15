@@ -24,6 +24,8 @@ void main() {
     expect(find.text('Norie Account'), findsNothing);
     await tester.tap(find.text('Learn').last);
     await tester.pump(const Duration(milliseconds: 600));
+    await tester.scrollUntilVisible(find.text('Mathematics'), 200,
+        scrollable: find.byType(Scrollable).last);
     expect(find.text('Mathematics'), findsWidgets);
     await tester.tap(find.text('Mathematics').first);
     await tester.pump();

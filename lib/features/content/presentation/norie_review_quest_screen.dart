@@ -14,13 +14,21 @@ import '../application/norie_quiz_adapter.dart';
 import '../data/norie_foundation_curriculum.dart';
 import '../domain/norie_content_models.dart';
 import '../domain/norie_review_quest.dart';
+import '../domain/norie_boss_mission.dart';
 
 class NorieReviewQuestScreen extends StatefulWidget {
   const NorieReviewQuestScreen(
       {super.key,
       required this.topic,
       required this.kind,
-      this.chapterTopics = const []});
+      this.chapterTopics = const []})
+      : bossMission = null;
+  NorieReviewQuestScreen.boss({super.key, required NorieBossMission mission})
+      : topic = mission.topics.first,
+        kind = NorieReviewQuestKind.chapter,
+        chapterTopics = mission.topics,
+        bossMission = mission;
+  final NorieBossMission? bossMission;
   final NorieTopicContent topic;
   final NorieReviewQuestKind kind;
   final List<NorieTopicContent> chapterTopics;
@@ -32,15 +40,27 @@ class _NorieReviewQuestScreenState extends State<NorieReviewQuestScreen> {
   final int _owner = NorieAdventureProgress.instance.ownershipRevision;
   final _sessionCurrent = NorieAccountService.instance.captureLearnerGuard();
   final String _attempt = const Uuid().v4();
-  late final _items = NorieItemRandomizer.randomize(
-      widget.kind == NorieReviewQuestKind.chapter
+  late final _items = NorieItemRandomizer.randomize(widget.bossMission != null
+      ? widget.bossMission!.questions()
+      : widget.kind == NorieReviewQuestKind.chapter
           ? NorieReviewQuestPolicy.chapterQuestions(widget.chapterTopics)
           : NorieReviewQuestPolicy.select(widget.topic, widget.kind));
   final List<QuizAnswerRecord> _answers = [];
   int _current = 0;
   int? _selected;
   bool _checked = false, _finishing = false;
-  String get _title => switch (widget.kind) {
+  late final bool _bossOwnedOnEntry;
+  @override
+  void initState() {
+    super.initState();
+    _bossOwnedOnEntry = widget.bossMission != null &&
+        NorieAdventureProgress.instance.trophyIds
+            .contains(widget.bossMission!.id);
+  }
+
+  String get _title =>
+      widget.bossMission?.title ??
+      switch (widget.kind) {
         NorieReviewQuestKind.mistakeDrill => 'Mistake drill',
         NorieReviewQuestKind.retainedReview => 'Later review',
         NorieReviewQuestKind.adaptivePractice => 'Adaptive practice',
@@ -51,6 +71,13 @@ class _NorieReviewQuestScreenState extends State<NorieReviewQuestScreen> {
       _owner == NorieAdventureProgress.instance.ownershipRevision;
   Future<void> _submit() async {
     if (_selected == null || _finishing) return;
+    if (!_stillCurrent ||
+        (widget.bossMission != null &&
+            !widget.bossMission!
+                .isReady(NorieProgression.instance.completedTopicIds))) {
+      setState(() {});
+      return;
+    }
     final question = _items[_current];
     if (!_checked) {
       final correct = _selected == question.correctIndex;
@@ -81,9 +108,10 @@ class _NorieReviewQuestScreenState extends State<NorieReviewQuestScreen> {
           widget.kind != NorieReviewQuestKind.adaptivePractice;
       final accepted = !recordsEvidence ||
           await NorieAdventureProgress.instance.recordAttempt(
-              topicId: widget.kind == NorieReviewQuestKind.chapter
-                  ? 'chapter:${widget.topic.subject.toLowerCase()}.${widget.topic.gradeLevel}'
-                  : widget.topic.id,
+              topicId: widget.bossMission?.id ??
+                  (widget.kind == NorieReviewQuestKind.chapter
+                      ? 'chapter:${widget.topic.subject.toLowerCase()}.${widget.topic.gradeLevel}'
+                      : widget.topic.id),
               attemptId: _attempt,
               answers: _answers,
               delayedReview: widget.kind == NorieReviewQuestKind.retainedReview,
@@ -116,14 +144,20 @@ class _NorieReviewQuestScreenState extends State<NorieReviewQuestScreen> {
               gradeLevel: norieQuizGrade(widget.topic),
               answers: _answers,
               earnedRewards: [
+                if (!_bossOwnedOnEntry &&
+                    widget.bossMission != null &&
+                    NorieAdventureProgress.instance.trophyIds
+                        .contains(widget.bossMission!.id))
+                  'Knowledge card earned',
                 for (final id in rewards)
-                  id.startsWith('path-mastery:')
-                      ? 'Whole-path mastery trophy'
-                      : id.startsWith('chapter:')
-                          ? 'Chapter expedition emblem'
-                          : id.startsWith('mastery:')
-                              ? 'Retained understanding badge'
-                              : 'Improvement badge'
+                  if (!id.startsWith('boss:'))
+                    id.startsWith('path-mastery:')
+                        ? 'Whole-path mastery trophy'
+                        : id.startsWith('chapter:')
+                            ? 'Chapter expedition emblem'
+                            : id.startsWith('mastery:')
+                                ? 'Retained understanding badge'
+                                : 'Improvement badge'
               ]),
           canRetry: false,
           canViewProfile: rewards.isNotEmpty);
@@ -144,7 +178,30 @@ class _NorieReviewQuestScreenState extends State<NorieReviewQuestScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => AnimatedBuilder(
+      animation: Listenable.merge([
+        NorieAdventureProgress.instance,
+        NorieProgression.instance,
+        NorieAccountService.instance
+      ]),
+      builder: (context, _) => _buildSession(context));
+
+  Widget _buildSession(BuildContext context) {
+    if (!_stillCurrent ||
+        (widget.bossMission != null &&
+            !widget.bossMission!
+                .isReady(NorieProgression.instance.completedTopicIds))) {
+      return Scaffold(
+          appBar: AppBar(title: Text(_title)),
+          body: Center(
+              child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                      !_stillCurrent
+                          ? 'The active learner changed'
+                          : 'Prepare your chapter first',
+                      style: const TextStyle(fontSize: 22)))));
+    }
     if (_items.isEmpty) {
       return Scaffold(
           appBar: AppBar(title: Text(_title)),
@@ -175,17 +232,20 @@ class _NorieReviewQuestScreenState extends State<NorieReviewQuestScreen> {
                                       fontWeight: FontWeight.w900)),
                               const SizedBox(height: 8),
                               Text(
-                                  widget.kind ==
-                                          NorieReviewQuestKind.mistakeDrill
-                                      ? 'A short return to the concepts you missed. No lives, timer or extra XP farming.'
+                                  widget.bossMission != null
+                                      ? 'Connect your chapter ideas. Reach 80% to earn a knowledge card. No timer, lives, extra XP or league points.'
                                       : widget.kind ==
-                                              NorieReviewQuestKind
-                                                  .adaptivePractice
-                                          ? 'Feedback-only authored practice. No XP, stars, trophies, league points or access changes. Use a lesson assessment or later review to demonstrate mastery.'
+                                              NorieReviewQuestKind.mistakeDrill
+                                          ? 'A short return to the concepts you missed. No lives, timer or extra XP farming.'
                                           : widget.kind ==
-                                                  NorieReviewQuestKind.chapter
-                                              ? 'Connect ideas across real lessons. This optional expedition earns a chapter badge at 80%; lessons stay open.'
-                                              : 'Answer independently. Five distinct items at 80% earn the retained-understanding star when at least 24 hours have passed since your first independent pass.',
+                                                  NorieReviewQuestKind
+                                                      .adaptivePractice
+                                              ? 'Feedback-only authored practice. No XP, stars, trophies, league points or access changes. Use a lesson assessment or later review to demonstrate mastery.'
+                                              : widget.kind ==
+                                                      NorieReviewQuestKind
+                                                          .chapter
+                                                  ? 'Connect ideas across real lessons. This optional expedition earns a chapter badge at 80%; lessons stay open.'
+                                                  : 'Answer independently. Five distinct items at 80% earn the retained-understanding star when at least 24 hours have passed since your first independent pass.',
                                   style: const TextStyle(
                                       color: NorieColors.textSecondary,
                                       height: 1.4)),

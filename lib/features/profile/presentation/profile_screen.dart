@@ -13,6 +13,7 @@ import '../../../core/widgets/norie_ambient_backdrop.dart';
 import '../../commerce/presentation/norie_shop_placeholder_screen.dart';
 import '../../commerce/presentation/subscription_placeholder_screen.dart';
 import '../../content/data/norie_foundation_curriculum.dart';
+import '../../content/presentation/norie_collectibles_screen.dart';
 import '../../account/presentation/account_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 
@@ -134,7 +135,7 @@ class ProfileScreen extends StatelessWidget {
                                       ? account.displayName!
                                       : 'Norie Learner',
                               subtitle:
-                                  'Level ${snapshot.level} ? ${snapshot.title}',
+                                  'Level ${snapshot.level} / ${snapshot.title}',
                               trophyLabels: NorieProfileAppearanceStore
                                   .instance.value.showcase
                                   .where(NorieAdventureProgress
@@ -157,6 +158,18 @@ class ProfileScreen extends StatelessWidget {
                                 icon: const Icon(Icons.palette_outlined),
                                 label: const Text(
                                     'Edit appearance & rank collection'),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: OutlinedButton.icon(
+                                onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                        builder: (_) =>
+                                            const NorieCollectiblesScreen())),
+                                icon: const Icon(Icons.auto_stories_outlined),
+                                label: const Text('Knowledge card collection'),
                               ),
                             ),
                             const SizedBox(height: 18),

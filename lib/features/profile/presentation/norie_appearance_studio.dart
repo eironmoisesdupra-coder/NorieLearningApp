@@ -472,6 +472,10 @@ String trophyLabel(String id) {
   final grade = gradeId == 'college'
       ? 'College'
       : gradeId.replaceFirst(RegExp(r'^g'), 'Grade ');
+  if (kind == 'boss') {
+    final chapter = RegExp(r':chapter-(\d+):').firstMatch(id)?.group(1);
+    return '$grade $subjectName · ${chapter == null ? 'Boss' : 'Chapter $chapter'} knowledge card';
+  }
   final award = switch (kind) {
     'expanded' => 'Extended path',
     'improvement' => 'Improvement',
