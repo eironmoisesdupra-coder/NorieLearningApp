@@ -337,7 +337,8 @@ class NorieAdventureProgress extends ChangeNotifier {
         lastPercent: percent,
         missedQuestionIds: mistakes.map((a) => a.questionId).toSet().toList(),
         priorityConcepts: concepts.take(2).toList());
-    if (independent &&
+    if (!topicId.startsWith('boss:') &&
+        independent &&
         chronological &&
         previous.lastAttemptAt != null &&
         percent >= previous.lastPercent + 20) {
@@ -348,7 +349,8 @@ class NorieAdventureProgress extends ChangeNotifier {
       _trophies.putIfAbsent(
           'mastery:$topicId', () => retained.toIso8601String());
     }
-    if (passed && topicId.startsWith('chapter:')) {
+    if (passed &&
+        (topicId.startsWith('chapter:') || topicId.startsWith('boss:'))) {
       _trophies.putIfAbsent(topicId, () => now.toIso8601String());
     }
     notifyListeners();

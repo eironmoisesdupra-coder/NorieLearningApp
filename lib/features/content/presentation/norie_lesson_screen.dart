@@ -109,10 +109,11 @@ class _NorieLessonScreenState extends State<NorieLessonScreen>
                   controller: _scroll,
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         _Badge(text: topic.category, color: NorieColors.violet),
-                        const SizedBox(width: 8),
                         _Badge(
                           text: 'Lesson ${topic.order}',
                           color: accent,

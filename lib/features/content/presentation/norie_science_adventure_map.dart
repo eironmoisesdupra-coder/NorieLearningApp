@@ -17,6 +17,7 @@ import '../domain/norie_grade_map.dart';
 import '../domain/norie_skill_graph.dart';
 import 'norie_lesson_screen.dart';
 import 'norie_review_quest_screen.dart';
+import 'norie_boss_missions_screen.dart';
 import '../domain/norie_review_quest.dart';
 
 class NorieScienceAdventureMap extends StatefulWidget {
@@ -327,6 +328,17 @@ class _NorieScienceAdventureMapState extends State<NorieScienceAdventureMap>
                 ],
                 const SizedBox(height: 18),
                 NorieLessonStarCard(topic: topic),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => NorieBossMissionsScreen(
+                            subject: widget.subject,
+                            gradeId: widget.grade.id)));
+                  },
+                  icon: const Icon(Icons.flag_rounded),
+                  label: const Text('Chapter Boss Missions & knowledge cards'),
+                ),
                 if (progress.nodes.any(
                     (node) => NorieFoundationCurriculum.isAuthored(node.topic)))
                   TextButton.icon(
