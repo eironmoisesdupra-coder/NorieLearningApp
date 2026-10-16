@@ -5,6 +5,7 @@ import '../core/audio/norie_audio_host.dart';
 import '../core/mascot/help/norie_help_models.dart';
 import '../core/mascot/norie_mascot_host.dart';
 import '../core/theme/norie_theme.dart';
+import '../features/accessibility/presentation/norie_accessibility_scope.dart';
 import '../features/learning/presentation/anatomy_lab_placeholder_screen.dart';
 import '../features/navigation/presentation/main_shell.dart';
 import '../features/navigation/presentation/norie_tutorial_navigation.dart';
@@ -71,12 +72,13 @@ class _NorieAppState extends State<NorieApp> {
       title: 'Norie Learning',
       debugShowCheckedModeBanner: false,
       theme: NorieTheme.dark,
-      builder: (context, child) => NorieAudioHost(
-          child: NorieMascotHost(
+      builder: (context, child) => NorieAccessibilityHost(
+          child: NorieAudioHost(
+              child: NorieMascotHost(
         onNavigate: _navigateFromHelp,
         onTutorialStep: _tutorialNavigation.showStep,
         child: child ?? const SizedBox.shrink(),
-      )),
+      ))),
       home: const SplashScreen(),
     );
   }

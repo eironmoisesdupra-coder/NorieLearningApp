@@ -24,6 +24,7 @@ async function main() {
   });
   let application = await launch();
   const errors = [];
+  const externalFontRequests = new Set();
   let page;
   let foregroundPage;
   async function enableAccessibility() {
@@ -152,6 +153,38 @@ async function main() {
     await page.reload();
     await enableAccessibility();
   }
+  async function captureHiddenResult() {
+    // CDP Page.captureScreenshot stalls on this animated Flutter dialog in a
+    // hidden Electron window. Native capture owns a capturer handle so the
+    // hidden surface paints; never show the CI window or relax offline checks.
+    const window = await application.browserWindow(page);
+    let captureTimeout;
+    try {
+      const image = await Promise.race([
+        window.evaluate(async browserWindow => {
+          await browserWindow.webContents.capturePage(undefined,
+            { stayHidden: true, stayAwake: true });
+          // The first capture wakes painting but can return the preceding frame.
+          // Allow the existing 1800ms outro reveal to paint before the artifact.
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          const snapshot = await browserWindow.webContents.capturePage(undefined,
+            { stayHidden: true, stayAwake: true });
+          return { png: snapshot.toDataURL(), size: snapshot.getSize(), empty: snapshot.isEmpty() };
+        }),
+        new Promise((_, reject) => {
+          captureTimeout = setTimeout(() => reject(new Error('Hidden result capture timed out')), 30000);
+        }),
+      ]);
+      assert.equal(image.empty, false);
+      assert.ok(image.size.width > 0 && image.size.height > 0);
+      assert.ok(image.png.startsWith('data:image/png;base64,'));
+      await fs.writeFile(path.resolve(__dirname, '../../build/windows-offline-quiz-outro.png'),
+        Buffer.from(image.png.split(',')[1], 'base64'));
+    } finally {
+      clearTimeout(captureTimeout);
+      await window.dispose();
+    }
+  }
   async function answerClick(locator) {
     await locator.waitFor();
     // The quiz uses animated Flutter semantics. Hit the actual canvas target
@@ -168,6 +201,10 @@ async function main() {
     application.context().setDefaultTimeout(30000);
     page = await application.firstWindow();
     page.on('pageerror', error => errors.push(error.message));
+    page.on('request', request => {
+      const url = new URL(request.url());
+      if (url.hostname === 'fonts.gstatic.com') externalFontRequests.add(url.origin + url.pathname);
+    });
     page.on('console', message => {
       if (message.type() === 'error') console.error('Renderer:', message.text());
     });
@@ -238,7 +275,8 @@ async function main() {
     }
     await page.waitForFunction(() => Number(localStorage.getItem('flutter.norie.totalXp')) > 0);
     await page.getByRole('button', { name: 'Continue', exact: true }).waitFor();
-    await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-quiz-outro.png') });
+    assert.deepEqual([...externalFontRequests], [], 'Core lessons/results must use bundled fonts, without online fallback attempts');
+    await captureHiddenResult();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     const xp = await page.evaluate(() => JSON.parse(localStorage.getItem('flutter.norie.totalXp')));
     assert.ok(xp > 0);
@@ -259,11 +297,16 @@ async function main() {
     application.context().setDefaultTimeout(30000);
     page = await application.firstWindow();
     page.on('pageerror', error => errors.push(error.message));
+    page.on('request', request => {
+      const url = new URL(request.url());
+      if (url.hostname === 'fonts.gstatic.com') externalFontRequests.add(url.origin + url.pathname);
+    });
     await enableAccessibility();
     await page.getByRole('button', { name: 'Progress Progress', exact: true }).click();
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('flutter.norie.totalXp'))), xp);
     console.log(`PASS: ${xp} XP persisted after closing and reopening offline`);
     await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-progress.png') });
+    assert.deepEqual([...externalFontRequests], [], 'Restarted offline app must not request online fonts');
     assert.deepEqual(errors, []);
   } catch (error) {
     if (page) {

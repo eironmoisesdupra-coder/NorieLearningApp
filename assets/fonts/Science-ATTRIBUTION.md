@@ -25,7 +25,7 @@ Bundled subset: 203,508 bytes; SHA-256 `38c41ed6451a5e79c6521f10873b29d68bf98f98
 Source: https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/notosansmath/NotoSansMath-Regular.ttf
 Upstream SHA-256: `3f495fe933c06786e4d5f6d86b8ee70b6753a68ee3b9d87528726de0f6e2c47d`
 License: [notosansmath-Science-OFL.txt](notosansmath-Science-OFL.txt)
-Bundled subset: 353,900 bytes; SHA-256 `01a87e790b6d40da2f7c90a50c3cbcede3b3c34819730c837e9214a472524044`.
+Bundled subset: 355,100 bytes; SHA-256 `c10001ab3915ce4589aa9fcf5666149af6e144b1934adcda349a9f8a82d3b46c`.
 
 Rebuild: install `fonttools==4.60.1`, then run `python tools/build_science_text_font.py`.
 The script verifies pinned font/license checksums and derives paths from the repository location.

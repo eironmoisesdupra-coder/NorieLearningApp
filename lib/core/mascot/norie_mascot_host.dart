@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../assets/norie_assets.dart';
+import '../../features/accessibility/presentation/norie_accessibility_scope.dart';
 import 'help/norie_help_models.dart';
 import 'help/norie_help_sheet.dart';
 import 'norie_app_context.dart';
@@ -144,7 +145,10 @@ class _NorieMascotHostState extends State<NorieMascotHost>
         fit: StackFit.expand,
         children: [
           widget.child,
-          if (_showMascot)
+          if (_showMascot &&
+              (!NorieAccessibilityScope.readingFocusOf(context) ||
+                  _assistantVisible ||
+                  _tutorialCoordinator.isActive))
             Positioned(
               right: 12,
               bottom: _tutorialCoordinator.isActive ? 172 : 18,

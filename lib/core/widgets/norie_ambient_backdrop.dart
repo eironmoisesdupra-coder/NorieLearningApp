@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/norie_theme.dart';
+import '../../features/accessibility/presentation/norie_accessibility_scope.dart';
 
 class NorieAmbientBackdrop extends StatelessWidget {
   const NorieAmbientBackdrop({
@@ -14,6 +15,11 @@ class NorieAmbientBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (NorieAccessibilityScope.readingFocusOf(context) ||
+        MediaQuery.highContrastOf(context)) {
+      return const IgnorePointer(
+          child: ColoredBox(color: NorieColors.background));
+    }
     return IgnorePointer(
       child: DecoratedBox(
         decoration: const BoxDecoration(color: NorieColors.background),

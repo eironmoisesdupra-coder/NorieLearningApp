@@ -14,6 +14,7 @@ import '../../commerce/presentation/norie_shop_placeholder_screen.dart';
 import '../../commerce/presentation/subscription_placeholder_screen.dart';
 import '../../content/data/norie_foundation_curriculum.dart';
 import '../../content/presentation/norie_collectibles_screen.dart';
+import '../../accessibility/presentation/norie_accessibility_screen.dart';
 import '../../account/presentation/account_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 
@@ -92,14 +93,14 @@ class ProfileScreen extends StatelessWidget {
                                       icon: const Icon(Icons.menu_rounded),
                                     ),
                                     const SizedBox(width: 10),
-                                    const Text(
+                                    const Expanded(
+                                        child: Text(
                                       'Profile',
                                       style: TextStyle(
                                         fontSize: 21,
                                         fontWeight: FontWeight.w900,
                                       ),
-                                    ),
-                                    const Spacer(),
+                                    )),
                                     const NorieTutorialReplayButton(
                                         definition:
                                             NorieTutorialCatalog.profile),
@@ -172,46 +173,62 @@ class ProfileScreen extends StatelessWidget {
                                 label: const Text('Knowledge card collection'),
                               ),
                             ),
-                            const SizedBox(height: 18),
-                            GridView.count(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              crossAxisCount:
-                                  MediaQuery.sizeOf(context).width >= 600
-                                      ? 4
-                                      : 2,
-                              crossAxisSpacing: 10,
-                              mainAxisSpacing: 10,
-                              childAspectRatio: 1.45,
-                              children: [
-                                _StatCard(
-                                  label: 'Total XP',
-                                  value: '${snapshot.totalXp}',
-                                  icon: Icons.star_rounded,
-                                  color: NorieColors.orange,
-                                ),
-                                _StatCard(
-                                  label: 'Streak',
-                                  value: '${progression.currentStreak} days',
-                                  icon: Icons.local_fire_department_rounded,
-                                  color: NorieColors.magenta,
-                                ),
-                                _StatCard(
-                                  label: 'Lessons',
-                                  value: '${progression.completedLessons}',
-                                  icon: Icons.menu_book_rounded,
-                                  color: NorieColors.cyan,
-                                ),
-                                _StatCard(
-                                  label: 'Accuracy',
-                                  value: progression.questionsAnswered == 0
-                                      ? '—'
-                                      : '$accuracy%',
-                                  icon: Icons.analytics_rounded,
-                                  color: NorieColors.green,
-                                ),
-                              ],
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: OutlinedButton.icon(
+                                onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                        builder: (_) =>
+                                            const NorieAccessibilityScreen())),
+                                icon:
+                                    const Icon(Icons.accessibility_new_rounded),
+                                label: const Text('Accessibility profile'),
+                              ),
                             ),
+                            const SizedBox(height: 18),
+                            LayoutBuilder(builder: (context, constraints) {
+                              final columns =
+                                  constraints.maxWidth >= 560 ? 4 : 2;
+                              final width =
+                                  (constraints.maxWidth - (columns - 1) * 10) /
+                                      columns;
+                              return Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: [
+                                    _StatCard(
+                                      label: 'Total XP',
+                                      value: '${snapshot.totalXp}',
+                                      icon: Icons.star_rounded,
+                                      color: NorieColors.orange,
+                                    ),
+                                    _StatCard(
+                                      label: 'Streak',
+                                      value:
+                                          '${progression.currentStreak} days',
+                                      icon: Icons.local_fire_department_rounded,
+                                      color: NorieColors.magenta,
+                                    ),
+                                    _StatCard(
+                                      label: 'Lessons',
+                                      value: '${progression.completedLessons}',
+                                      icon: Icons.menu_book_rounded,
+                                      color: NorieColors.cyan,
+                                    ),
+                                    _StatCard(
+                                      label: 'Accuracy',
+                                      value: progression.questionsAnswered == 0
+                                          ? '—'
+                                          : '$accuracy%',
+                                      icon: Icons.analytics_rounded,
+                                      color: NorieColors.green,
+                                    ),
+                                  ]
+                                      .map((stat) =>
+                                          SizedBox(width: width, child: stat))
+                                      .toList());
+                            }),
                             const SizedBox(height: 24),
                             const Text(
                               'Learning activity',
