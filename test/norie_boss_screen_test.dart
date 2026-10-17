@@ -51,7 +51,7 @@ void main() {
     final boss = NorieBossMission.forPath('Science', 'g1').last;
     SharedPreferences.setMockInitialValues(
         {'norie.completedTopicIds': boss.topics.map((t) => t.id).toList()});
-    await NorieProgression.instance.load();
+    await tester.runAsync(NorieProgression.instance.load);
     final beforeXp = NorieProgression.instance.totalXp;
     final beforeGame = NorieProgression.instance.completedTopicIds;
     await tester.pumpWidget(
@@ -119,7 +119,7 @@ void main() {
     final boss = NorieBossMission.forPath('Science', 'g1').last;
     SharedPreferences.setMockInitialValues(
         {'norie.completedTopicIds': boss.topics.map((t) => t.id).toList()});
-    await NorieProgression.instance.load();
+    await tester.runAsync(NorieProgression.instance.load);
     NorieAdventureProgress.instance.applyValidatedState({
       ...NorieAdventureProgress.emptyState,
       'trophies': {boss.id: '2026-10-15T00:00:00.000Z'}

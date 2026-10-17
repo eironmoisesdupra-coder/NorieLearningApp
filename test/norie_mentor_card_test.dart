@@ -18,7 +18,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     NorieProgression.instance.resetAsyncQueuesForTesting();
     NorieAdventureProgress.instance.resetAsyncQueuesForTesting();
-    await NorieProgression.instance.load();
+    await tester.runAsync(NorieProgression.instance.load);
     final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1').first;
     NorieAdventureProgress.instance.applyValidatedState({
       ...NorieAdventureProgress.emptyState,

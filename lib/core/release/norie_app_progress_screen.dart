@@ -45,8 +45,10 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
 
   Future<void> _export() => _perform(() async {
         final owner = _owner;
+        final sessionCurrent = NorieCloudSync.instance.captureSessionGuard();
+        await NorieProgression.instance.flushPendingSaves(retry: true);
         await NorieLessonJourney.instance.flush();
-        if (owner != _owner) {
+        if (owner != _owner || !sessionCurrent()) {
           throw const FormatException('Account changed. Please retry.');
         }
         final text = NorieProgressBackup.encode(
@@ -122,7 +124,13 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
         if (owner != _owner || NorieCloudSync.instance.isSyncing) {
           throw const FormatException('Account state changed. Please retry.');
         }
+        await NorieProgression.instance.flushPendingSaves(retry: true);
         await NorieLessonJourney.instance.flush();
+        if (owner != _owner ||
+            !sessionCurrent() ||
+            NorieCloudSync.instance.isSyncing) {
+          throw const FormatException('Account state changed. Please retry.');
+        }
         final previous = NorieProgressBackup.encode(
             NorieProgression.instance.exportCloudState(),
             owner: owner);

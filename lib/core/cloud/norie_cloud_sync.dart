@@ -485,11 +485,17 @@ class NorieCloudSync extends ChangeNotifier {
     notifyListeners();
   }
 
-  static String _friendlyError(Object error) => error
-          .toString()
-          .contains('learner_state')
-      ? 'Cloud tables are not ready yet. Apply the Norie Supabase migration.'
-      : 'Cloud sync could not complete. Local progress is still safe.';
+  static String _friendlyError(Object error) {
+    final message = error.toString();
+    if (message.contains('norie_get_learner_bundle') ||
+        message.contains('norie_save_learner_bundle_guarded') ||
+        message.contains('learner_feature_state')) {
+      return 'Cloud feature sync is not ready yet. Apply the Norie learner feature-bundle migration.';
+    }
+    return message.contains('learner_state')
+        ? 'Cloud tables are not ready yet. Apply the Norie Supabase migration.'
+        : 'Cloud sync could not complete. Local progress is still safe.';
+  }
 
   @override
   void dispose() {
@@ -521,6 +527,9 @@ class _SupabaseSyncBackend extends NorieCloudSyncBackend {
     final value = appearance?['appearance'] as Map?;
     final journey = state['lesson_journey'] as Map?;
     final adventure = state['adventure_progress'] as Map?;
+    final journal = state['sync_event_journal'] as Map?;
+    final classroom = state['classroom_state'] as Map?;
+    final seasonal = state['seasonal_state'] as Map?;
     return progress.totalXp > 0 ||
         progress.completedLessons > 0 ||
         progress.studySessions > 0 ||
@@ -532,6 +541,10 @@ class _SupabaseSyncBackend extends NorieCloudSyncBackend {
         (adventure?['evidence'] as Map?)?.isNotEmpty == true ||
         progress.ownedShopItems.isNotEmpty ||
         progress.credits > 0 ||
+        (journal?['events'] as List?)?.isNotEmpty == true ||
+        (classroom?['assignments'] as List?)?.isNotEmpty == true ||
+        (classroom?['submissions'] as List?)?.isNotEmpty == true ||
+        (seasonal?['receipts'] as List?)?.isNotEmpty == true ||
         (appearance?['presets'] as List?)?.isNotEmpty == true ||
         value?['avatar'] != 'norie' ||
         value?['palette'] != 'explorer' ||
@@ -544,6 +557,9 @@ class _SupabaseSyncBackend extends NorieCloudSyncBackend {
   @override
   Future<void> saveGuestRecovery(
       Map<String, dynamic> state, bool Function() stillCurrent) async {
+    if (!stillCurrent()) return;
+    await NorieProgression.instance.flushPendingSaves(retry: true);
+    if (!stillCurrent()) return;
     final backup = NorieProgressBackup.encode(state);
     final prefs = await SharedPreferences.getInstance();
     if (!stillCurrent()) return;
@@ -573,33 +589,51 @@ class _SupabaseSyncBackend extends NorieCloudSyncBackend {
   Map<String, dynamic> exportState() =>
       NorieProgression.instance.exportCloudState();
   @override
-  Future<Map<String, dynamic>?> fetchState(String userId) async =>
-      NorieSupabase.client!
-          .from('learner_state')
-          .select('state, updated_at')
-          .eq('user_id', userId)
-          .maybeSingle();
+  Future<Map<String, dynamic>?> fetchState(String userId) async {
+    _requireCurrentOwner(userId);
+    final value = await NorieSupabase.client!
+        .rpc('norie_get_learner_bundle', params: {'p_user_id': userId});
+    _requireCurrentOwner(userId);
+    if (value == null) return null;
+    if (value is! Map || value['state'] is! Map) {
+      throw const FormatException('Invalid saved learning bundle.');
+    }
+    return Map<String, dynamic>.from(value);
+  }
+
   @override
   Future<void> uploadState(
       String userId, Map<String, dynamic> state, DateTime modified) async {
-    await NorieSupabase.client!.from('learner_state').upsert({
-      'user_id': userId,
-      'state': state,
-      'updated_at': modified.toIso8601String(),
-    }, onConflict: 'user_id');
+    final latest = await fetchState(userId);
+    final expected = latest?['state'];
+    final expectedState =
+        expected == null ? null : Map<String, dynamic>.from(expected as Map);
+    final merged = expectedState == null
+        ? state
+        : mergePermanentCollections(state, expectedState);
+    final saved =
+        await uploadStateIfUnchanged(userId, merged, modified, expectedState);
+    if (!saved) throw StateError('learner_bundle_conflict');
   }
 
   @override
   Future<bool> uploadStateIfUnchanged(String userId, Map<String, dynamic> state,
-          DateTime modified, Map<String, dynamic>? expectedState) async =>
-      await NorieSupabase.client!
-          .rpc('norie_save_learner_state_guarded', params: {
-        'p_user_id': userId,
-        'p_state': state,
-        'p_modified': modified.toIso8601String(),
-        'p_expected_state': expectedState,
-      }) ==
-      true;
+      DateTime modified, Map<String, dynamic>? expectedState) async {
+    await NorieProgression.instance.flushPendingSaves(retry: true);
+    _requireCurrentOwner(userId);
+    return await NorieSupabase.client!
+            .rpc('norie_save_learner_bundle_guarded', params: {
+          'p_user_id': userId,
+          'p_state': state,
+          'p_modified': modified.toIso8601String(),
+          'p_expected_state': expectedState,
+        }) ==
+        true;
+  }
+
+  void _requireCurrentOwner(String expectedUser) {
+    if (userId != expectedUser) throw StateError('learner_owner_mismatch');
+  }
 
   @override
   Future<String?> readOwner() async =>
