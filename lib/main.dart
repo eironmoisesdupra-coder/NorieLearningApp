@@ -12,6 +12,8 @@ import 'core/progression/norie_lesson_journey.dart';
 import 'core/progression/norie_adventure_progress.dart';
 import 'core/progression/norie_startup_collections.dart';
 import 'features/profile/data/norie_profile_appearance_store.dart';
+import 'features/classroom/data/norie_classroom_store.dart';
+import 'features/seasonal/data/norie_seasonal_store.dart';
 import 'features/study/data/norie_study_service.dart';
 
 Future<void> main() async {
@@ -28,6 +30,11 @@ Future<void> main() async {
       .addListener(NorieProgression.instance.recordJourneyChange);
   NorieProfileAppearanceStore.instance
       .addListener(NorieProgression.instance.recordJourneyChange);
+
+  NorieClassroomStore.instance
+      .addListener(NorieProgression.instance.recordClassroomChange);
+  NorieSeasonalStore.instance
+      .addListener(NorieProgression.instance.recordSeasonalChange);
 
   // Lessons and local progress must be available before any network work.
   runApp(const NorieApp());

@@ -13,6 +13,8 @@ import '../../navigation/presentation/norie_drawer.dart';
 import '../../progress/presentation/progress_screen.dart';
 import '../../study/presentation/study_generator_screen.dart';
 import '../../study/presentation/study_hub_screen.dart';
+import '../../classroom/presentation/norie_classroom_hub_screen.dart';
+import '../../seasonal/presentation/norie_seasonal_hub_screen.dart';
 import 'anatomy_lab_placeholder_screen.dart';
 
 class LearnScreen extends StatefulWidget {
@@ -243,6 +245,32 @@ class _LearnScreenState extends State<LearnScreen> {
                         ),
                       ));
                     },
+                  ),
+                  const SizedBox(height: 28),
+                  _SubjectTile(
+                    title: 'Classroom',
+                    subtitle: 'Build, share and complete assignments offline',
+                    icon: Icons.school_rounded,
+                    color: NorieColors.cyan,
+                    progress: 0,
+                    badge: 'OFFLINE',
+                    onTap: () =>
+                        Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const NorieClassroomHubScreen(),
+                    )),
+                  ),
+                  const SizedBox(height: 12),
+                  _SubjectTile(
+                    title: 'Seasonal Learning',
+                    subtitle: 'Optional missions and lasting keepsakes',
+                    icon: Icons.celebration_outlined,
+                    color: NorieColors.violet,
+                    progress: 0,
+                    badge: 'DISCOVER',
+                    onTap: () =>
+                        Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const NorieSeasonalHubScreen(),
+                    )),
                   ),
                   const SizedBox(height: 28),
                   _AiQaPreview(

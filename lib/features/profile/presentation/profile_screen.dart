@@ -15,6 +15,8 @@ import '../../commerce/presentation/subscription_placeholder_screen.dart';
 import '../../content/data/norie_foundation_curriculum.dart';
 import '../../content/presentation/norie_collectibles_screen.dart';
 import '../../accessibility/presentation/norie_accessibility_screen.dart';
+import '../../seasonal/presentation/norie_seasonal_hub_screen.dart';
+import '../../seasonal/data/norie_seasonal_store.dart';
 import '../../account/presentation/account_screen.dart';
 import '../../navigation/presentation/norie_drawer.dart';
 
@@ -59,7 +61,8 @@ class ProfileScreen extends StatelessWidget {
               animation: Listenable.merge([
                 NorieAccountService.instance,
                 NorieProfileAppearanceStore.instance,
-                NorieAdventureProgress.instance
+                NorieAdventureProgress.instance,
+                NorieSeasonalStore.instance
               ]),
               builder: (context, _) {
                 return AnimatedBuilder(
@@ -184,6 +187,19 @@ class ProfileScreen extends StatelessWidget {
                                 icon:
                                     const Icon(Icons.accessibility_new_rounded),
                                 label: const Text('Accessibility profile'),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: OutlinedButton.icon(
+                                onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                        builder: (_) =>
+                                            const NorieSeasonalHubScreen())),
+                                icon: const Icon(Icons.auto_awesome_outlined),
+                                label: Text(
+                                    'Seasonal keepsakes (${NorieSeasonalStore.instance.earnedRewards.length})'),
                               ),
                             ),
                             const SizedBox(height: 18),

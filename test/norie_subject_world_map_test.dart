@@ -107,31 +107,12 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'norie.completedTopicIds': [topic.id],
     });
-    await _drainPersistence(tester, NorieProgression.instance.load());
+    await tester.runAsync(NorieProgression.instance.load);
     await tester.pump();
     expect(find.text('1/8 authored lessons completed'), findsOneWidget);
-    await _drainPersistence(
-        tester, NorieProgression.instance.resetForNewAccount());
+    await tester.runAsync(NorieProgression.instance.resetForNewAccount);
     await tester.pump();
     expect(find.text('0/8 authored lessons completed'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
-}
-
-Future<void> _drainPersistence(
-    WidgetTester tester, Future<dynamic> operation) async {
-  var completed = false;
-  Object? error;
-  operation.then((_) => completed = true, onError: (Object value) {
-    error = value;
-    completed = true;
-  });
-  for (var i = 0; i < 100 && !completed; i++) {
-    await tester.pump(const Duration(milliseconds: 10));
-    await tester
-        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 1)));
-  }
-  expect(completed, isTrue,
-      reason: 'Persistence must finish across clock zones');
-  if (error != null) throw error!;
 }

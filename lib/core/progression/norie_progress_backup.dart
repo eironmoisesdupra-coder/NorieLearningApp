@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../sync/norie_feature_state.dart';
 import 'norie_lesson_journey.dart';
 import 'norie_adventure_progress.dart';
 import '../../features/profile/data/norie_profile_appearance_store.dart';
@@ -39,7 +40,7 @@ abstract final class NorieProgressBackup {
     validateState(state);
     final encoded = const JsonEncoder.withIndent('  ').convert({
       'format': 'norie-learning-progress',
-      'version': 1,
+      'version': state.containsKey('sync_event_journal') ? 2 : 1,
       'owner': owner,
       'exported_at': DateTime.now().toUtc().toIso8601String(),
       'state': state,
@@ -57,7 +58,7 @@ abstract final class NorieProgressBackup {
     final doc = jsonDecode(text);
     if (doc is! Map<String, dynamic> ||
         doc['format'] != 'norie-learning-progress' ||
-        doc['version'] != 1) {
+        !const [1, 2].contains(doc['version'])) {
       throw const FormatException('Choose a supported Norie progress backup.');
     }
     final owner = doc['owner'];
@@ -83,7 +84,10 @@ abstract final class NorieProgressBackup {
       'lesson_journey',
       'adventure_progress',
       'profile_appearance',
-      'rewarded_assessment_attempts'
+      'rewarded_assessment_attempts',
+      'sync_event_journal',
+      'classroom_state',
+      'seasonal_state'
     ];
     final allowed = {..._numbers, ..._lists, ..._equipment, ...remaining};
     if (state.keys.any((key) => !allowed.contains(key)) ||
@@ -167,6 +171,7 @@ abstract final class NorieProgressBackup {
     if (state.containsKey('profile_appearance')) {
       NorieProfileAppearanceStore.validateState(state['profile_appearance']);
     }
+    NorieFeatureState.validate(state);
     final attempts = state['rewarded_assessment_attempts'];
     if (attempts != null &&
         (attempts is! List ||

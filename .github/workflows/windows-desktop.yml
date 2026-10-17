@@ -49,6 +49,8 @@ jobs:
         run: npm test
       - name: Verify browser updates preserve offline progress across tabs
         run: node desktop/test/web-update.cjs
+      - name: Verify classroom file exchange and seasonal navigation
+        run: node desktop/test/classroom-seasonal-web.cjs
       - name: Exercise every atlas system with networking blocked
         run: node anatomy_viewer/test/browser-smoke.mjs
       - name: Package Windows app
