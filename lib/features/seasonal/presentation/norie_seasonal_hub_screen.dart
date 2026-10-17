@@ -111,14 +111,38 @@ class _NorieSeasonalHubScreenState extends State<NorieSeasonalHubScreen> {
     final done = store.complete(season, completed),
         earned = store.isEarned(season.rewardId);
     return Card(
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: NorieColors.violet.withValues(alpha: .45))),
         child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(season.title,
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.w900)),
+                  Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(colors: [
+                            NorieColors.violet.withValues(alpha: .22),
+                            NorieColors.cyan.withValues(alpha: .10),
+                          ])),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.travel_explore_rounded,
+                                size: 32, color: NorieColors.cyan),
+                            const SizedBox(height: 8),
+                            Text(season.title,
+                                style: const TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.w900)),
+                            const SizedBox(height: 4),
+                            const Text('Optional lessons / Cosmetic keepsake',
+                                style: TextStyle(
+                                    color: NorieColors.textSecondary)),
+                          ])),
+                  const SizedBox(height: 10),
                   Text(
                       switch (status) {
                         NorieSeasonStatus.active => 'Active',
@@ -128,14 +152,15 @@ class _NorieSeasonalHubScreenState extends State<NorieSeasonalHubScreen> {
                       style: const TextStyle(
                           color: NorieColors.cyan,
                           fontWeight: FontWeight.bold)),
-                  const Text('October 1–November 30, 2026 (UTC) • Grade 1'),
+                  Text(
+                      '${_date(season.startsAt)} to ${_date(season.endsAt)} (UTC; end exclusive)'),
                   const SizedBox(height: 8),
                   Text(season.description),
                   const SizedBox(height: 8),
                   for (final mission in season.missions) ...[
                     Text(mission.title,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text('${mission.subject} • Grade 1'),
+                    Text('${mission.subject} / ${_grade(mission.gradeId)}'),
                     for (final id in mission.topicIds)
                       _lesson(context, mission, id, completed.contains(id)),
                     const SizedBox(height: 12),
@@ -145,8 +170,8 @@ class _NorieSeasonalHubScreenState extends State<NorieSeasonalHubScreen> {
                       : 'Keepsake: ${season.rewardLabel}'),
                   if (!earned)
                     Text(done
-                        ? 'Both missions completed.'
-                        : 'Complete both lesson mastery checks to finish the missions.'),
+                        ? 'All ${season.missions.length} missions completed.'
+                        : 'Complete each lesson mastery check to finish the missions.'),
                   if (status == NorieSeasonStatus.active && !earned)
                     FilledButton(
                         onPressed: done && store.loaded && !_busy
@@ -161,6 +186,16 @@ class _NorieSeasonalHubScreenState extends State<NorieSeasonalHubScreen> {
                         'Keepsake claims open when the season starts. You can explore lessons now.'),
                 ])));
   }
+
+  String _date(DateTime date) =>
+      date.toUtc().toIso8601String().substring(0, 10);
+
+  String _grade(String gradeId) =>
+      NorieFoundationCurriculum.gradeLevels
+          .where((grade) => grade.id == gradeId)
+          .firstOrNull
+          ?.label ??
+      gradeId;
 
   Widget _lesson(BuildContext context, NorieSeasonMission mission, String id,
       bool complete) {

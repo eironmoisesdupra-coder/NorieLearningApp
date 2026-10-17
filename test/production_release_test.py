@@ -88,4 +88,16 @@ class ProductionReleaseTest(unittest.TestCase):
             with patch.object(m, 'run', return_value=json.dumps({**valid,**change})), self.assertRaises(ValueError):
                 m.verify_windows(Path('app.exe'),'a'*64)
 
+    def test_aab_requires_verified_payload_and_one_pinned_unexpired_signer(self):
+        with patch.object(m, 'run', side_effect=['jar verified.', 'SHA256: '+'a'*64]):
+            self.assertEqual(m.verify_aab(Path('app.aab'), 'a'*64), 'a'*64)
+        for output in ('jar is unsigned', 'jar verified. unsigned entries',
+                       'jar verified. certificate has expired', 'jar verified. not yet valid'):
+            with patch.object(m, 'run', return_value=output), self.assertRaises(ValueError):
+                m.verify_aab(Path('app.aab'), 'a'*64)
+        for certificate in ('SHA256: '+'b'*64, 'unsigned',
+                            'SHA256: '+'a'*64+'\nSHA256: '+'a'*64):
+            with patch.object(m, 'run', side_effect=['jar verified.', certificate]), self.assertRaises(ValueError):
+                m.verify_aab(Path('app.aab'), 'a'*64)
+
 if __name__ == '__main__': unittest.main()

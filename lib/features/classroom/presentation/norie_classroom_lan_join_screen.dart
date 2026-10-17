@@ -7,12 +7,14 @@ import '../domain/norie_classroom_models.dart';
 import '../lan/norie_classroom_lan.dart';
 import 'norie_classroom_identity_guard.dart';
 import 'norie_classroom_lan_messages.dart';
+import 'norie_classroom_connection_copy.dart';
 import 'norie_classroom_lan_scan_screen.dart';
 import 'norie_classroom_runner_screen.dart';
 
 class NorieClassroomLanJoinScreen extends StatefulWidget {
-  const NorieClassroomLanJoinScreen({this.store, super.key});
+  const NorieClassroomLanJoinScreen({this.store, this.client, super.key});
   final NorieClassroomStore? store;
+  final NorieClassroomLanClient? client;
   @override
   State<NorieClassroomLanJoinScreen> createState() => _JoinState();
 }
@@ -20,7 +22,7 @@ class NorieClassroomLanJoinScreen extends StatefulWidget {
 class _JoinState extends State<NorieClassroomLanJoinScreen>
     with NorieClassroomIdentityGuard<NorieClassroomLanJoinScreen> {
   late final store = widget.store ?? NorieClassroomStore.instance;
-  final client = NorieClassroomLanClient();
+  late final client = widget.client ?? NorieClassroomLanClient();
   final address = TextEditingController(),
       code = TextEditingController(),
       qrLink = TextEditingController();
@@ -28,6 +30,7 @@ class _JoinState extends State<NorieClassroomLanJoinScreen>
   List<NorieLanAssignmentSummary> assignments = const [];
   String? expectedSession, error, notice;
   bool busy = false;
+  Future<void> Function()? retryAction;
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _JoinState extends State<NorieClassroomLanJoinScreen>
       busy = true;
       error = null;
       notice = null;
+      retryAction = action;
     });
     try {
       await action();
@@ -103,11 +107,14 @@ class _JoinState extends State<NorieClassroomLanJoinScreen>
 
   Future<void> send(NorieClassroomSubmission submission) async {
     if (!current) throw StateError('Learner changed. Reopen Classroom.');
-    await client.submit(submission);
+    final acknowledgement = await client.submit(submission);
     if (mounted && current) {
       setState(() {
         sent.add(submission.id);
-        notice = 'Received by teacher';
+        notice = acknowledgement.accepted
+            ? 'Received by teacher'
+            : NorieClassroomConnectionCopy.message(
+                NorieClassroomConnectionIssue.alreadySubmitted);
       });
     }
   }
@@ -146,33 +153,10 @@ class _JoinState extends State<NorieClassroomLanJoinScreen>
               style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
           const Text(
-              'Use the address and code shown on the teacher device. Connect to the same trusted Wi-Fi or hotspot. No internet is required.'),
-          TextField(
-              controller: address,
-              enabled: !busy,
-              autocorrect: false,
-              keyboardType: TextInputType.url,
-              onChanged: (_) => detailsChanged(),
-              decoration: const InputDecoration(
-                  labelText: 'Teacher address',
-                  hintText: 'http://192.168.1.20:12345')),
-          const SizedBox(height: 12),
-          TextField(
-              controller: code,
-              enabled: !busy,
-              autocorrect: false,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              onChanged: (_) => detailsChanged(),
-              decoration: const InputDecoration(labelText: 'Join code')),
-          FilledButton.icon(
-              onPressed: busy || !client.supported ? null : () => run(join),
-              icon: const Icon(Icons.login),
-              label: const Text('Join classroom')),
+              'Scan your teacher QR or load a copied join link. Both devices must use the same trusted Wi-Fi or hotspot; internet is not required.'),
           const SizedBox(height: 12),
           if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
-            OutlinedButton.icon(
+            FilledButton.tonalIcon(
                 onPressed: busy ? null : () => run(scan),
                 icon: const Icon(Icons.qr_code_scanner),
                 label: const Text('Scan teacher QR')),
@@ -188,6 +172,45 @@ class _JoinState extends State<NorieClassroomLanJoinScreen>
                 onPressed: busy ? null : () => run(() => useLink(qrLink.text)),
                 child: const Text('Load join details')),
           ]),
+          ExpansionTile(
+              title: const Text('Enter address and code manually'),
+              children: [
+                TextField(
+                    controller: address,
+                    enabled: !busy,
+                    autocorrect: false,
+                    keyboardType: TextInputType.url,
+                    onChanged: (_) => detailsChanged(),
+                    decoration: const InputDecoration(
+                        labelText: 'Teacher address',
+                        hintText: 'http://192.168.1.20:12345')),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: code,
+                    enabled: !busy,
+                    autocorrect: false,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (_) => detailsChanged(),
+                    decoration: const InputDecoration(labelText: 'Join code')),
+              ]),
+          if (expectedSession != null)
+            Text('QR details ready. Join code: ${code.text}'),
+          FilledButton.icon(
+              onPressed: busy ||
+                      !client.supported ||
+                      address.text.isEmpty ||
+                      code.text.length != 6
+                  ? null
+                  : () => run(join),
+              icon: const Icon(Icons.login),
+              label: const Text('Join classroom')),
+          Text(client.session == null
+              ? 'Not connected to a classroom'
+              : error != null
+                  ? 'Connection needs attention'
+                  : 'Connected to teacher: ${assignments.length} shared assignment(s)'),
           if (client.session != null) ...[
             Wrap(spacing: 8, children: [
               TextButton.icon(
@@ -214,8 +237,19 @@ class _JoinState extends State<NorieClassroomLanJoinScreen>
           if (error != null) ...[
             Text(error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            const Text(
-                'Check the teacher address, current code and Wi-Fi. If the teacher restarted, load the new details and join again. Saved results stay on this device.'),
+            if (retryAction != null)
+              TextButton.icon(
+                  onPressed: busy ? null : () => run(retryAction!),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry last action')),
+            ExpansionTile(title: const Text('Connection help'), children: [
+              Text(NorieClassroomConnectionCopy.message(
+                  NorieClassroomConnectionIssue.differentNetwork)),
+              Text(NorieClassroomConnectionCopy.message(
+                  NorieClassroomConnectionIssue.firewallBlocked)),
+              const Text(
+                  'If the teacher restarted, load the new QR or address and code. Saved results also remain in Offline Classroom.'),
+            ]),
           ],
           for (final a in assignments)
             Card(

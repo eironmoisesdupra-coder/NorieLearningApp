@@ -58,7 +58,8 @@ async function main(){
       assert.equal(await locator.isChecked(),true);
     }
     await page.getByRole('button',{name:'Learn Learn',exact:true}).click();
-    await click(page.getByRole('progressbar',{name:/Classroom/}).first());
+    await page.getByRole('checkbox',{name:'Classroom',exact:true}).click();
+    await click(page.getByRole('button',{name:/^Classroom\b/}).first());
     await click(page.getByRole('button',{name:'Build assignment',exact:true}));
     console.log('Building the classroom assignment through the app');
     const title=page.getByRole('textbox',{name:'Assignment title'});

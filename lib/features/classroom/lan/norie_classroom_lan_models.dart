@@ -5,6 +5,41 @@ import '../domain/norie_classroom_models.dart';
 const norieLanMaxBytes = 2 * 1024 * 1024;
 const norieLanTimeout = Duration(seconds: 15);
 
+enum NorieLanFailure {
+  unreachable,
+  unauthorized,
+  unavailable,
+  changed,
+  oversized,
+  throttled,
+  busy,
+  incompatible,
+}
+
+/// Typed public failure; transport details and join secrets never reach UI copy.
+class NorieLanConnectionException extends StateError {
+  NorieLanConnectionException(this.failure, {this.status})
+      : super(switch (failure) {
+          NorieLanFailure.unreachable =>
+            'Cannot reach the classroom. Check the teacher address and Wi-Fi, then retry. Your saved work stays on this device.',
+          NorieLanFailure.unauthorized =>
+            'Check the classroom code with your teacher.',
+          NorieLanFailure.unavailable =>
+            'This assignment is no longer shared. Refresh the classroom.',
+          NorieLanFailure.changed =>
+            'The classroom session or saved work changed. Rejoin with the current code, or check the saved assignment.',
+          NorieLanFailure.oversized => 'This classroom package is too large.',
+          NorieLanFailure.throttled =>
+            'Too many code attempts. Wait a minute, then try again.',
+          NorieLanFailure.busy =>
+            'The teacher is busy or disconnected. Retry shortly; your saved work is safe.',
+          NorieLanFailure.incompatible =>
+            'The classroom package could not be accepted. Check that both apps have the same content version.',
+        });
+  final NorieLanFailure failure;
+  final int? status;
+}
+
 Uri norieLanEndpoint(String value) {
   if (value.length > 256) throw const FormatException('Invalid local address.');
   final u = Uri.tryParse(value);
@@ -184,8 +219,15 @@ class NorieLanEnvelope {
     final m = classroomMap(jsonDecode(text));
     if (m['protocol'] != 'norie-classroom-lan' ||
         m['version'] != 1 ||
-        !const {'hello', 'assignment_list', 'assignment', 'submission', 'ack'}
-            .contains(m['type'])) {
+        !const {
+          'hello',
+          'assignment_list',
+          'assignment',
+          'submission',
+          'ack',
+          'presence',
+          'presence_ack'
+        }.contains(m['type'])) {
       throw const FormatException('Unsupported LAN classroom message.');
     }
     final id = classroomString(m['session_id'], 128),

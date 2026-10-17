@@ -146,6 +146,35 @@ jobs:
       - name: Build Android APK
         run: flutter build apk --release
 
+      - name: Audit exact Android APK against reviewed preview budget
+        run: python scripts/release/asset_budget.py --android build/app/outputs/flutter-apk/app-release.apk --json-output build/android-package-size-report.json --fail-on-growth
+
+      - name: Build preview Android App Bundle (not production signed)
+        run: flutter build appbundle --release
+
+      - name: Bind tested AAB bytes to this exact source and build
+        run: |
+          bundle_version=$(python -c 'import re; from pathlib import Path; print(re.search(r"^version:\s*(\S+)", Path("pubspec.yaml").read_text(), re.M).group(1))')
+          python scripts/release/production_aab.py provenance build/app/outputs/bundle/release/app-release.aab --revision "$GITHUB_SHA" --version "$bundle_version" --output build/aab-build-provenance.json
+          mkdir -p build/aab-preview-artifact
+          cp build/app/outputs/bundle/release/app-release.aab build/aab-preview-artifact/
+          cp build/aab-build-provenance.json build/aab-preview-artifact/
+
+      - name: Upload preview Android App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: NorieLearning-android-bundle-preview
+          path: build/aab-preview-artifact/
+          if-no-files-found: error
+
+      - name: Upload measured Android budget report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-package-size-report
+          path: build/android-package-size-report.json
+          if-no-files-found: warn
+
       - name: Upload branded Android APK
         uses: actions/upload-artifact@v4
         with:

@@ -1,3 +1,19 @@
+# NorieLearning 0.13 polish / store-preflight integration
+
+Version **0.13.0+17 Preview**, branch `feat/polish-store-readiness`, baseline develop `6364ff7c043a465653e13cc8108a4be08ee3b312`. User supplied `NorieLearning-WIP-0.13-to-store-ready-2026-10-17.zip` and requested implementation; archive inspected manually, installer never executed. Existing isolated integration worktree reused; original checkout preserved.
+
+Implemented scope: QR-first Classroom with manual fallback, typed recovery and explicit safe retry, capability-negotiated anonymous active device links and current shared assignments; five Learn groups with real resume/progress, preserved tutorials/routes and no preset percentages; evidence-based dashboard/mentor retained and seasonal presentation derived from catalog; deterministic source/exact-artifact budget audit; strict nonpublishing store schema/evidence reports and honest listing drafts. Added separate Preview AAB CI build/provenance and optional protected candidate AAB signing with pinned verification and unchanged payload checks. No production credential, physical certification or store submission is claimed.
+
+Owner explicitly confirmed no signing credentials and no public support email/privacy policy URL. All thirteen production/store readiness gates remain not_tested. Schema preflight may pass while readiness is false; strict readiness rejects blockers. Do not suppress schema failures. Real-key AAB rehearsal and Windows Store identity/package path remain external follow-through, alongside physical migration/Wi-Fi/device and legal review.
+
+Local validation passed: analysis clean; 762 Flutter tests; release web build and Windows Electron package; phone320x640/160% widget checks; browser Classroom/seasonal/Learn navigation and visual checks; packaged Electron teacher/native Dart learner durable exchange, duplicate/reconnect retry and unchanged XP; 35 Node/web-shell tests; release/asset/AAB and store-preflight suites. Symlink privilege cases are explicitly skipped on this Windows host. Independent review has no remaining P1/P2 findings. Android APK/AAB builds, exact platform artifact budgets and publication require remote CI. Final PR/release records exact head/merged SHA and green PR -> develop -> web/dual Preview publication. No main updates. All external store gates remain pending.
+
+See [polish details](implementation/0.13-polish-certification.md), [budgets](implementation/package-optimization.md), [store gates](implementation/store-ready.md) and [plan](superpowers/plans/2026-10-17-polish-store-readiness.md).
+
+---
+
+## Historical0.12 integration notes
+
 # NorieLearning roadmap 18 / 19 / 20 integration
 
 Updated 2026-10-17. Version **0.12.0+16 Preview**, branch `feat/live-lan-release-certification`, current-develop baseline `f4255a04ab71cb313f05c4d3223b7865d380256d` (0.11.0+15 / PR45-46). User supplied NorieLearning-WIP-roadmap-18-19-20-2026-10-17.zip and requested implementation. Archive inspected; its installer was never executed. Reused the isolated NorieLearning-integrate workspace and preserved the original dirty checkout.

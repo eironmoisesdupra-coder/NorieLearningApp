@@ -11,6 +11,12 @@ on:
         description: Version tag matching source (vMAJOR.MINOR.PATCH)
         required: true
         type: string
+      android_format:
+        description: Exact tested Android package to sign (candidate only)
+        type: choice
+        required: true
+        default: apk
+        options: [apk, aab]
 
 permissions:
   contents: read
@@ -74,7 +80,7 @@ jobs:
       - uses: actions/download-artifact@v4
         if: matrix.platform == 'android'
         with:
-          name: NorieLearning-android-release
+          name: ${{ inputs.android_format == 'aab' && 'NorieLearning-android-bundle-preview' || 'NorieLearning-android-release' }}
           path: tested-input
           github-token: ${{ github.token }}
           run-id: ${{ needs.provenance.outputs.android_run }}
@@ -100,10 +106,15 @@ jobs:
           NORIE_WINDOWS_TIMESTAMP_URL: ${{ matrix.platform == 'windows' && vars.NORIE_WINDOWS_TIMESTAMP_URL || '' }}
           PLATFORM: ${{ matrix.platform }}
           REVISION: ${{ inputs.revision }}
+          NORIE_ANDROID_FORMAT: ${{ inputs.android_format || 'apk' }}
         run: |
           $version = ((Get-Content pubspec.yaml | Select-String '^version:').Line -replace '^version:\s*','').Trim()
-          $artifact = if ($env:PLATFORM -eq 'android') { 'tested-input/app-release.apk' } else { 'tested-input/NorieLearning-Windows.zip' }
-          python scripts/release/sign_candidate.py $env:PLATFORM $artifact --revision $env:REVISION --version $version --output signed-candidates
+          $artifact = if ($env:PLATFORM -eq 'android') { if ($env:NORIE_ANDROID_FORMAT -eq 'aab') { 'tested-input/app-release.aab' } else { 'tested-input/app-release.apk' } } else { 'tested-input/NorieLearning-Windows.zip' }
+          $candidateArguments = @($env:PLATFORM, $artifact, '--revision', $env:REVISION, '--version', $version, '--output', 'signed-candidates')
+          if ($env:PLATFORM -eq 'android' -and $env:NORIE_ANDROID_FORMAT -eq 'aab') {
+            $candidateArguments += @('--android-format', 'aab', '--aab-provenance', 'tested-input/aab-build-provenance.json')
+          }
+          python scripts/release/sign_candidate.py @candidateArguments
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:

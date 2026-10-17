@@ -7,7 +7,31 @@ import shutil
 import subprocess
 import tempfile
 from production_release import (validate_environment, secret_file, digest,
-                                verify_android, verify_windows, extract_windows_archive, run)
+                                verify_android, verify_aab, verify_windows, extract_windows_archive, run)
+from production_aab import validate_provenance, prepare_unsigned, validate_same_payload
+
+
+def sign_android_bundle(artifact, provenance, target, revision, version, key, alias, fingerprint):
+    """Sign only exact tested AAB bytes, preserving every application payload file."""
+    artifact, target = Path(artifact), Path(target)
+    validate_provenance(artifact, provenance, revision, version)
+    if target.exists():
+        raise FileExistsError('Candidate output must not overwrite an existing file')
+    with tempfile.TemporaryDirectory(prefix='norie-aab-') as temporary:
+        unsigned = Path(temporary) / 'unsigned.aab'
+        prepare_unsigned(artifact, unsigned)
+        try:
+            run(['jarsigner', '-keystore', str(key),
+                 '-storepass:env', 'NORIE_ANDROID_KEYSTORE_PASSWORD',
+                 '-keypass:env', 'NORIE_ANDROID_KEY_PASSWORD',
+                 '-digestalg', 'SHA-256', '-sigfile', 'NORIE',
+                 '-signedjar', str(target), str(unsigned), alias])
+            verify_aab(target, fingerprint)
+            validate_same_payload(artifact, target)
+        except BaseException:
+            target.unlink(missing_ok=True)
+            raise
+    return fingerprint.replace(':', '').replace(' ', '').lower()
 
 def main():
     p = argparse.ArgumentParser()
@@ -16,7 +40,14 @@ def main():
     p.add_argument('--revision', required=True)
     p.add_argument('--version', required=True)
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--android-format', choices=['apk', 'aab'], default='apk')
+    p.add_argument('--aab-provenance', type=Path)
     a = p.parse_args()
+    is_aab = a.platform == 'android' and a.android_format == 'aab'
+    if ((a.android_format == 'aab' and a.platform != 'android') or
+            (is_aab and a.aab_provenance is None) or
+            (not is_aab and a.aab_provenance is not None)):
+        p.error('AAB format requires Android and its tested provenance sidecar')
     validate_environment(a.platform)
     if run(['git', 'rev-parse', 'HEAD']).strip() != a.revision:
         raise ValueError('Checked-out source revision mismatch')
@@ -29,7 +60,14 @@ def main():
     env = os.environ
     with tempfile.TemporaryDirectory(prefix='norie-sign-') as temp:
         root = Path(temp)
-        if a.platform == 'android':
+        if is_aab:
+            validate_provenance(a.artifact, a.aab_provenance, a.revision, a.version)
+            target = a.output / 'NorieLearning-Android.aab'
+            with secret_file(env['NORIE_ANDROID_KEYSTORE_BASE64'], root/'release.keystore') as key:
+                fingerprint = sign_android_bundle(a.artifact, a.aab_provenance, target,
+                    a.revision, a.version, key, env['NORIE_ANDROID_KEY_ALIAS'],
+                    env['NORIE_ANDROID_CERT_SHA256'])
+        elif a.platform == 'android':
             sdk = Path(env['ANDROID_HOME']) / 'build-tools'
             tools = sorted(sdk.iterdir(), key=lambda x: tuple(int(n) for n in x.name.split('.') if n.isdigit()))[-1]
             signer = str(tools / ('apksigner.bat' if os.name == 'nt' else 'apksigner'))
@@ -63,7 +101,10 @@ def main():
                 signing={a.platform: dict(status='verified',cert_sha256=fingerprint)},
                 tested_input=dict(name=a.artifact.name, sha256=original_digest),
                 certification='pending human physical-device evidence; not production approved')
-    (a.output/(a.platform+'-candidate.json')).write_text(json.dumps(data,indent=2)+'\n')
+    if is_aab:
+        data['tested_input']['provenance_sha256'] = digest(a.aab_provenance)
+    suffix = '-aab' if is_aab else ''
+    (a.output/(a.platform+suffix+'-candidate.json')).write_text(json.dumps(data,indent=2)+'\n')
 
 def name_version(version):
     return version.split('+')[0]

@@ -40,7 +40,7 @@ async function serve(){
  async function dismiss(page){const close=page.getByRole('button',{name:'Close',exact:true});if(await close.isVisible())await close.click();}
  async function seek(page,l){await dismiss(page);for(let i=0;i<20;i++){if(await l.count()){const b=await l.boundingBox();if(b&&b.y>75&&b.y+b.height<760)return;}await page.mouse.move(190,600);await page.mouse.wheel(0,350);await page.waitForTimeout(100);}await l.waitFor();}
  async function click(page,l){await seek(page,l);await l.click();}
- async function classroom(page){await click(page,page.getByRole('progressbar',{name:/Classroom/}).first());await page.getByRole('heading',{name:'Offline Classroom',exact:true}).waitFor();}
+ async function classroom(page){await page.getByRole('checkbox',{name:'Classroom',exact:true}).click();await click(page,page.getByRole('button',{name:/^Classroom\b/}).first());await page.getByRole('heading',{name:'Offline Classroom',exact:true}).waitFor();}
  async function download(page,button,path){await seek(page,button);const pending=page.waitForEvent('download');await button.click();const file=await pending;await file.saveAs(path);return path;}
  async function upload(page,button,path){await seek(page,button);const pending=page.waitForEvent('filechooser');await button.click();await(await pending).setFiles(path);await page.waitForTimeout(500);}
  try{
@@ -77,7 +77,7 @@ async function serve(){
   await seek(teacher,joinButton);assert.equal(await joinButton.isEnabled(),false);
   await teacher.screenshot({path:'build/windows-lan-web-fallback.png'});
   console.log('PASS browser Classroom explains installed-app LAN support and preserves working file exchange.');
-  const seasonal=await open();await click(seasonal,seasonal.getByRole('progressbar',{name:/Seasonal Learning/}).first());
+  const seasonal=await open();await seasonal.getByRole('checkbox',{name:'Activities',exact:true}).click();await click(seasonal,seasonal.getByRole('button',{name:/^Seasonal Learning\b/}).first());
   await seasonal.getByRole('heading',{name:'Seasonal learning',exact:true}).waitFor();
   await seek(seasonal,seasonal.getByRole('button',{name:/Open lesson: Living/}));
   await seasonal.screenshot({path:'build/seasonal-phone.png'});

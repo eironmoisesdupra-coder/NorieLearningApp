@@ -10,6 +10,16 @@ function raw(s, path='/v1/hello', extra={}) {
   });
 }
 async function queued(lan) { for(let i=0;i<100;i++){const p=lan.poll();if(p.requests.length)return p.requests;await tick();}throw Error('Request not queued'); }
+
+test('anonymous presence is authorized and relayed through the same bounded bridge',async t=>{
+ const lan=createClassroomLan();t.after(()=>lan.stop());const s=await lan.start();
+ assert.equal((await raw(s,'/v1/presence',{method:'POST',body:'{}',headers:{'x-norie-join-code':'wrong'}})).status,401);
+ const pending=raw(s,'/v1/presence',{method:'POST',body:'{"active":true}'});
+ const [r]=await queued(lan);assert.equal(r.path,'/v1/presence');assert.equal(r.body,'{"active":true}');
+ lan.respond({request_id:r.request_id,status:200,body:'{"active":true}'});
+ assert.equal((await pending).status,200);
+ assert.equal((await raw(s,'/v1/presence')).status,405);
+});
 test('does not acknowledge until renderer durably responds; relays raw JSON unchanged',async t=>{
  const lan=createClassroomLan();t.after(()=>lan.stop()); assert.equal(lan.poll().session,null);
  const s=await lan.start(); assert.match(s.join_code,/^\d{6}$/);assert.match(s.session_id,/^[\da-f-]{36}$/);

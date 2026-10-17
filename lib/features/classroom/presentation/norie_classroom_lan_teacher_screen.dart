@@ -8,8 +8,9 @@ import 'norie_classroom_identity_guard.dart';
 import 'norie_classroom_lan_messages.dart';
 
 class NorieClassroomLanTeacherScreen extends StatefulWidget {
-  const NorieClassroomLanTeacherScreen({this.store, super.key});
+  const NorieClassroomLanTeacherScreen({this.store, this.host, super.key});
   final NorieClassroomStore? store;
+  final NorieClassroomLanHost? host;
   @override
   State<NorieClassroomLanTeacherScreen> createState() => _TeacherState();
 }
@@ -17,11 +18,12 @@ class NorieClassroomLanTeacherScreen extends StatefulWidget {
 class _TeacherState extends State<NorieClassroomLanTeacherScreen>
     with NorieClassroomIdentityGuard<NorieClassroomLanTeacherScreen> {
   late final store = widget.store ?? NorieClassroomStore.instance;
-  late final host =
+  late final host = widget.host ??
       NorieClassroomLanHost(store: store, stillCurrent: () => current);
   final selected = <String>{};
   String? error, address, notice;
   bool busy = false;
+  Future<void> Function()? retryAction;
 
   @override
   void initState() {
@@ -34,6 +36,7 @@ class _TeacherState extends State<NorieClassroomLanTeacherScreen>
     setState(() {
       busy = true;
       error = null;
+      retryAction = action;
     });
     try {
       await action();
@@ -116,24 +119,8 @@ class _TeacherState extends State<NorieClassroomLanTeacherScreen>
                 Text('Classroom is open',
                     style: Theme.of(context).textTheme.headlineSmall),
                 const Text(
-                    'Students use the address and temporary code below, or scan this QR in NorieLearning. Both devices must be on the same trusted Wi-Fi.'),
+                    'Scan this QR in NorieLearning, then tap Join classroom. Both devices must use the same trusted Wi-Fi or hotspot.'),
                 const SizedBox(height: 12),
-                if (session.addresses.length > 1)
-                  DropdownButtonFormField<String>(
-                      key: ValueKey('${session.sessionId}:$address'),
-                      initialValue: address,
-                      isExpanded: true,
-                      decoration:
-                          const InputDecoration(labelText: 'Wi-Fi address'),
-                      items: [
-                        for (final hostAddress in session.addresses)
-                          DropdownMenuItem(
-                              value: 'http://$hostAddress:${session.port}',
-                              child:
-                                  Text('http://$hostAddress:${session.port}'))
-                      ],
-                      onChanged: (value) => setState(() => address = value)),
-                SelectableText('Address: ${address ?? session.endpoint}'),
                 SelectableText('Join code: ${session.joinCode}',
                     style: Theme.of(context).textTheme.headlineSmall),
                 if (session.host.startsWith('127.'))
@@ -160,9 +147,43 @@ class _TeacherState extends State<NorieClassroomLanTeacherScreen>
                       icon: const Icon(Icons.stop_circle_outlined),
                       label: const Text('Stop classroom')),
                 ]),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
+                Text('Active device links: ${host.activeLinks}'),
+                Text('Submitted aliases: ${host.peers.length}'),
                 const Text(
-                    'If a learner cannot connect, check the Wi-Fi address and allow NorieLearning on Private networks in Windows Firewall. Guest Wi-Fi may block device-to-device access.'),
+                    'Links are anonymous and expire after a minute without a heartbeat. Neither count verifies identity or attendance.'),
+                const SizedBox(height: 12),
+                Text(
+                    'Currently shared: ${host.sharedAssignments.length} assignment(s)',
+                    style: Theme.of(context).textTheme.titleMedium),
+                for (final shared in host.sharedAssignments)
+                  Text(
+                      '${shared.title} (${shared.questionIds.length} questions)'),
+                ExpansionTile(
+                    title: const Text('Connection details (manual fallback)'),
+                    tilePadding: EdgeInsets.zero,
+                    children: [
+                      if (session.addresses.length > 1)
+                        DropdownButtonFormField<String>(
+                            key: ValueKey('${session.sessionId}:$address'),
+                            initialValue: address,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                                labelText: 'Wi-Fi address'),
+                            items: [
+                              for (final hostAddress in session.addresses)
+                                DropdownMenuItem(
+                                    value:
+                                        'http://$hostAddress:${session.port}',
+                                    child: Text(
+                                        'http://$hostAddress:${session.port}'))
+                            ],
+                            onChanged: (value) =>
+                                setState(() => address = value)),
+                      SelectableText('Address: ${address ?? session.endpoint}'),
+                      const Text(
+                          'If learners cannot connect, check the address and Private-network firewall permission. Guest Wi-Fi may block device-to-device access.'),
+                    ]),
                 const Divider(height: 32),
                 Text('Received results',
                     style: Theme.of(context).textTheme.titleLarge),
@@ -184,10 +205,18 @@ class _TeacherState extends State<NorieClassroomLanTeacherScreen>
               ],
               if (busy) const LinearProgressIndicator(),
               if (notice != null) Text(notice!),
-              if (error != null)
-                Text(error!,
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error)),
+              if (error != null) ...[
+                Semantics(
+                    liveRegion: true,
+                    child: Text(error!,
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.error))),
+                if (retryAction != null)
+                  TextButton.icon(
+                      onPressed: busy ? null : () => run(retryAction!),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry last action')),
+              ],
             ]);
           }));
 }

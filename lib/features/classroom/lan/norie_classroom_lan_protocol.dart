@@ -10,8 +10,10 @@ class NorieLanProtocolHandler {
       required this.session,
       required List<NorieClassroomAssignment> assignments,
       required this.stillCurrent,
-      required this.changed})
-      : packages = Map.unmodifiable({
+      required this.changed,
+      DateTime Function()? clock})
+      : _clock = clock ?? DateTime.now,
+        packages = Map.unmodifiable({
           for (final a in assignments)
             a.id: NorieClassroomCodec.encodeAssignment(a)
         });
@@ -21,6 +23,15 @@ class NorieLanProtocolHandler {
   final void Function() changed;
   final Map<String, String> packages;
   final Map<String, NorieLanPeer> _peers = {};
+  final DateTime Function() _clock;
+  final Map<String, DateTime> _links = {};
+  void _expireLinks() => _links.removeWhere(
+      (_, seen) => _clock().difference(seen) >= const Duration(seconds: 60));
+  int get activeLinks {
+    _expireLinks();
+    return _links.length;
+  }
+
   List<NorieLanPeer> get peers => List.unmodifiable(_peers.values);
   void _guard() {
     if (!stillCurrent()) throw StateError('Classroom ownership changed.');
@@ -42,7 +53,33 @@ class NorieLanProtocolHandler {
                       payload: payload)
                   .encode());
       if (method == 'GET' && path == '/v1/hello') {
-        return reply('hello', session.toJson());
+        return reply('hello', {
+          ...session.toJson(),
+          'capabilities': ['presence']
+        });
+      }
+      if (method == 'POST' && path == '/v1/presence') {
+        final envelope = NorieLanEnvelope.decode(body,
+            expectedType: 'presence', expectedSessionId: session.sessionId);
+        final token = envelope.payload['connection_id'];
+        final active = envelope.payload['active'];
+        if (token is! String ||
+            !RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
+                .hasMatch(token) ||
+            active is! bool) {
+          return error(400);
+        }
+        _expireLinks();
+        if (active) {
+          if (!_links.containsKey(token) && _links.length >= 128) {
+            return error(503);
+          }
+          _links[token] = _clock();
+        } else {
+          _links.remove(token);
+        }
+        changed();
+        return reply('presence_ack', {'active': active});
       }
       if (method == 'GET' && path == '/v1/assignments') {
         return reply('assignment_list', {

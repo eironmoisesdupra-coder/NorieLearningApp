@@ -1,3 +1,5 @@
+import 'norie_classroom_connection_copy.dart';
+import 'norie_classroom_lan_messages.dart';
 import 'norie_classroom_identity_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -43,10 +45,10 @@ class _RunnerState extends State<NorieClassroomRunnerScreen>
       if (mounted && current) {
         setState(() => returnNotice = 'Received by teacher');
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted && current) {
         setState(() => returnNotice =
-            'Saved on this device. Check the teacher connection, then retry here or rejoin and return your saved result.');
+            '${NorieClassroomConnectionCopy.message(NorieClassroomConnectionIssue.submissionPending)} ${norieClassroomLanMessage(e)}');
       }
     } finally {
       if (mounted) setState(() => busy = false);
