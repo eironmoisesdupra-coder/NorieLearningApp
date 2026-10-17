@@ -13,6 +13,7 @@ class NorieStudyOfflineStore {
 
   final String userId;
   static final Map<String, Future<void>> _writes = {};
+  static final Map<String, Future<void>> _rewardDrains = {};
   String get _key => 'norie.study.$userId.offline.v1';
 
   Future<Map<String, dynamic>> _read() async {
@@ -253,6 +254,7 @@ class NorieStudyOfflineStore {
         }
         ledger[setId] = rewarded.toList();
         state['answerRewards'] = ledger;
+        _enqueueReward(state, 'card:$setId:${answer.question.id}', 5, 1);
         return 5;
       });
 
@@ -304,6 +306,10 @@ class NorieStudyOfflineStore {
                 .toInt()
             : 0;
         state['rewarded'] = rewarded.toList();
+        if (xpAwarded > 0) {
+          _enqueueReward(
+              state, 'study-set:${studySet.id}:completion', xpAwarded, 0);
+        }
         final attempts = List<dynamic>.from(state['attempts'] as List? ?? []);
         attempts.add({
           'id': const Uuid().v4(),
@@ -336,6 +342,69 @@ class NorieStudyOfflineStore {
         .whereType<Map>()
         .map((value) => Map<String, dynamic>.from(value))
         .toList();
+  }
+
+  static void _enqueueReward(
+      Map<String, dynamic> state, String claim, int xp, int credits) {
+    final outbox =
+        Map<String, dynamic>.from(state['rewardOutbox'] as Map? ?? {});
+    outbox[claim] = {'claim_key': claim, 'xp': xp, 'credits': credits};
+    state['rewardOutbox'] = outbox;
+  }
+
+  /// Eligibility and this outbox commit together. A receipt leaves the outbox
+  /// only after its economy envelope is durable; retrying that receipt is safe.
+  Future<Map<String, int>> drainRewardOutbox({
+    required bool Function() stillCurrent,
+    required bool Function(String claim, int xp, int credits) award,
+    required Future<void> Function() flushEconomy,
+  }) {
+    final result = Completer<Map<String, int>>();
+    _rewardDrains[userId] =
+        (_rewardDrains[userId] ?? Future<void>.value()).then((_) async {
+      final granted = <String, int>{};
+      try {
+        if (!stillCurrent()) {
+          result.complete(granted);
+          return;
+        }
+        final state = await _read();
+        if (!stillCurrent()) {
+          result.complete(granted);
+          return;
+        }
+        final outbox =
+            Map<String, dynamic>.from(state['rewardOutbox'] as Map? ?? {});
+        for (final entry in outbox.entries) {
+          if (!stillCurrent()) break;
+          final receipt = Map<String, dynamic>.from(entry.value as Map);
+          if (receipt['claim_key'] != entry.key ||
+              receipt['xp'] is! int ||
+              receipt['credits'] is! int) {
+            throw const FormatException('Invalid saved study reward.');
+          }
+          final didAward =
+              award(entry.key, receipt['xp'] as int, receipt['credits'] as int);
+          await flushEconomy();
+          if (!stillCurrent()) break;
+          await _write((latest) {
+            if (!stillCurrent()) return;
+            final pending =
+                Map<String, dynamic>.from(latest['rewardOutbox'] as Map? ?? {});
+            if (jsonEncode(pending[entry.key]) == jsonEncode(receipt)) {
+              pending.remove(entry.key);
+              latest['rewardOutbox'] = pending;
+            }
+          });
+          if (!stillCurrent()) break;
+          if (didAward) granted[entry.key] = receipt['xp'] as int;
+        }
+        result.complete(granted);
+      } catch (error, stack) {
+        result.completeError(error, stack);
+      }
+    });
+    return result.future;
   }
 
   Future<void> acknowledgeAttempt(String id) => _write((state) {

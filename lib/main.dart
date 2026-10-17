@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/norie_app.dart';
 import 'core/account/norie_account_service.dart';
 import 'core/account/norie_demo_access_service.dart';
 import 'core/cloud/norie_cloud_sync.dart';
 import 'core/cloud/supabase_config.dart';
+import 'core/diagnostics/norie_diagnostics.dart';
 import 'core/progression/norie_progression.dart';
 import 'core/progression/norie_lesson_journey.dart';
 import 'core/progression/norie_adventure_progress.dart';
@@ -18,6 +20,10 @@ import 'features/study/data/norie_study_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final diagnostics = NorieDiagnosticsStore.instance;
+  NorieDiagnosticsHandlers.install(diagnostics);
+  // Diagnostics storage is optional and must not delay offline learning startup.
+  unawaited(diagnostics.load());
 
   await NorieProgression.instance.load();
   await NorieLessonJourney.instance.load();
@@ -38,13 +44,37 @@ Future<void> main() async {
 
   // Lessons and local progress must be available before any network work.
   runApp(const NorieApp());
-  unawaited(_initializeCloud());
+  unawaited(_initializeServices());
+}
+
+Future<void> _initializeServices() async {
+  try {
+    // Before initializing authentication, only an unowned installation may
+    // replay guest rewards. Account outboxes drain after cloud owner alignment.
+    final preferences = await SharedPreferences.getInstance();
+    if (preferences.getString('norie.cloudOwnerUserId') == null) {
+      await NorieStudyService.instance.drainPendingRewards();
+    }
+  } catch (error) {
+    NorieDiagnosticsStore.instance
+        .capture(error, source: DiagnosticSource.startup);
+  }
+  await _initializeCloud();
 }
 
 Future<void> _initializeCloud() async {
   try {
     final cloudReady = await NorieSupabase.initialize();
     if (cloudReady) {
+      var previousIdentity = NorieAccountService.instance.user?.id;
+      NorieAccountService.instance.addListener(() {
+        final identity = NorieAccountService.instance.user?.id;
+        if (identity != previousIdentity) {
+          previousIdentity = identity;
+          // Never retain a previous learner's local diagnostic timeline.
+          unawaited(NorieDiagnosticsStore.instance.clear());
+        }
+      });
       await NorieAccountService.instance.initialize();
       NorieAccountService.instance.addListener(() {
         unawaited(NorieStudyService.instance.syncPendingAttempts());
@@ -53,7 +83,9 @@ Future<void> _initializeCloud() async {
       await NorieDemoAccessService.instance.initialize();
       await NorieCloudSync.instance.initialize();
     }
-  } catch (_) {
+  } catch (error, stack) {
+    NorieDiagnosticsStore.instance
+        .capture(error, stack: stack, source: DiagnosticSource.startup);
     // Cloud recovery is optional. Local learning keeps running if it fails.
   }
 }

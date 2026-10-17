@@ -7,9 +7,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../account/norie_account_service.dart';
 import '../account/norie_demo_access_service.dart';
 import '../cloud/norie_cloud_sync.dart';
+import '../diagnostics/norie_diagnostics_screen.dart';
 import '../progression/norie_lesson_journey.dart';
 import '../progression/norie_progress_backup.dart';
 import '../progression/norie_progression.dart';
+import '../sync/norie_economy_store.dart';
+import '../sync/norie_economy_screen.dart';
 import 'norie_app_info.dart';
 import 'norie_update_bridge.dart';
 
@@ -124,15 +127,33 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
         if (owner != _owner || NorieCloudSync.instance.isSyncing) {
           throw const FormatException('Account state changed. Please retry.');
         }
-        await NorieProgression.instance.flushPendingSaves(retry: true);
+        final rewardRecovery = !NorieEconomyStore.instance.available;
+        if (rewardRecovery) {
+          await NorieProgression.instance.flushForRewardRecovery();
+        } else {
+          await NorieProgression.instance.flushPendingSaves(retry: true);
+        }
         await NorieLessonJourney.instance.flush();
         if (owner != _owner ||
             !sessionCurrent() ||
             NorieCloudSync.instance.isSyncing) {
           throw const FormatException('Account state changed. Please retry.');
         }
+        if (rewardRecovery) {
+          final damaged = prefs.getString(NorieEconomyStore.storageKey);
+          if (damaged != null &&
+              !await prefs.setString('norie.economy.quarantineRecovery.v1',
+                  jsonEncode({'owner': owner, 'envelope': damaged}))) {
+            throw const FormatException(
+                'Could not preserve damaged reward storage. Restore was cancelled.');
+          }
+          if (owner != _owner || !sessionCurrent()) {
+            throw const FormatException('Account changed. Please retry.');
+          }
+        }
         final previous = NorieProgressBackup.encode(
-            NorieProgression.instance.exportCloudState(),
+            NorieProgression.instance
+                .exportCloudState(includeEconomy: !rewardRecovery),
             owner: owner);
         final recoverySaved = await prefs.setString(_recoveryKey, previous);
         if (!recoverySaved) {
@@ -147,6 +168,7 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
           state,
           remoteModifiedAt: DateTime.now().toUtc(),
           stillCurrent: stillCurrent,
+          restoreEconomy: true,
         );
         if (!restored || !stillCurrent()) {
           throw const FormatException(
@@ -210,6 +232,28 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
                       onPressed: _busy ? null : _downloads,
                       icon: const Icon(Icons.download),
                       label: const Text('Windows & Android downloads')),
+                  const Divider(height: 32),
+                  OutlinedButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => Navigator.of(context)
+                                  .push(MaterialPageRoute<void>(
+                                settings:
+                                    const RouteSettings(name: 'diagnostics'),
+                                builder: (_) => const NorieDiagnosticsScreen(),
+                              )),
+                      icon: const Icon(Icons.privacy_tip_outlined),
+                      label: const Text('Local diagnostics')),
+                  OutlinedButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => Navigator.of(context)
+                                  .push(MaterialPageRoute<void>(
+                                settings: const RouteSettings(name: 'settings'),
+                                builder: (_) => const NorieEconomyScreen(),
+                              )),
+                      icon: const Icon(Icons.account_balance_wallet_outlined),
+                      label: const Text('Credits and device budget')),
                   const Divider(height: 32),
                   Text(status, style: Theme.of(context).textTheme.titleLarge),
                   if (cloud.lastSyncedAt != null)

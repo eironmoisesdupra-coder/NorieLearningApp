@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/account/norie_account_service.dart';
 import '../../../core/audio/norie_reward_sound.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
@@ -212,14 +213,22 @@ class _ShopItemCard extends StatelessWidget {
     final purchased = progression.purchaseShopItem(item);
     if (!purchased) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not enough Norie Credits.')),
+        SnackBar(
+            content: Text(
+                progression.economyMessage ?? 'Not enough Norie Credits.')),
       );
       return;
     }
-    await NorieRewardSound.playCoin();
+    final sameLearner = NorieAccountService.instance.captureLearnerGuard();
+    final signedIn = NorieAccountService.instance.isSignedIn;
+    if (!signedIn) await NorieRewardSound.playCoin();
     if (!context.mounted) return;
+    if (!sameLearner()) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${item.title} purchased.')),
+      SnackBar(
+          content: Text(signedIn
+              ? '${item.title} requested. Your purchase will be confirmed after account sync.'
+              : '${item.title} purchased.')),
     );
   }
 

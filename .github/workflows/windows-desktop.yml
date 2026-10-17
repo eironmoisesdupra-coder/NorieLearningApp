@@ -51,6 +51,8 @@ jobs:
         run: node desktop/test/web-update.cjs
       - name: Verify classroom file exchange and seasonal navigation
         run: node desktop/test/classroom-seasonal-web.cjs
+      - name: Verify private diagnostics export and offline reward controls
+        run: node desktop/test/economy-diagnostics-web.cjs
       - name: Exercise every atlas system with networking blocked
         run: node anatomy_viewer/test/browser-smoke.mjs
       - name: Package Windows app

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/core/progression/norie_progression.dart';
+import 'package:norie_learning/core/sync/norie_economy_store.dart';
 import 'package:norie_learning/features/study/data/norie_study_service.dart';
 import 'package:norie_learning/features/study/data/norie_study_offline_store.dart';
 import 'package:norie_learning/features/study/domain/norie_study_models.dart';
@@ -31,6 +33,144 @@ NorieStudySet savedSet() => NorieStudySet(
     );
 
 void main() {
+  test(
+      'restart between eligibility commit and award recovers both rewards once',
+      () async {
+    final store = NorieStudyOfflineStore('local');
+    const answer =
+        NorieStudyAnswer(question: question, response: '5', correct: true);
+    await store.claimAnswerReward(savedSet().id, answer);
+    await store.recordAttempt(studySet: savedSet(), answers: [answer]);
+    // A new service pass sees durable eligibility already consumed.
+    expect(
+        await NorieStudyOfflineStore('local')
+            .claimAnswerReward(savedSet().id, answer),
+        0);
+    await NorieStudyService.instance.drainPendingRewards();
+    expect(NorieProgression.instance.totalXp, 25);
+    expect(NorieProgression.instance.credits, 1);
+    await NorieStudyService.instance.drainPendingRewards();
+    expect(NorieProgression.instance.totalXp, 25);
+    final saved = jsonDecode((await SharedPreferences.getInstance())
+        .getString('norie.study.local.offline.v1')!) as Map;
+    expect(saved['rewardOutbox'], isEmpty);
+  });
+
+  test('failed economy save retains outbox and retry never duplicates award',
+      () async {
+    final store = NorieStudyOfflineStore('local');
+    const answer =
+        NorieStudyAnswer(question: question, response: '5', correct: true);
+    await store.claimAnswerReward(savedSet().id, answer);
+    var fail = false;
+    final economy =
+        NorieEconomyStore(read: () async => null, write: (_) async => !fail);
+    await economy.load({});
+    await economy.flush();
+    fail = true;
+    Future<Map<String, int>> drain() => store.drainRewardOutbox(
+        stillCurrent: () => true,
+        award: (claim, xp, credits) =>
+            economy.reward(claim, xp: xp, credits: credits),
+        flushEconomy: () => economy.flush(retry: true));
+    await expectLater(drain(), throwsStateError);
+    var saved = jsonDecode((await SharedPreferences.getInstance())
+        .getString('norie.study.local.offline.v1')!) as Map;
+    expect((saved['rewardOutbox'] as Map).length, 1);
+    fail = false;
+    await drain();
+    expect(economy.totalXp, 5);
+    expect(economy.credits, 1);
+    saved = jsonDecode((await SharedPreferences.getInstance())
+        .getString('norie.study.local.offline.v1')!) as Map;
+    expect(saved['rewardOutbox'], isEmpty);
+  });
+
+  test('crash after economy save before outbox acknowledgement deduplicates',
+      () async {
+    final store = NorieStudyOfflineStore('local');
+    const answer =
+        NorieStudyAnswer(question: question, response: '5', correct: true);
+    await store.claimAnswerReward(savedSet().id, answer);
+    NorieProgression.instance.reward('card:saved-set:q1', xp: 5, credits: 1);
+    await NorieProgression.instance.flushPendingSaves();
+    await NorieProgression.instance.load();
+    await NorieStudyService.instance.drainPendingRewards();
+    expect(NorieProgression.instance.totalXp, 5);
+    expect(NorieProgression.instance.credits, 1);
+    final saved = jsonDecode((await SharedPreferences.getInstance())
+        .getString('norie.study.local.offline.v1')!) as Map;
+    expect(saved['rewardOutbox'], isEmpty);
+  });
+
+  test('legacy eligibility without outbox cannot invent new awards', () async {
+    SharedPreferences.setMockInitialValues({
+      'norie.study.local.offline.v1': jsonEncode({
+        'rewarded': ['saved-set'],
+        'answerRewards': {
+          'saved-set': ['q1']
+        }
+      })
+    });
+    await NorieStudyService.instance.drainPendingRewards();
+    expect(NorieProgression.instance.totalXp, 0);
+    expect(NorieProgression.instance.credits, 0);
+  });
+
+  test('owner change during economy save retains reward for its original owner',
+      () async {
+    final store = NorieStudyOfflineStore('local');
+    const answer =
+        NorieStudyAnswer(question: question, response: '5', correct: true);
+    await store.claimAnswerReward(savedSet().id, answer);
+    var current = true;
+    await store.drainRewardOutbox(
+        stillCurrent: () => current,
+        award: (claim, xp, credits) => true,
+        flushEconomy: () async {
+          current = false;
+        });
+    final saved = jsonDecode((await SharedPreferences.getInstance())
+        .getString('norie.study.local.offline.v1')!) as Map;
+    expect((saved['rewardOutbox'] as Map).length, 1);
+  });
+
+  test('card eligibility and recoverable reward are saved in one document',
+      () async {
+    final store = NorieStudyOfflineStore('local');
+    const answer =
+        NorieStudyAnswer(question: question, response: '5', correct: true);
+    await store.claimAnswerReward(savedSet().id, answer);
+    final prefs = await SharedPreferences.getInstance();
+    final saved =
+        jsonDecode(prefs.getString('norie.study.local.offline.v1')!) as Map;
+    expect(saved['rewardOutbox'], {
+      'card:saved-set:q1': {
+        'claim_key': 'card:saved-set:q1',
+        'xp': 5,
+        'credits': 1
+      }
+    });
+  });
+
+  test('completion eligibility and recoverable reward are saved together',
+      () async {
+    final store = NorieStudyOfflineStore('local');
+    await store.recordAttempt(studySet: savedSet(), answers: const [
+      NorieStudyAnswer(question: question, response: '5', correct: true)
+    ]);
+    final prefs = await SharedPreferences.getInstance();
+    final saved =
+        jsonDecode(prefs.getString('norie.study.local.offline.v1')!) as Map;
+    expect(saved['rewardOutbox'], {
+      'study-set:saved-set:completion': {
+        'claim_key': 'study-set:saved-set:completion',
+        'xp': 25,
+        'credits': 0
+      }
+    });
+  });
+
   test('reviews persist per learner and are scheduled in UTC', () async {
     SharedPreferences.setMockInitialValues({});
     final due = await NorieStudyOfflineStore('alice')
@@ -74,9 +214,11 @@ void main() {
   });
 
   setUp(() async {
+    NorieProgression.instance.resetAsyncQueuesForTesting();
     SharedPreferences.setMockInitialValues({});
-    await NorieProgression.instance.load();
+    await NorieProgression.instance.resetForNewAccount();
   });
+  tearDown(() => NorieProgression.instance.flushPendingSaves());
 
   test('a saved quiz finishes offline and awards XP only once', () async {
     final before = NorieProgression.instance.snapshot.totalXp;

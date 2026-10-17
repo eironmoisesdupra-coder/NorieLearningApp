@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import '../sync/norie_feature_state.dart';
+import '../sync/norie_economy_store.dart';
+import '../account/norie_account_service.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -569,6 +572,9 @@ class NorieProgression extends ChangeNotifier {
     _lastModifiedAt = DateTime.tryParse(rawModified ?? '')?.toUtc() ??
         DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     _onboardingComplete = prefs.getBool(_onboardingKey) ?? false;
+    await NorieEconomyStore.instance
+        .load(_legacyEconomyBaseline(), force: true);
+    _applyEconomyProjection();
     final migratedLegacyTopic = _migrateLegacyTopicCompletion();
     notifyListeners();
     if (migratedLegacyTopic) {
@@ -576,53 +582,98 @@ class NorieProgression extends ChangeNotifier {
     }
   }
 
-  NorieXpAward addXp(int amount) {
-    final safeAmount = amount < 0 ? 0 : amount;
-    final before = snapshot;
-    _totalXp += safeAmount;
-    final after = snapshot;
+  Map<String, dynamic> _legacyEconomyBaseline() => {
+        'total_xp': _totalXp,
+        'credits': _credits,
+        'owned_shop_items': _ownedShopItems.toList()..sort(),
+        'streak_shields': _streakShields,
+        'modified_at': _lastModifiedAt.toIso8601String(),
+        'claim_keys': [
+          ..._rewardedLessonTopics.map((id) => 'lesson:$id'),
+          ..._rewardedPerfectLessonTopics.map((id) => 'perfect:$id'),
+          ..._dailyChallengeDates.map((id) => 'daily:$id'),
+          ..._speedRewardDates.map((id) => 'speed:$id'),
+          ..._weeklyRewardedWeeks.map((id) => 'weekly:$id'),
+          ..._rewardedAssessmentAttempts.map((id) => 'assessment:$id'),
+          if (_onboardingComplete) 'onboarding',
+        ],
+      };
 
-    if (safeAmount > 0) {
-      _changed();
-    }
-
-    return NorieXpAward(
-      amount: safeAmount,
-      before: before,
-      after: after,
-    );
+  void _applyEconomyProjection() {
+    final economy = NorieEconomyStore.instance;
+    _totalXp = economy.totalXp;
+    _credits = economy.credits;
+    _ownedShopItems = economy.ownedShopItems;
+    _streakShields = economy.streakShields;
+    if (!_ownedShopItems.contains(_equippedFrameId)) _equippedFrameId = null;
+    if (!_ownedShopItems.contains(_equippedBadgeId)) _equippedBadgeId = null;
+    if (!_ownedShopItems.contains(_equippedThemeId)) _equippedThemeId = null;
   }
 
-  void addCredits(int amount) {
-    final safeAmount = amount < 0 ? 0 : amount;
-    if (safeAmount == 0) return;
-    _credits += safeAmount;
-    _recordCreditTransaction(safeAmount, 'Credits earned');
+  Future<void> reconcileEconomyResult(Map<String, dynamic> result,
+      {required bool Function() stillCurrent}) async {
+    final before = jsonEncode(
+        [_totalXp, _credits, _streakShields, _ownedShopItems.toList()..sort()]);
+    await NorieEconomyStore.instance
+        .applyServerResult(result, stillCurrent: stillCurrent);
+    if (!stillCurrent()) return;
+    _applyEconomyProjection();
+    final after = jsonEncode(
+        [_totalXp, _credits, _streakShields, _ownedShopItems.toList()..sort()]);
+    if (before != after) _changed();
+  }
+
+  String? get economyMessage => NorieEconomyStore.instance.lastMessage;
+
+  bool reward(String claimKey, {int xp = 0, int credits = 0}) {
+    final awarded =
+        NorieEconomyStore.instance.reward(claimKey, xp: xp, credits: credits);
+    if (!awarded) return false;
+    _applyEconomyProjection();
+    if (credits > 0) _recordCreditTransaction(credits, 'Credits earned');
     _changed();
+    return true;
+  }
+
+  NorieXpAward addXp(int amount, {String? claimKey}) {
+    final before = snapshot;
+    final safeAmount = amount < 0 ? 0 : amount;
+    final granted = safeAmount > 0 &&
+        reward(claimKey ?? 'award:${const Uuid().v4()}', xp: safeAmount);
+    return NorieXpAward(
+        amount: granted ? safeAmount : 0, before: before, after: snapshot);
+  }
+
+  void addCredits(int amount, {String? claimKey}) {
+    if (amount > 0) {
+      reward(claimKey ?? 'award:${const Uuid().v4()}', credits: amount);
+    }
   }
 
   bool spendCredits(int amount) {
-    final safeAmount = amount < 0 ? 0 : amount;
-    if (safeAmount == 0) return true;
-    if (_credits < safeAmount) return false;
-    _credits -= safeAmount;
+    if (amount <= 0) return true;
+    if (!NorieEconomyStore.instance.spend(amount,
+        requiresReservation: NorieAccountService.instance.isSignedIn)) {
+      return false;
+    }
+    _applyEconomyProjection();
     _changed();
     return true;
   }
 
   bool purchaseShopItem(NorieShopItem item) {
     if (!item.consumable && _ownedShopItems.contains(item.id)) return false;
-    if (_credits < item.price) return false;
-
-    _credits -= item.price;
-    _recordCreditTransaction(-item.price, 'Purchased ${item.title}');
-
-    if (item.id == NorieShopCatalog.streakShield.id) {
-      _streakShields++;
-    } else {
-      _ownedShopItems.add(item.id);
+    if (!NorieEconomyStore.instance.spend(item.price,
+        itemId: item.id,
+        requiresReservation: NorieAccountService.instance.isSignedIn)) {
+      return false;
     }
-
+    _applyEconomyProjection();
+    _recordCreditTransaction(
+        -item.price,
+        NorieEconomyStore.instance.pendingPurchases.contains(item.id)
+            ? 'Purchase requested: ${item.title}'
+            : 'Purchased ${item.title}');
     _changed();
     return true;
   }
@@ -645,8 +696,11 @@ class NorieProgression extends ChangeNotifier {
   }
 
   bool useStreakShield() {
-    if (_streakShields < 1) return false;
-    _streakShields--;
+    if (!NorieEconomyStore.instance.consumeShield(
+        requiresReservation: NorieAccountService.instance.isSignedIn)) {
+      return false;
+    }
+    _applyEconomyProjection();
     _changed();
     return true;
   }
@@ -709,14 +763,20 @@ class NorieProgression extends ChangeNotifier {
     if (normalizedTopicId.isNotEmpty) {
       _completedTopicIds.add(normalizedTopicId);
 
-      if (_rewardedLessonTopics.add(normalizedTopicId)) {
+      if (!_rewardedLessonTopics.contains(normalizedTopicId) &&
+          NorieEconomyStore.instance.reward('lesson:$normalizedTopicId',
+              credits: NorieEconomyRules.lessonCompletionCredits)) {
+        _rewardedLessonTopics.add(normalizedTopicId);
         creditsAwarded += NorieEconomyRules.lessonCompletionCredits;
         lessonRewardAwarded = true;
       }
 
       if (totalAttempts > 0 &&
           totalCorrect == totalAttempts &&
-          _rewardedPerfectLessonTopics.add(normalizedTopicId)) {
+          !_rewardedPerfectLessonTopics.contains(normalizedTopicId) &&
+          NorieEconomyStore.instance.reward('perfect:$normalizedTopicId',
+              credits: NorieEconomyRules.perfectLessonCredits)) {
+        _rewardedPerfectLessonTopics.add(normalizedTopicId);
         creditsAwarded += NorieEconomyRules.perfectLessonCredits;
         perfectRewardAwarded = true;
       }
@@ -733,7 +793,7 @@ class NorieProgression extends ChangeNotifier {
             'reward_claimed', 'perfect:$normalizedTopicId');
       }
     }
-    _credits += creditsAwarded;
+    _applyEconomyProjection();
     _recordTopicBatch(
       category: category,
       topic: topic,
@@ -760,6 +820,7 @@ class NorieProgression extends ChangeNotifier {
     required int total,
     required int xpAwarded,
     required String topic,
+    String? claimKey,
   }) {
     final safeTotal = total < 0 ? 0 : total;
     final safeCorrect = correct.clamp(0, safeTotal).toInt();
@@ -770,7 +831,11 @@ class NorieProgression extends ChangeNotifier {
     _studySessions++;
     _correctAnswers += safeCorrect;
     _questionsAnswered += safeTotal;
-    _totalXp += safeXp;
+    if (safeXp > 0) {
+      NorieEconomyStore.instance
+          .reward(claimKey ?? 'study:${const Uuid().v4()}', xp: safeXp);
+    }
+    _applyEconomyProjection();
     _recordStudyDay(DateTime.now());
 
     if (safeTotal > 0) {
@@ -902,8 +967,30 @@ class NorieProgression extends ChangeNotifier {
     if (weeklyRewardAwarded) {
       NorieFeatureState.recordFact('reward_claimed', 'weekly:${_weekKey(now)}');
     }
-    _totalXp += baseXp + bonusXp;
-    _credits += creditsAwarded;
+    final weeklyXp =
+        weeklyRewardAwarded ? NorieChallengeRules.weeklyGoalBonus : 0;
+    final weeklyCredits =
+        weeklyRewardAwarded ? NorieEconomyRules.weeklyGoalCredits : 0;
+    if (baseXp + bonusXp - weeklyXp > 0 || creditsAwarded - weeklyCredits > 0) {
+      final awarded = NorieEconomyStore.instance.reward(
+          '${mode == NorieChallengeMode.daily ? 'daily' : 'speed'}:$dateKey',
+          xp: baseXp + bonusXp - weeklyXp,
+          credits: creditsAwarded - weeklyCredits);
+      if (!awarded) {
+        baseXp = 0;
+        bonusXp = weeklyXp;
+        creditsAwarded = weeklyCredits;
+        dailyRewardAwarded = false;
+      }
+    }
+    if (weeklyRewardAwarded &&
+        !NorieEconomyStore.instance.reward('weekly:${_weekKey(now)}',
+            xp: weeklyXp, credits: weeklyCredits)) {
+      bonusXp -= weeklyXp;
+      creditsAwarded -= weeklyCredits;
+      weeklyRewardAwarded = false;
+    }
+    _applyEconomyProjection();
     final after = snapshot;
     _changed();
 
@@ -994,6 +1081,7 @@ class NorieProgression extends ChangeNotifier {
   }
 
   Future<void> flushPendingSaves({bool retry = false}) async {
+    await NorieEconomyStore.instance.flush(retry: retry);
     if (retry) {
       await _save();
     } else {
@@ -1004,6 +1092,19 @@ class NorieProgression extends ChangeNotifier {
       NorieProfileAppearanceStore.instance.flush(),
       NorieFeatureState.flush(retry: retry)
     ]);
+  }
+
+  /// Recovery keeps the damaged economy document separately; ordinary backup
+  /// still requires a complete, healthy economy envelope.
+  Future<void> flushForRewardRecovery() async {
+    if (NorieEconomyStore.instance.available) {
+      await flushPendingSaves(retry: true);
+      return;
+    }
+    await _save();
+    await NorieFeatureState.flush(retry: true);
+    await NorieAdventureProgress.instance.flush(retry: true);
+    await NorieProfileAppearanceStore.instance.flush();
   }
 
   Future<void> _saves = Future<void>.value();
@@ -1019,6 +1120,8 @@ class NorieProgression extends ChangeNotifier {
     NorieProfileAppearanceStore.instance.resetAsyncQueuesForTesting();
     // ignore: invalid_use_of_visible_for_testing_member
     NorieFeatureState.resetAsyncQueuesForTesting();
+    // ignore: invalid_use_of_visible_for_testing_member
+    NorieEconomyStore.instance.resetAsyncQueuesForTesting();
   }
 
   Future<void> _save() {
@@ -1031,6 +1134,9 @@ class NorieProgression extends ChangeNotifier {
   }
 
   Future<void> _persist() async {
+    if (NorieEconomyStore.instance.available) {
+      await NorieEconomyStore.instance.flush();
+    }
     final prefs = await SharedPreferences.getInstance();
     final saved = await Future.wait<bool>([
       prefs.setStringList(
@@ -1140,6 +1246,7 @@ class NorieProgression extends ChangeNotifier {
           _topicMastery = <String, NorieTopicMastery>{};
           _onboardingComplete = true;
           _lastModifiedAt = DateTime.now().toUtc();
+          NorieEconomyStore.instance.reset(_legacyEconomyBaseline());
 
           notifyListeners();
           unawaited(_save());
@@ -1159,8 +1266,10 @@ class NorieProgression extends ChangeNotifier {
     }
   }
 
-  Map<String, dynamic> exportCloudState() => {
+  Map<String, dynamic> exportCloudState({bool includeEconomy = true}) => {
         ...NorieFeatureState.exportState(),
+        if (includeEconomy)
+          'economy_state': NorieEconomyStore.instance.exportState(),
         'adventure_progress': NorieAdventureProgress.instance.exportState(),
         'profile_appearance':
             NorieProfileAppearanceStore.instance.exportState(),
@@ -1239,6 +1348,11 @@ class NorieProgression extends ChangeNotifier {
       appearance['rankLevel'] = other['rankLevel'];
     }
     result['profile_appearance'] = appearance;
+    if (primary.containsKey('economy_state') ||
+        secondary.containsKey('economy_state')) {
+      result['economy_state'] = NorieEconomyStore.merge(
+          primary['economy_state'], secondary['economy_state']);
+    }
     NorieProgressBackup.validateState(result);
     return result;
   }
@@ -1247,6 +1361,7 @@ class NorieProgression extends ChangeNotifier {
     Map<String, dynamic> state, {
     DateTime? remoteModifiedAt,
     bool Function()? stillCurrent,
+    bool restoreEconomy = false,
   }) async {
     if (stillCurrent != null && !stillCurrent()) return false;
     NorieProgressBackup.validateState(state);
@@ -1331,6 +1446,22 @@ class NorieProgression extends ChangeNotifier {
           );
           _lastModifiedAt =
               (remoteModifiedAt ?? stateModified ?? DateTime.now()).toUtc();
+          if (state.containsKey('economy_state')) {
+            NorieEconomyStore.instance.applyValidatedState(
+                state['economy_state'],
+                preserveLocalPending: !restoreEconomy);
+          } else {
+            if (restoreEconomy && !NorieEconomyStore.instance.available) {
+              NorieEconomyStore.instance.reset(_legacyEconomyBaseline());
+            } else if (restoreEconomy && NorieEconomyStore.instance.active) {
+              NorieEconomyStore.instance.applyValidatedState(
+                  NorieEconomyStore.instance.exportState(),
+                  preserveLocalPending: false);
+            } else {
+              NorieEconomyStore.instance.applyLegacy(_legacyEconomyBaseline());
+            }
+          }
+          _applyEconomyProjection();
           _migrateLegacyTopicCompletion();
           refreshGradeTrophies();
 
@@ -1394,6 +1525,7 @@ class NorieProgression extends ChangeNotifier {
   @visibleForTesting
   void setTotalXpForTesting(int value) {
     _totalXp = value < 0 ? 0 : value;
+    NorieEconomyStore.instance.reset(_legacyEconomyBaseline());
     notifyListeners();
   }
 }

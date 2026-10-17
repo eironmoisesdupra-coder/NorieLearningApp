@@ -1,3 +1,41 @@
+# NorieLearning Roadmap 15B / 16 / 17 integration
+
+Updated 2026-10-17. Integrating **0.11.0+15** on `feat/live-sync-quality-diagnostics`, based on develop `e320420c2b45a7e3590c8460099e24f48b089ad6` (published 0.10.0+14 / PR44). The original dirty checkout remains preserved; work is isolated in NorieLearning-integrate. User authorized live implementation of NorieLearning-WIP-roadmap-15B-16-17-2026-10-17.zip. Archive inspected manually; its installer was not executed.
+
+## Current scope
+
+- **15B accounting:** durable reward/spend operations, stable earning claims, account-authoritative XP/credits/items/shields, origin sequences, atomic device spending reservations, durable checkpoints/acknowledgements and safe detail compaction. Study reward eligibility has a durable outbox so interrupted economy writes can retry. Lessons and rewards work offline; signed-in purchases queue within a funded allowance and unlock only after server confirmation.
+- **16 curriculum quality:** deterministic published-content scanner and CI JSON artifact. Structural errors fail CI: duplicate identities/content, invalid options/answers, broken prerequisite graphs, missing authored coverage and invalid figures. Known intentional same-topic Grade1 math quiz/challenge reuse is narrowly allowed. Current scan covers 249 published topics with zero errors/warnings; approved lesson text was not rewritten.
+- **17 diagnostics:** bounded local-only, sanitized category/source/route/time history; chained Flutter/platform handlers; retention/clear/disable/retry controls; manual JSON export. No raw errors, stacks, notes, answers, credentials, account identifiers, network telemetry or automatic upload.
+
+## Backend deployment
+
+Migrations `20261017030340_authoritative_economy.sql` and `20261017030617_economy_private_rpc_boundaries.sql` are deployed. Production rollback-only smoke passed after both migrations, using only a disposable learner. All new database advisories were resolved: public endpoints are invoker wrappers over owner/admission-checked private definer implementations, and private tables have explicit restrictive deny policies plus revoked client grants. The only remaining security advisory is the preexisting [disabled leaked-password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+## Accounting compatibility and recovery
+
+New migration `20261017030340_authoritative_economy.sql` retains the strict legacy learner-state schema and guards every legacy write with authoritative numeric mirrors after enrollment. Non-economic progress continues through the existing owner-guarded bundle RPC. Portable `economy_state` is validated locally and stripped from legacy server snapshots. Legacy first enrollment uses maximum historical XP, latest legacy balance/shields and permanent-item union; it cannot reconstruct unknown pre-upgrade individual earnings. Old clients cannot overwrite activated balances and must update to earn account XP/credits or purchase rewards reliably.
+
+For an existing account, explicit guest adoption merges learning history and pending earning receipts while retaining confirmed account balances/items; unfunded guest purchases do not transfer as funded entitlements. A new account can adopt its guest baseline once. Backups never clone installation identity, sequence allocation or funded reservations. Manual restore rotates origin identity and requires reconnecting to fund purchases. Account checkpoints cannot be replaced by a legacy scalar backup.
+
+Each reservation lasts seven days and reserves at most650 outstanding credits (the largest catalog price), plus confirmed shields. Separate devices cannot reserve the same funds. Expired or retired-device purchases are rejected and reconciled without having granted entitlements. Checkpoint acknowledgement follows durable local save. Every active registered device must acknowledge the latest checkpoint before detailed operations compact; devices never time out implicitly. Explicit retirement requires recovery on return. Permanent receipt digests, claim tombstones and origin watermarks remain after detail compaction to prevent replay.
+
+Core lessons remain available if optional reward storage is damaged; damaged data is quarantined instead of silently replaced. Export/sync require recovery, and reward/purchase mutations pause until a valid restore. Keep a backup before preview APK replacement; Android remains preview/debug signed and Windows unsigned.
+
+## Local verification
+
+Full Flutter suite: **734 passed**. Full analysis clean. Release web build passed. Curriculum report:249topics, zeroerrors/zerowarnings. All16 webcache/update/download tests passed. Actual390px Edge browser diagnostics download/disabled-history restart/guest-budget controls passed with external origins blocked and screenshots inspected. SQL ledger, compatibility, private-boundary verifier and production rollback-only checks passed. Windows/Android exact-head CI and atomic public release remain mandatory gates; local success is not a publication claim.
+
+## Verification and release gate
+
+Run `flutter analyze`, full `flutter test`, `dart tool/curriculum_health.dart --json --output build/curriculum-health.json`, and `node scripts/verify_economy_database.mjs <pglite-module>`. Database fixtures exercise actual PostgreSQL authorization/RLS, retries/conflicts, sequence gates, escrow/catalog/expiry, legacy-write normalization, acknowledgement/retirement and replay after compaction. PGlite serializes sessions; these tests do not claim production multiple-backend lock stress.
+
+Before live handoff: review/deploy the additive migration, production rollback-only SQL verification, green exact-head PR checks, merge to develop, merged-source Windows/Android/web checks, actual browser inspection, and atomic release publication with both durable downloads. Main is not a deployment target. Exact source SHA, CI state and release links are reported in the final handoff.
+
+---
+
+## Historical 0.10 release notes (superseded accounting boundary)
+
 # NorieLearning Roadmap 13A / 14 / 15 integration
 
 Updated 2026-10-17. Preparing **0.10.0+14** on `feat/live-classroom-seasonal-events`, based on develop `02bacca28fdda0371492ac11b4be34358aaf2e68` (published0.9.0+13 / PR43). Original dirty checkout remains preserved. User supplied `NorieLearning-WIP-roadmap-13A-14-15-2026-10-17.zip` and explicitly requests live implementation. Archive reviewed manually; its installer was not executed.

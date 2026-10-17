@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../core/audio/norie_audio_navigation.dart';
+import '../core/diagnostics/norie_diagnostics.dart';
 
 import '../core/audio/norie_audio_host.dart';
 import '../core/mascot/help/norie_help_models.dart';
@@ -19,10 +22,31 @@ class NorieApp extends StatefulWidget {
   State<NorieApp> createState() => _NorieAppState();
 }
 
-class _NorieAppState extends State<NorieApp> {
+class _NorieAppState extends State<NorieApp> with WidgetsBindingObserver {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final _audioNavigation = NorieAudioNavigation();
+  final _diagnosticsNavigation =
+      NorieDiagnosticsRouteObserver(NorieDiagnosticsStore.instance);
   late final _tutorialNavigation = NorieTutorialNavigation(_navigatorKey);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      unawaited(NorieDiagnosticsStore.instance.flush());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   void _navigateFromHelp(NorieHelpDestination destination) {
     final navigator = _navigatorKey.currentState;
@@ -68,7 +92,7 @@ class _NorieAppState extends State<NorieApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: _navigatorKey,
-      navigatorObservers: [_audioNavigation],
+      navigatorObservers: [_audioNavigation, _diagnosticsNavigation],
       title: 'Norie Learning',
       debugShowCheckedModeBanner: false,
       theme: NorieTheme.dark,

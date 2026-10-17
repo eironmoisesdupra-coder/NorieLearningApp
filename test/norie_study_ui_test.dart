@@ -11,6 +11,7 @@ import 'norie_offline_study_test.dart' show question, savedSet;
 
 void main() {
   setUp(() async {
+    NorieProgression.instance.resetAsyncQueuesForTesting();
     SharedPreferences.setMockInitialValues({});
     await NorieProgression.instance.load();
   });
@@ -36,7 +37,12 @@ void main() {
     await tester.tap(button);
     await tester.tap(button);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 10)));
+      if (find.text('Correct!').evaluate().isNotEmpty) break;
+    }
     expect(find.text('Correct!'), findsWidgets);
     expect(find.byType(NorieMascotView), findsOneWidget);
     expect(find.text('+5 XP'), findsOneWidget);

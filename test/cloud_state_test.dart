@@ -4,6 +4,14 @@ import 'package:norie_learning/core/progression/norie_lesson_journey.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
+  setUp(() async {
+    await NorieProgression.instance.flushPendingSaves();
+    NorieProgression.instance.resetAsyncQueuesForTesting();
+  });
+  tearDown(() => NorieProgression.instance.flushPendingSaves());
+
   test('cloud progression state exports and restores core progress', () async {
     SharedPreferences.setMockInitialValues({});
 
@@ -19,6 +27,7 @@ void main() {
 
     final remoteTime = DateTime.utc(2026, 9, 27, 10);
     final remote = Map<String, dynamic>.from(exported)
+      ..remove('economy_state') // Legacy server rows have no portable envelope.
       ..['total_xp'] = 3333
       ..['modified_at'] = remoteTime.toIso8601String();
 
@@ -75,7 +84,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final progression = NorieProgression.instance;
     await progression.load();
-    final baseline = progression.exportCloudState();
+    final baseline = progression.exportCloudState()..remove('economy_state');
     final first = progression.importCloudState({
       ...baseline,
       'total_xp': 111,

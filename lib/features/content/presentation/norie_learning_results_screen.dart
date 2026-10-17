@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:uuid/uuid.dart';
+import '../../../core/sync/norie_economy_store.dart';
 import '../../../core/progression/norie_adventure_progress.dart';
 import '../../profile/presentation/profile_screen.dart';
 import 'norie_review_quest_screen.dart';
@@ -80,9 +81,10 @@ class _NorieLearningResultsScreenState
         ? widget.challengeScore * widget.topic.challenge.xpPerCorrect
         : 0;
     _completionXp = earned ? widget.topic.lesson.completionXp : 0;
-    _totalXp = _quizXp + _challengeXp + _completionXp;
+    final requestedXp = _quizXp + _challengeXp + _completionXp;
 
-    final receipt = _receipts.putIfAbsent('$_owner:$_attemptId', () {
+    final receipt =
+        _receipts.putIfAbsent('$_owner:${widget.topic.id}:$_attemptId', () {
       final progression = NorieProgression.instance;
       final unlockedBefore = progression.achievements
           .where((a) => a.unlocked)
@@ -101,7 +103,8 @@ class _NorieLearningResultsScreenState
               topicId: widget.topic.id,
               quizAttempts: widget.topic.quiz.questions.length,
               challengeAttempts: widget.topic.challenge.rounds.length);
-      final award = progression.addXp(_totalXp);
+      final award = progression.addXp(requestedXp,
+          claimKey: 'assessment:${widget.topic.id}:$_attemptId');
       if (earned) progression.refreshGradeTrophies();
       return _LessonRewardReceipt(
           award,
@@ -111,6 +114,7 @@ class _NorieLearningResultsScreenState
               .toList());
     });
     _award = earned ? receipt.award : NorieProgression.instance.addXp(0);
+    _totalXp = _award.amount;
     _lessonCompletion = earned
         ? receipt.completion
         : const NorieLessonCompletion(
@@ -277,6 +281,12 @@ class _NorieLearningResultsScreenState
                   ),
                 ],
                 const SizedBox(height: 14),
+                if (!NorieEconomyStore.instance.available)
+                  const _Notice(
+                      icon: Icons.info_outline,
+                      color: NorieColors.cyan,
+                      text:
+                          'Lesson saved. Rewards are paused until reward storage is recovered in App & progress.'),
                 NorieRewardBanner(
                   credits: _lessonCompletion.creditsAwarded,
                   xp: _totalXp,
