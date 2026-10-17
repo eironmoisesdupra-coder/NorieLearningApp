@@ -133,6 +133,7 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 14),
                             NorieAppearancePreview(
+                              rankLevel: snapshot.level,
                               value: NorieProfileAppearanceStore.instance.value,
                               displayName:
                                   account.displayName?.isNotEmpty == true

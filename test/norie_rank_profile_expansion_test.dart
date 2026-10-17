@@ -4,6 +4,49 @@ import 'package:norie_learning/features/profile/data/norie_profile_appearance_st
 import 'package:norie_learning/features/profile/domain/norie_profile_appearance.dart';
 
 void main() {
+  test('new rank labels keep legacy cosmetic IDs, thresholds and saved presets',
+      () {
+    final expected = {
+      1: ('explorer', 'Rookie'),
+      5: ('curious', 'Novice'),
+      15: ('scholar', 'Veteran'),
+      30: ('specialist', 'Scholar'),
+      50: ('master', 'Master')
+    };
+    for (final entry in expected.entries) {
+      final bundle = NorieAppearanceCatalog.bundleForLevel(entry.key);
+      expect(bundle.id, entry.value.$1);
+      expect(bundle.title, entry.value.$2);
+      final raw = {
+        'version': 1,
+        'rankLevel': entry.key,
+        'appearance': {
+          'frame': bundle.id,
+          'palette': bundle.id,
+          'nameplate': bundle.id
+        },
+        'presets': [
+          {'frame': bundle.id, 'palette': bundle.id, 'nameplate': bundle.id}
+        ]
+      };
+      final normalized = NorieProfileAppearanceStore.validateState(raw);
+      expect(normalized['appearance']['frame'], bundle.id);
+      expect(normalized['presets'][0]['nameplate'], bundle.id);
+      expect(
+          NorieAppearanceCatalog.canEquip(
+              NorieProfileAppearance.fromJson(normalized['appearance']),
+              entry.key, const {}),
+          isTrue);
+      if (entry.key > 1) {
+        expect(
+            NorieAppearanceCatalog.canEquip(
+                NorieProfileAppearance.fromJson(normalized['appearance']),
+                entry.key - 1, const {}),
+            isFalse);
+      }
+    }
+  });
+
   test('rank experience benefits become richer without academic advantages',
       () {
     final explorer = NorieAppearanceCatalog.bundleForLevel(1);

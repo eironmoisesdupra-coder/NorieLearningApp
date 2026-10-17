@@ -1,3 +1,4 @@
+import '../../../core/widgets/norie_animated_rank_badge.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/assets/norie_assets.dart';
@@ -112,6 +113,7 @@ class _NorieAppearanceStudioState extends State<NorieAppearanceStudio> {
                 const SizedBox(height: 16),
                 NorieAppearancePreview(
                     value: draft,
+                    rankLevel: ownedLevel,
                     displayName: widget.displayName,
                     subtitle: 'Preview · ${current.title}',
                     trophyLabels: draft.showcase.map(trophyLabel).toList()),
@@ -306,6 +308,10 @@ class _NorieAppearanceStudioState extends State<NorieAppearanceStudio> {
                                         crossAxisAlignment:
                                             WrapCrossAlignment.center,
                                         children: [
+                                          NorieAnimatedRankBadge(
+                                              level: b.level,
+                                              size: 48,
+                                              animate: false),
                                           Icon(
                                               b.level <= ownedLevel
                                                   ? Icons.check_circle_outline
@@ -514,8 +520,10 @@ class NorieAppearancePreview extends StatelessWidget {
       required this.value,
       required this.displayName,
       required this.subtitle,
-      this.trophyLabels = const []});
+      this.trophyLabels = const [],
+      this.rankLevel});
   final NorieProfileAppearance value;
+  final int? rankLevel;
   final String displayName, subtitle;
   final List<String> trophyLabels;
   @override
@@ -610,6 +618,10 @@ class NorieAppearancePreview extends StatelessWidget {
                                     fit: BoxFit.contain)),
                           ]),
                       const SizedBox(height: 12),
+                      if (rankLevel != null) ...[
+                        NorieAnimatedRankBadge(level: rankLevel!, size: 96),
+                        const SizedBox(height: 8),
+                      ],
                       _NorieNameplate(
                           id: value.nameplateId,
                           color: color,

@@ -1,3 +1,4 @@
+import 'norie_animated_rank_badge.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -289,7 +290,14 @@ class _NorieRankCelebration extends StatelessWidget {
           return CustomPaint(
             key: ValueKey('rank-celebration-${bundle.id}'),
             painter: NorieRankMotifPainter(bundle: bundle),
-            child: child,
+            child: Stack(alignment: Alignment.center, children: [
+              child!,
+              Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: NorieAnimatedRankBadge(
+                      level: bundle.level, size: 48, animate: false)),
+            ]),
           );
         },
       );

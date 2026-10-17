@@ -4,20 +4,20 @@
 
 | Level | Rank |
 | ---: | --- |
-| 1 | Explorer |
-| 5 | Curious Mind |
-| 15 | Scholar |
-| 30 | Specialist |
+| 1 | Rookie |
+| 5 | Novice |
+| 15 | Veteran |
+| 30 | Scholar |
 | 50 | Master |
 
 A learner keeps the most recently unlocked rank until the next milestone.
 
 Examples:
 
-- Level 3 → Explorer
-- Level 8 → Curious Mind
-- Level 21 → Scholar
-- Level 37 → Specialist
+- Level 3 → Rookie
+- Level 8 → Novice
+- Level 21 → Veteran
+- Level 37 → Scholar
 - Level 50 → Master
 
 ## XP curve
@@ -44,12 +44,12 @@ Examples:
 
 Level 50 is currently the maximum level.
 
-## Current demo state
+## XP example
 
-The prototype begins with **1,250 total XP**, which resolves to:
+A learner with **1,250 total XP** resolves to:
 
 - Level 8
-- Curious Mind
+- Novice
 - 25 / 275 XP toward Level 9
 
 The Home screen reads this data dynamically instead of using a hard-coded level.
@@ -66,3 +66,9 @@ The results screen awards earned XP, updates the level bar, and announces level-
 ## Future persistence
 
 The current prototype keeps progression in app memory for the active session. Persistent progression will later move into the learner account/backend so XP survives refreshes and syncs across devices.
+
+## Rank visuals and saved cosmetics
+
+Ranks use bundled native Flutter crests, with pulse/glow and higher-tier orbit accents in large views. Small badges and rank rows remain static. OS accessibility, app reduced motion and inactive-route TickerMode stop motion. Cosmetics grant no extra XP, mastery or lesson access.
+
+Persistent IDs remain unchanged: `explorer` = Rookie (1), `curious` = Novice (5), `scholar` = Veteran (15), `specialist` = Scholar (30), `master` = Master (50). Appearance presets, ownership and cloud/backup data retain their meaning. Labels derive from levels; the ambiguous old visible title Scholar is never used as a saved cosmetic identifier. Legacy rank image files remain available.

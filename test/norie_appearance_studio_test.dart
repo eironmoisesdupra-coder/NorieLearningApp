@@ -16,8 +16,9 @@ void main() {
   Future<void> open(WidgetTester tester, {int level = 5}) async {
     await tester.pumpWidget(MaterialApp(
         builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(textScaler: const TextScaler.linear(1.6)),
+            data: MediaQuery.of(context).copyWith(
+                disableAnimations: true,
+                textScaler: const TextScaler.linear(1.6)),
             child: child!),
         home: Builder(
             builder: (context) => Scaffold(
@@ -64,7 +65,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, 'Comet'));
     await tester.scrollUntilVisible(find.text('Save appearance'), 500);
-    await tester.ensureVisible(find.text('Save appearance'));
+    await Scrollable.ensureVisible(
+        tester.element(find.widgetWithText(FilledButton, 'Save appearance')),
+        alignment: .5);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(FilledButton, 'Save appearance').hitTestable(),
+        findsOneWidget);
     await tester.runAsync(() async {
       await tester.tap(find.text('Save appearance'));
       await store.flush();
@@ -78,7 +84,12 @@ void main() {
     await tester.tap(find.text('Reset preview'));
     await tester.pumpAndSettle();
     expect(store.value.avatarId, 'comet');
-    await tester.ensureVisible(find.text('Save appearance'));
+    await Scrollable.ensureVisible(
+        tester.element(find.widgetWithText(FilledButton, 'Save appearance')),
+        alignment: .5);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(FilledButton, 'Save appearance').hitTestable(),
+        findsOneWidget);
     await tester.runAsync(() async {
       await tester.tap(find.text('Save appearance'));
       await store.flush();
@@ -106,7 +117,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await open(tester);
-    for (final label in ['Glow', 'Star field', 'Curious ribbon']) {
+    for (final label in ['Glow', 'Star field', 'Novice ribbon']) {
       final chip = find.widgetWithText(ChoiceChip, label);
       await tester.scrollUntilVisible(chip, 180);
       await tester.ensureVisible(chip);
@@ -123,7 +134,12 @@ void main() {
     expect(preview.value.frameEffectId, 'glow');
     expect(store.value.toJson(), const NorieProfileAppearance().toJson());
     await tester.scrollUntilVisible(find.text('Save appearance'), 450);
-    await tester.ensureVisible(find.text('Save appearance'));
+    await Scrollable.ensureVisible(
+        tester.element(find.widgetWithText(FilledButton, 'Save appearance')),
+        alignment: .5);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(FilledButton, 'Save appearance').hitTestable(),
+        findsOneWidget);
     await tester.runAsync(() async {
       await tester.tap(find.text('Save appearance'));
       await store.flush();
