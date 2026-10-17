@@ -1,3 +1,4 @@
+import '../../../core/widgets/norie_animated_rank_badge.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/assets/norie_assets.dart';
@@ -139,28 +140,23 @@ class ProgressScreen extends StatelessWidget {
                         const SizedBox(height: 14),
                         const _RankRow(
                           level: 1,
-                          title: 'Explorer',
-                          asset: NorieAssets.rankExplorer,
+                          title: 'Rookie',
                         ),
                         const _RankRow(
                           level: 5,
-                          title: 'Curious Mind',
-                          asset: NorieAssets.rankCuriousMind,
+                          title: 'Novice',
                         ),
                         const _RankRow(
                           level: 15,
-                          title: 'Scholar',
-                          asset: NorieAssets.rankScholar,
+                          title: 'Veteran',
                         ),
                         const _RankRow(
                           level: 30,
-                          title: 'Specialist',
-                          asset: NorieAssets.rankSpecialist,
+                          title: 'Scholar',
                         ),
                         const _RankRow(
                           level: 50,
                           title: 'Master',
-                          asset: NorieAssets.rankMaster,
                         ),
                         const SizedBox(height: 26),
                         _MasterySummaryCard(
@@ -365,14 +361,7 @@ class _CurrentRankCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 92,
-                height: 92,
-                child: Image.asset(
-                  NorieAssets.rankForTitle(snapshot.title),
-                  fit: BoxFit.contain,
-                ),
-              ),
+              NorieAnimatedRankBadge(level: snapshot.level, size: 92),
               const SizedBox(width: 15),
               Expanded(
                 child: Column(
@@ -454,12 +443,10 @@ class _RankRow extends StatelessWidget {
   const _RankRow({
     required this.level,
     required this.title,
-    required this.asset,
   });
 
   final int level;
   final String title;
-  final String asset;
 
   @override
   Widget build(BuildContext context) {
@@ -488,11 +475,8 @@ class _RankRow extends StatelessWidget {
           children: [
             Opacity(
               opacity: unlocked ? 1 : .28,
-              child: SizedBox(
-                width: 62,
-                height: 62,
-                child: Image.asset(asset, fit: BoxFit.contain),
-              ),
+              child: NorieAnimatedRankBadge(
+                  level: level, size: 62, animate: false),
             ),
             const SizedBox(width: 13),
             Expanded(

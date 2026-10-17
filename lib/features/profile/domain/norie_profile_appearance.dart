@@ -128,7 +128,7 @@ abstract final class NorieAppearanceCatalog {
   static const bundles = [
     NorieRankBundle(
         'explorer',
-        'Explorer',
+        'Rookie',
         1,
         'norie',
         'welcome',
@@ -137,11 +137,11 @@ abstract final class NorieAppearanceCatalog {
         1,
         'Classic stepping stones',
         'Simple star burst',
-        'Explorer tab',
+        'Rookie tab',
         'Soft cyan edge'),
     NorieRankBundle(
         'curious',
-        'Curious Mind',
+        'Novice',
         5,
         'comet',
         'study',
@@ -150,24 +150,24 @@ abstract final class NorieAppearanceCatalog {
         2,
         'Comet trail',
         'Curiosity spark',
-        'Curious ribbon',
+        'Novice ribbon',
         'Violet shimmer'),
     NorieRankBundle(
         'scholar',
-        'Scholar',
+        'Veteran',
         15,
         'leaf',
         'celebrate',
         [Color(0xFF96E7B5), Color(0xFF8AE3DD), Color(0xFFD3E991)],
         3,
         3,
-        'Scholar lantern trail',
+        'Veteran lantern trail',
         'Laurel celebration',
-        'Scholar plaque',
+        'Veteran plaque',
         'Emerald glow'),
     NorieRankBundle(
         'specialist',
-        'Specialist',
+        'Scholar',
         30,
         'orbit',
         'study',
@@ -176,7 +176,7 @@ abstract final class NorieAppearanceCatalog {
         4,
         'Orbit trail',
         'Orbit ring celebration',
-        'Specialist crest',
+        'Scholar crest',
         'Orbit halo'),
     NorieRankBundle(
         'master',
@@ -212,10 +212,10 @@ abstract final class NorieAppearanceCatalog {
     'constellation': 'Constellation'
   };
   static const nameplates = {
-    'explorer': 'Explorer tab',
-    'curious': 'Curious ribbon',
-    'scholar': 'Scholar plaque',
-    'specialist': 'Specialist crest',
+    'explorer': 'Rookie tab',
+    'curious': 'Novice ribbon',
+    'scholar': 'Veteran plaque',
+    'specialist': 'Scholar crest',
     'master': 'Master crest'
   };
   static const frameEffects = {

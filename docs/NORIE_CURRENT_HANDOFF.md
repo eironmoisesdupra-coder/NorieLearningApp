@@ -1,3 +1,15 @@
+# NorieLearning 0.14 native rank animations
+
+Version **0.14.0+18 Preview**, branch `feat/native-rank-animations`, baseline develop `10a0e11b7158c515ba6aeb2e4b56ec44fc1e7463`. Owner supplied NorieLearning-WIP-Native-Rank-Animations-2026-10-17.zip and requested integration. Archive inspected manually; installer never run. Reused isolated integration workspace; original dirty checkout preserved.
+
+Implemented offline native crests for Rookie (Level 1), Novice (Level 5), Veteran (Level 15), Scholar (Level 30) and Master (Level 50). XP curve and all milestones remain unchanged. Saved cosmetic IDs explorer/curious/scholar/specialist/master retain their exact levels and ownership, including old scholar = Veteran (Level 15) and specialist = Scholar (Level 30). Home, Progress ladder/current rank, Profile, appearance studio and reward feedback use the crests. Large views animate; small rows remain static. Existing app/OS reduced motion and route TickerMode stop motion; inactive Progress/Profile tabs explicitly disable tickers. Full-frame mascot, anatomy, lessons, mastery and rewards are preserved. Private league points/tiers are a separate unchanged system.
+
+Local full Flutter suite passed 767 tests, with one intentional packaged interop skip; after SDK lint cleanup, 14 affected tests passed and analysis is clean. Regression proved hidden-tab issue before fix. Independent review has no remaining P1/P2 findings. Source asset audit passed; supplied PNGs preserved byte-for-byte. Web build, actual crest screenshots and packaged Windows checks are in progress. PR CI must validate exact-head full tests, Android APK/AAB, Windows offline behavior and exact artifact budgets before merge; merged-source CI/web and dual-platform publication follow. Final PR/release records exact SHA and verified downloads.
+
+Preview signing and all external store gates from 0.13 remain pending: no production keys, public support/privacy details, hardware certification or store submission. See [rank implementation](implementation/native-rank-animations.md) and [level rules](LEVEL_SYSTEM.md).
+
+---
+
 # NorieLearning 0.13 polish / store-preflight integration
 
 Version **0.13.0+17 Preview**, branch `feat/polish-store-readiness`, baseline develop `6364ff7c043a465653e13cc8108a4be08ee3b312`. User supplied `NorieLearning-WIP-0.13-to-store-ready-2026-10-17.zip` and requested implementation; archive inspected manually, installer never executed. Existing isolated integration worktree reused; original checkout preserved.

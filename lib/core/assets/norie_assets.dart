@@ -23,20 +23,22 @@ abstract final class NorieAssets {
   static const achievementConsistentLearner =
       'assets/achievements/Diamond_badge.png';
 
-  // Ranks
-  static const rankExplorer = 'assets/ranking/Explorer_rank.png';
-  static const rankCuriousMind = 'assets/ranking/curiousmind_rank.png';
-  static const rankScholar = 'assets/ranking/scholar_rank.png';
-  static const rankSpecialist = 'assets/ranking/Specialist_rank.png';
-  static const rankMaster = 'assets/ranking/Master_rank.png';
+  // Current visible ranks. Legacy title aliases preserve older callers; saved
+  // cosmetic IDs are resolved by level in NorieAppearanceCatalog, never by title.
+  static const rankRookie = 'assets/ranking/norie_rookie.png';
+  static const rankNovice = 'assets/ranking/norie_novice.png';
+  static const rankVeteran = 'assets/ranking/norie_veteran.png';
+  static const rankScholar = 'assets/ranking/norie_scholar.png';
+  static const rankMaster = 'assets/ranking/norie_master.png';
+  static const rankExplorer = rankRookie;
+  static const rankCuriousMind = rankNovice;
+  static const rankSpecialist = rankScholar;
 
-  static String rankForTitle(String title) {
-    return switch (title) {
-      'Curious Mind' => rankCuriousMind,
-      'Scholar' => rankScholar,
-      'Specialist' => rankSpecialist,
-      'Master' => rankMaster,
-      _ => rankExplorer,
-    };
-  }
+  static String rankForTitle(String title) => switch (title) {
+        'Novice' || 'Curious Mind' => rankNovice,
+        'Veteran' => rankVeteran,
+        'Scholar' || 'Specialist' => rankScholar,
+        'Master' => rankMaster,
+        _ => rankRookie,
+      };
 }

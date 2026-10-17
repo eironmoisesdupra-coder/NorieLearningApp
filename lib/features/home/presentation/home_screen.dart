@@ -1,3 +1,4 @@
+import '../../../core/widgets/norie_animated_rank_badge.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/assets/norie_assets.dart';
@@ -399,13 +400,22 @@ class _HomeHero extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          Text(
-                            'Level ${snapshot.level} · ${snapshot.title}',
-                            style: const TextStyle(
-                              color: Color(0xFFD1DCF2),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                            ),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              NorieAnimatedRankBadge(
+                                  level: snapshot.level,
+                                  size: 40,
+                                  animate: false),
+                              Text(
+                                  'Level ${snapshot.level} \u00b7 ${snapshot.title}',
+                                  style: const TextStyle(
+                                      color: Color(0xFFD1DCF2),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800)),
+                            ],
                           ),
                           const SizedBox(height: 13),
                           Wrap(

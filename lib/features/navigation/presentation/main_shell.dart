@@ -98,13 +98,13 @@ class _MainShellState extends State<MainShell> {
             onTabSelected: _selectTab,
           ),
           ChallengeScreen(onTabSelected: _selectTab),
-          ProgressScreen(
-            embedded: true,
-            onTabSelected: _selectTab,
+          TickerMode(
+            enabled: _index == 3,
+            child: ProgressScreen(embedded: true, onTabSelected: _selectTab),
           ),
-          ProfileScreen(
-            embedded: true,
-            onTabSelected: _selectTab,
+          TickerMode(
+            enabled: _index == 4,
+            child: ProfileScreen(embedded: true, onTabSelected: _selectTab),
           ),
         ],
       ),
@@ -232,9 +232,8 @@ class _DockItem extends StatelessWidget {
                 Icon(
                   icon,
                   size: selected ? 24 : 22,
-                  color: selected
-                      ? NorieColors.cyan
-                      : NorieColors.textSecondary,
+                  color:
+                      selected ? NorieColors.cyan : NorieColors.textSecondary,
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -243,8 +242,7 @@ class _DockItem extends StatelessWidget {
                   overflow: TextOverflow.fade,
                   style: TextStyle(
                     fontSize: 8.5,
-                    fontWeight:
-                        selected ? FontWeight.w900 : FontWeight.w700,
+                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                     color: selected
                         ? NorieColors.textPrimary
                         : NorieColors.textSecondary,

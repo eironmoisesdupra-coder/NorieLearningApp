@@ -1,3 +1,6 @@
+import 'package:norie_learning/core/widgets/norie_animated_rank_badge.dart';
+import 'package:norie_learning/features/progress/presentation/progress_screen.dart';
+import 'package:norie_learning/features/profile/presentation/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,6 +54,19 @@ void main() {
           await tester.pump(const Duration(milliseconds: 200));
         }
         expect(tester.takeException(), isNull, reason: tab);
+        for (final element in find
+            .byType(NorieAnimatedRankBadge, skipOffstage: false)
+            .evaluate()) {
+          final badge = element.widget as NorieAnimatedRankBadge;
+          if (!badge.animate) continue;
+          final progress =
+              element.findAncestorWidgetOfExactType<ProgressScreen>() != null;
+          final profile =
+              element.findAncestorWidgetOfExactType<ProfileScreen>() != null;
+          expect(TickerMode.valuesOf(element).enabled,
+              (progress && tab == 'Progress') || (profile && tab == 'Profile'),
+              reason: 'Only the visible tab may animate its rank badge');
+        }
       }
       expect(NorieProgression.instance.totalXp, 0);
       await tester.pumpWidget(const SizedBox());
