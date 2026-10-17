@@ -1,7 +1,7 @@
 name: norie_learning
 description: A modern gamified learning platform for students and professionals.
 publish_to: "none"
-version: 0.11.0+15
+version: 0.12.0+16
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -21,6 +21,8 @@ dependencies:
   url_launcher: 6.3.3
   webview_flutter: ^4.14.1
   web: ^1.1.1
+  qr_flutter: 4.1.0
+  mobile_scanner: 7.4.2
 
 dev_dependencies:
   flutter_test:

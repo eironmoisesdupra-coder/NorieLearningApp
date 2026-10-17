@@ -1,16 +1,17 @@
 {
   "name": "norie-learning-desktop",
   "productName": "NorieLearning",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Offline NorieLearning for Windows",
   "author": "eironmoisesdupra-coder",
   "private": true,
   "main": "main.cjs",
   "scripts": {
-    "test": "node --test test/asset-policy.test.cjs test/audio-assets.test.cjs",
+    "test": "node --test test/asset-policy.test.cjs test/audio-assets.test.cjs test/classroom-lan.test.cjs",
     "package:windows": "node package-windows.cjs",
     "test:offline": "node test/offline-app.cjs",
-    "test:audio": "node test/audio-playback.cjs"
+    "test:audio": "node test/audio-playback.cjs",
+    "test:lan": "node test/classroom-lan-app.cjs"
   },
   "devDependencies": {
     "@electron/packager": "20.3.0",

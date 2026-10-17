@@ -71,7 +71,7 @@ async function main() {
   await fs.mkdir(stage, { recursive: true });
   await fs.cp(web, path.join(stage, 'web'), { recursive: true, force: true });
   await bundleDecoder();
-  for (const file of ['main.cjs', 'asset-policy.cjs']) {
+  for (const file of ['main.cjs', 'asset-policy.cjs', 'preload.cjs', 'classroom-lan.cjs', 'classroom-lan-ipc.cjs']) {
     await fs.copyFile(path.join(__dirname, file), path.join(stage, file));
   }
   await fs.writeFile(path.join(stage, 'package.json'), JSON.stringify({

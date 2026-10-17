@@ -58,6 +58,11 @@ jobs:
       - name: Package Windows app
         working-directory: desktop
         run: npm run package:windows
+      - name: Verify packaged LAN classroom with a native Dart learner
+        working-directory: desktop
+        run: |
+          flutter precache --windows
+          npm run test:lan
       - name: Verify offline audio playback and persisted settings
         working-directory: desktop
         run: npm run test:audio

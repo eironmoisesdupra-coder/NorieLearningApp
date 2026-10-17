@@ -5,6 +5,7 @@ import '../data/norie_classroom_store.dart';
 import '../domain/norie_classroom_models.dart';
 import 'norie_classroom_builder_screen.dart';
 import 'norie_classroom_runner_screen.dart';
+import 'norie_classroom_lan_screen.dart';
 
 class NorieClassroomHubScreen extends StatefulWidget {
   const NorieClassroomHubScreen({this.store, super.key});
@@ -97,6 +98,16 @@ class _HubState extends State<NorieClassroomHubScreen>
                     onPressed: busy ? null : () => run(importSubmission),
                     icon: const Icon(Icons.fact_check),
                     label: const Text('Import submission')),
+                OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    NorieClassroomLanScreen(store: store))),
+                    icon: const Icon(Icons.wifi_tethering_rounded),
+                    label: const Text('Local Wi-Fi Classroom')),
               ]),
               if (busy) const LinearProgressIndicator(),
               if (error != null)

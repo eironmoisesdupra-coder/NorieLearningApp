@@ -68,6 +68,15 @@ async function serve(){
   assert.match(await fs.readFile(csv,'utf8'),/Mina/);
   await teacher.screenshot({path:'build/classroom-report-phone.png'});
   console.log('PASS actual teacher build/export, learner import/practice/export, teacher import/report CSV across isolated browser profiles.');
+  await teacher.getByRole('button',{name:'Back',exact:true}).click();
+  await teacher.mouse.move(190,400);await teacher.mouse.wheel(0,-3000);await teacher.waitForTimeout(300);
+  await click(teacher,teacher.getByRole('button',{name:'Local Wi-Fi Classroom',exact:true}));
+  const hostButton=teacher.getByRole('button',{name:'Host a classroom',exact:true});
+  await seek(teacher,hostButton);assert.equal(await hostButton.isEnabled(),false);
+  const joinButton=teacher.getByRole('button',{name:'Join a classroom',exact:true});
+  await seek(teacher,joinButton);assert.equal(await joinButton.isEnabled(),false);
+  await teacher.screenshot({path:'build/windows-lan-web-fallback.png'});
+  console.log('PASS browser Classroom explains installed-app LAN support and preserves working file exchange.');
   const seasonal=await open();await click(seasonal,seasonal.getByRole('progressbar',{name:/Seasonal Learning/}).first());
   await seasonal.getByRole('heading',{name:'Seasonal learning',exact:true}).waitFor();
   await seek(seasonal,seasonal.getByRole('button',{name:/Open lesson: Living/}));
