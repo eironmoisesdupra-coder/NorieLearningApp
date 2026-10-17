@@ -21,7 +21,7 @@ function route(method, path) {
   if (typeof path !== 'string' || path.length > 1024) return 404;
   const read = path === '/v1/hello' || path === '/v1/assignments' || /^\/v1\/assignments\/[A-Za-z0-9_~.%-]+$/.test(path);
   if (read) {try {if(decodeURIComponent(path).includes('..')) return 404;}catch {return 404;} return method === 'GET' ? 0 : 405;}
-  if (path === '/v1/submissions') return method === 'POST' ? 0 : 405;
+  if (path === '/v1/submissions' || path === '/v1/presence') return method === 'POST' ? 0 : 405;
   return 404;
 }
 function createClassroomLan(options = {}) {

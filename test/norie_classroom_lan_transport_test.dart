@@ -33,6 +33,7 @@ void main() {
     final economy = jsonEncode(NorieEconomyStore.instance.exportState());
     final progress = jsonEncode(NorieAdventureProgress.instance.exportState());
     final (store, host, client) = await setup();
+    expect(host.activeLinks, 1);
     expect((await client.fetchAssignments()).single.title, 'Living things');
     expect((await client.downloadAssignment('a')).id, 'a');
     final ack = await client.submit(fixtures.submission());
@@ -50,6 +51,25 @@ void main() {
     await host.stop();
     expect(host.session, isNull);
     await expectLater(client.fetchAssignments(), throwsA(anything));
+  });
+  test(
+      'two anonymous device links leave independently without saving identities',
+      () async {
+    final (store, host, first) = await setup();
+    final second = NorieClassroomLanClient();
+    addTearDown(second.dispose);
+    await second.connect(
+        'http://127.0.0.1:${host.session!.port}', host.session!.joinCode);
+    expect(host.activeLinks, 2);
+    second.disconnect();
+    for (var i = 0; i < 50 && host.activeLinks != 1; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    expect(host.activeLinks, 1);
+    expect(store.submissions, isEmpty);
+    expect(host.peers, isEmpty);
+    await first.refreshPresence();
+    expect(host.activeLinks, 1);
   });
   test('ACK waits for disk and failed disk can retry without duplicates',
       () async {
