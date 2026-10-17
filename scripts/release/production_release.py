@@ -73,13 +73,17 @@ def verify_android(artifact, expected, apksigner='apksigner'):
 
 def verify_aab(artifact, expected):
     # jarsigner verifies signed entries; keytool identifies the embedded signer.
-    output = run(['jarsigner', '-verify', '-verbose', '-certs', str(artifact)])
-    if 'jar verified.' not in output or 'unsigned entries' in output:
+    output = run(['jarsigner', '-J-Duser.language=en', '-J-Duser.country=US',
+                  '-verify', '-verbose', '-certs', str(artifact)])
+    if ('jar verified.' not in output.lower() or any(warning in output.lower()
+            for warning in ('unsigned entries', 'certificate has expired', 'not yet valid'))):
         raise ValueError('AAB signature verification failed or contains unsigned entries')
-    output = run(['keytool', '-printcert', '-jarfile', str(artifact)])
+    output = run(['keytool', '-J-Duser.language=en', '-J-Duser.country=US',
+                  '-printcert', '-jarfile', str(artifact)])
     fingerprints = re.findall(r'SHA256:\s*([0-9a-fA-F:]+)', output)
     if len(fingerprints) != 1: raise ValueError('Exactly one AAB signer required')
     check_fingerprint(fingerprints[0], expected)
+    return expected.replace(':', '').replace(' ', '').lower()
 
 
 def verify_windows(artifact, expected):

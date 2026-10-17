@@ -1,0 +1,59 @@
+name: Store readiness (non-publishing)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  readiness-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: anatomy_viewer/package-lock.json
+      - uses: actions/cache@v4
+        with:
+          path: build/anatomy-research
+          key: anatomy-sources-${{ hashFiles('scripts/anatomy/sources.json') }}
+          restore-keys: anatomy-sources-
+      - name: Test readiness and package-audit failure boundaries
+        run: |
+          python -m unittest discover -s test -p store_readiness_tools_test.py
+          python -m unittest discover -s test -p asset_budget_test.py
+          python -m unittest discover -s test -p production_aab_test.py
+          python -m unittest discover -s test -p production_aab_signing_test.py
+      - name: Validate schema and report real store blockers
+        run: |
+          mkdir -p build
+          dart tool/store_readiness.dart store/readiness.json --check-schema --json-report build/store-readiness-report.json
+      - name: Fetch licensed offline assets for a complete source inventory
+        run: |
+          python scripts/fetch_music_assets.py
+          bash scripts/fetch_anatomy_assets.sh
+      - name: Audit source assets (final packages measured by platform CI)
+        run: python scripts/release/asset_budget.py --json-output build/source-asset-audit.json --fail-on-growth
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: store-readiness-static
+          path: |
+            build/store-readiness-report.json
+            build/source-asset-audit.json
+            store/readiness.json
+          if-no-files-found: error
+# No store publishing, credential creation, signing or physical certification.
+# A green schema preflight does not mean the application is store-ready.

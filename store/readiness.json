@@ -1,0 +1,103 @@
+{
+  "format": "norie-store-readiness",
+  "version": 1,
+  "source_revision": "",
+  "app_version": "",
+  "artifact_sha256": {
+    "android": "",
+    "windows": ""
+  },
+  "gates": [
+    {
+      "id": "production_android_signing",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "production_windows_signing",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "physical_device_matrix",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "preview_to_production_migration",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "classroom_real_wifi",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "privacy_policy_published",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "account_deletion_flow",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "content_rating_completed",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "store_graphics_ready",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "support_contact_ready",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "package_size_reviewed",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "accessibility_regression",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    },
+    {
+      "id": "data_safety_privacy_declarations",
+      "required": true,
+      "status": "not_tested",
+      "evidence": null,
+      "review": null
+    }
+  ]
+}

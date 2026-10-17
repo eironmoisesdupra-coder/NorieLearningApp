@@ -48,8 +48,10 @@ pinned signer information. APK verification runs `apksigner verify --print-certs
 Windows verifies every packaged EXE, DLL and native Node module using
 `Get-AuthenticodeSignature`, pinned certificate SHA-256 and timestamp trust.
 `production_release.verify_aab` verifies signed AAB entries and embedded signer
-using JDK tools; this workflow does not build or publish an AAB because current CI
-certifies APKs only. A future AAB workflow must supply an exact-revision tested AAB.
+using JDK tools. The optional 0.13 AAB candidate path consumes the exact-revision
+Preview bundle and provenance sidecar from trusted CI; neither builds nor
+publishes store packages inside the signing job. Real-key rehearsal and
+bundletool/console validation remain pending.
 
 Before a production promotion, download both candidates and their metadata. Verify
 source/version/channel/digests with `validate_binding`, rerun both platform signature
@@ -87,3 +89,8 @@ should be assumed to contain local progress.
 This document is a migration procedure, not evidence that a physical migration has
 passed. Subsequent production upgrades must retain the same production signing
 identity (or follow a separately tested Android signing-key rotation procedure).
+
+
+## Optional tested AAB candidate
+
+0.13 adds android_format=apk/aab to this same protected workflow (APK remains default). AAB candidates require the matching exact-push-CI Preview bundle plus its byte-bound provenance sidecar. Jarsigner uses environment-password references, pinned certificate verification and unchanged-payload comparison. No keys or store upload are created. See [production-aab.md](production-aab.md) and the [official JDK jarsigner reference](https://docs.oracle.com/en/java/javase/17/docs/specs/man/jarsigner.html). Actual credential-backed execution and physical/store review remain pending.

@@ -73,6 +73,14 @@ jobs:
         shell: pwsh
         run: |
           Compress-Archive -Path build/windows-desktop/NorieLearning-win32-x64 -DestinationPath build/NorieLearning-Windows.zip
+      - name: Audit exact Windows ZIP against reviewed preview budget
+        run: python scripts/release/asset_budget.py --windows build/NorieLearning-Windows.zip --json-output build/windows-package-size-report.json --fail-on-growth
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Windows-package-size-report
+          path: build/windows-package-size-report.json
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
           name: NorieLearning-Windows-offline

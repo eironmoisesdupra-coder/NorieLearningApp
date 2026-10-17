@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "limits_bytes": {
+    "android": 251658240,
+    "windows": 346030080,
+    "single_asset": 83886080
+  },
+  "baseline": {
+    "version": "0.12.0+16 Preview",
+    "source_sha": "6364ff7c043a465653e13cc8108a4be08ee3b312",
+    "evidence": "Published 0.12 release metadata; sizes are observations, not artifact hashes or store certification",
+    "packages": {
+      "android": {"bytes": 229384836},
+      "windows": {"bytes": 315112049}
+    }
+  }
+}
