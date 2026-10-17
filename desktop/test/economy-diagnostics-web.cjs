@@ -83,6 +83,9 @@ async function serve(){
     }
     async function open(){
       await page.goto(site,{waitUntil:'domcontentloaded',timeout:90000});
+      // On a warm reload the engine placeholder precedes the framework's
+      // first frame. Enable semantics after the app is actually painting.
+      await page.locator('canvas').first().waitFor({state:'visible',timeout:90000});
       await page.waitForSelector('flt-semantics-placeholder',{state:'attached',timeout:90000});
       await page.evaluate(()=>document.querySelector('flt-semantics-placeholder').click());
       await page.getByRole('button',{name:'Home Home',exact:true}).waitFor({timeout:90000});

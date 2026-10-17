@@ -1,3 +1,31 @@
+# NorieLearning roadmap 18 / 19 / 20 integration
+
+Updated 2026-10-17. Version **0.12.0+16 Preview**, branch `feat/live-lan-release-certification`, current-develop baseline `f4255a04ab71cb313f05c4d3223b7865d380256d` (0.11.0+15 / PR45-46). User supplied NorieLearning-WIP-roadmap-18-19-20-2026-10-17.zip and requested implementation. Archive inspected; its installer was never executed. Reused the isolated NorieLearning-integrate workspace and preserved the original dirty checkout.
+
+## Scope and external prerequisites
+
+- **18 signing:** separate protected manual workflow creates signed production candidates from exact-revision trusted CI artifacts, checks pinned certificate identities, artifact/source/version bindings and Windows timestamps, confines secrets to matching platform runners, cleans credentials, and rejects unsafe ZIPs. Preview release metadata explicitly says `channel: preview`. No signing credential is generated or committed. Owner confirmed **no production credentials yet; keep downloads Preview**. The production workflow has not been triggered. Real signer execution and Android preview-to-production migration evidence remain pending.
+- **19 certification:** five-device human report template and strict verifier, twelve scenarios, source/build/artifact-digest bindings and evidence-file checks. Missing/duplicate/unknown hardware classes and incomplete results reject; CI cannot certify hardware. Passing structural checks is not proof of physical results. No real hardware report or certification is claimed.
+- **20 LAN Classroom:** installed Windows/Electron and native Android host/join support using explicit selected assignments, temporary code/session and local QR. Existing classroom codecs/resolver/store validate installed content, recompute scores and durably save before ACK. Learners download/practise/return the same saved result; retry/rejoin is idempotent. Roster shows received-result aliases, not attendance. No XP, credits, mastery or league rewards are awarded by this mode.
+
+## Platform and lifecycle behavior
+
+Windows actually ships Electron, so native Dart-only overlay would not work there. Added a sandboxed preload and exact top-level `norie://app/` IPC allowlist. Node handles bounded local HTTP transport; Dart remains the persistence/scoring authority. Native Dart uses the same protocol/handler. Private literal IPv4 + explicit port only, no public/DNS/redirect endpoints, bounded streamed input and readers/pending memory, code throttling, deadlines, no wildcard CORS. Hosting begins only after explicit selection/start and stops on route departure, learner ownership change, reload/crash/exit. Codes are not persisted or cloud-relayed.
+
+Hosted web remains file-based; LAN screens explain that installed Windows/Android apps are required. Existing file exchange stays usable. Android QR scanning uses bundled offline ML Kit and requests camera only when scanning; camera hardware is optional and manual address/code entry remains available. Camera lifecycle belongs to the scanner widget.
+
+## Verification / publication state
+
+Full Flutter suite: **748 passed**, with the packaged interoperability test deliberately skipped in the ordinary runner and run separately against Electron. Analysis clean; release web build and Windows packaging passed. Targeted native LAN: 11 tests; phone/retry widgets: 3 tests at 320px/160% text; desktop: 18 tests; release helpers: 11 tests; certification tools: 2 tests; web shell: 16 tests. Actual browser teacher/learner file exchange, CSV report, installed-app fallback and seasonal navigation passed with external origins blocked. Actual packaged Windows/Electron teacher to native Dart learner loopback passed: UI-authored assignment/QR, wrong-code rejection, download, durable recomputed score, idempotent duplicate/reconnect retry, unchanged XP and stop-on-exit. Screenshots inspected at phone width. Diagnostics export, disabled-history persistence after reload and guest reward controls passed. Remote build and publication gates remain pending. All workflow YAML parses. Independent reviews checked durable ACK, ownership, bridge authorization and honest certification boundaries.
+
+Do not infer publication from this file. Complete local checks and actual packaged Electron/native-Dart interoperability, then canonical focused commits and PR into develop, green exact-head CI, merge, merged-source Android/Windows/web verification, and dual-platform Preview publication. Final PR/release metadata records exact SHA and CI. Never main. Physical Windows-teacher/Android-student isolated Wi-Fi, camera/firewall flow, five-device performance and production-signed migration remain human hardware work, not loopback/CI claims.
+
+See [LAN usage](implementation/classroom-lan.md), [production signing](implementation/production-signing.md), [physical certification](implementation/device-certification.md), and the [implementation plan](superpowers/plans/2026-10-17-lan-signing-certification.md).
+
+---
+
+## Historical 0.11 integration notes
+
 # NorieLearning Roadmap 15B / 16 / 17 integration
 
 Updated 2026-10-17. Integrating **0.11.0+15** on `feat/live-sync-quality-diagnostics`, based on develop `e320420c2b45a7e3590c8460099e24f48b089ad6` (published 0.10.0+14 / PR44). The original dirty checkout remains preserved; work is isolated in NorieLearning-integrate. User authorized live implementation of NorieLearning-WIP-roadmap-15B-16-17-2026-10-17.zip. Archive inspected manually; its installer was not executed.

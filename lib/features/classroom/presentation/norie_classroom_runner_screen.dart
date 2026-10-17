@@ -9,9 +9,10 @@ import 'norie_classroom_question_context.dart';
 
 class NorieClassroomRunnerScreen extends StatefulWidget {
   const NorieClassroomRunnerScreen(
-      {required this.assignment, this.store, super.key});
+      {required this.assignment, this.store, this.returnSubmission, super.key});
   final NorieClassroomAssignment assignment;
   final NorieClassroomStore? store;
+  final Future<void> Function(NorieClassroomSubmission)? returnSubmission;
   @override
   State<NorieClassroomRunnerScreen> createState() => _RunnerState();
 }
@@ -27,6 +28,31 @@ class _RunnerState extends State<NorieClassroomRunnerScreen>
   bool busy = false;
   String? error;
   NorieClassroomSubmission? done;
+  String? returnNotice;
+
+  Future<void> returnToTeacher() async {
+    if (busy || !current || done == null || widget.returnSubmission == null) {
+      return;
+    }
+    setState(() {
+      busy = true;
+      returnNotice = null;
+    });
+    try {
+      await widget.returnSubmission!(done!);
+      if (mounted && current) {
+        setState(() => returnNotice = 'Received by teacher');
+      }
+    } catch (_) {
+      if (mounted && current) {
+        setState(() => returnNotice =
+            'Saved on this device. Check the teacher connection, then retry here or rejoin and return your saved result.');
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   @override
   void dispose() {
     alias.dispose();
@@ -86,8 +112,16 @@ class _RunnerState extends State<NorieClassroomRunnerScreen>
                     const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
             const Text(
                 'Practice results stay separate from XP, credits, ranks and league points.'),
+            if (widget.returnSubmission != null) ...[
+              FilledButton.icon(
+                  onPressed: busy ? null : returnToTeacher,
+                  icon: const Icon(Icons.send_outlined),
+                  label: const Text('Return to teacher')),
+              if (returnNotice != null)
+                Semantics(liveRegion: true, child: Text(returnNotice!)),
+            ],
             FilledButton.icon(
-                onPressed: export,
+                onPressed: busy ? null : export,
                 icon: const Icon(Icons.save_alt),
                 label: const Text('Export submission')),
             for (final q in questions)

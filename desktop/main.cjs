@@ -1,7 +1,10 @@
-const { app, BrowserWindow, Menu, net, protocol, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, net, protocol, session, shell, ipcMain } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { assetFileFor, externalLinkFor } = require('./asset-policy.cjs');
+const { createClassroomLan } = require('./classroom-lan.cjs');
+const { installClassroomLanIpc } = require('./classroom-lan-ipc.cjs');
+const classroomLan = createClassroomLan();
 
 app.setName('NorieLearning');
 app.setAppUserModelId('com.norielearning.desktop');
@@ -29,6 +32,7 @@ function createWindow() {
     icon: path.join(__dirname, 'norie-logo.png'),
     webPreferences: {
       nodeIntegration: false, contextIsolation: true, sandbox: true,
+      preload: path.join(__dirname, 'preload.cjs'),
       backgroundThrottling: !hidden,
     },
   });
@@ -43,7 +47,11 @@ function createWindow() {
       openWebLink(url);
     }
   });
-  window.on('closed', () => { window = null; });
+  window.webContents.on('did-start-navigation', (_event, _url, _inPlace, isMainFrame) => {
+    if (isMainFrame) void classroomLan.stop();
+  });
+  window.webContents.on('render-process-gone', () => { void classroomLan.stop(); });
+  window.on('closed', () => { void classroomLan.stop(); window = null; });
   void window.loadURL('norie://app/');
 }
 
@@ -58,6 +66,7 @@ if (!app.requestSingleInstanceLock()) {
     }
   });
   app.whenReady().then(() => {
+    installClassroomLanIpc(ipcMain, () => window?.webContents, classroomLan);
     Menu.setApplicationMenu(null);
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     protocol.handle('norie', async (request) => {
@@ -74,4 +83,5 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.on('activate', () => { if (!window) createWindow(); });
   app.on('window-all-closed', () => app.quit());
+  app.on('before-quit', () => { void classroomLan.stop(); });
 }

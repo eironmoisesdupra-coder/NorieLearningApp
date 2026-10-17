@@ -34,7 +34,7 @@ def metadata(directory, version, tag, revision):
         with path.open('rb') as stream:
             digest = hashlib.file_digest(stream, 'sha256').hexdigest()
         assets.append(dict(name=name, bytes=path.stat().st_size, sha256=digest))
-    return dict(schema=1, version=version, tag=tag, revision=revision, assets=assets,
+    return dict(schema=1, channel='preview', version=version, tag=tag, revision=revision, assets=assets,
                 signing=dict(windows='unsigned', android='Flutter debug signing; not a production release key'))
 
 
@@ -73,7 +73,7 @@ def main():
         data = metadata(directory, version, args.tag, args.revision)
         (directory / 'release-metadata.json').write_text(json.dumps(data, indent=2) + '\n')
         (directory / 'SHA256SUMS.txt').write_text(''.join(f"{item['sha256']}  {item['name']}\n" for item in data['assets']))
-        notes = f"NorieLearning {version}\n\nBuilt from commit `{args.revision}`. Both packages passed the develop push CI workflows at this exact revision.\n\nWindows: unsigned portable x64 ZIP. Extract the entire folder, then open NorieLearning.exe.\n\nAndroid: APK uses Flutter's generated debug signing configuration, not a production release key. Install as a preview only; updates may require an uninstall when signing keys change. Back up any important local progress before uninstalling.\n\nSee SHA256SUMS.txt to verify downloaded bytes. Core lessons work offline; optional AI and account services may require connectivity and configuration.\n\n<!-- norie-release-metadata -->\n```json\n{json.dumps(data, indent=2)}\n```\n"
+        notes = f"NorieLearning {version} PREVIEW\n\nBuilt from commit `{args.revision}`. Both packages passed the develop push CI workflows at this exact revision.\n\nWindows: unsigned portable x64 ZIP. Extract the entire folder, then open NorieLearning.exe.\n\nAndroid: APK uses Flutter's generated debug signing configuration, not a production release key. Install as a preview only; updates may require an uninstall when signing keys change. Back up any important local progress before uninstalling.\n\nSee SHA256SUMS.txt to verify downloaded bytes. Core lessons work offline; optional AI and account services may require connectivity and configuration.\n\n<!-- norie-release-metadata -->\n```json\n{json.dumps(data, indent=2)}\n```\n"
         Path('release-notes.md').write_text(notes)
 
 
