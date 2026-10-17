@@ -1,0 +1,114 @@
+name: Production signed candidates (protected)
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Full develop commit with both exact-revision push CI runs green
+        required: true
+        type: string
+      tag:
+        description: Version tag matching source (vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: norie-production-signing
+  cancel-in-progress: false
+
+jobs:
+  provenance:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    outputs:
+      android_run: ${{ steps.gate.outputs.android_run }}
+      windows_run: ${{ steps.gate.outputs.windows_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate requested revision before checkout
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: |
+          [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          git merge-base --is-ancestor "$REVISION" origin/develop
+          git checkout --detach "$REVISION"
+      - name: Require trusted successful Android and Windows push CI
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_SHA: ${{ inputs.revision }}
+        run: python scripts/release/prepare_release.py gate --tag "$RELEASE_TAG" --revision "$RELEASE_SHA"
+  sign:
+    needs: provenance
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: android
+            os: ubuntu-latest
+          - platform: windows
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        if: matrix.platform == 'android'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        if: matrix.platform == 'android'
+      - uses: actions/download-artifact@v4
+        if: matrix.platform == 'android'
+        with:
+          name: NorieLearning-android-release
+          path: tested-input
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.provenance.outputs.android_run }}
+      - uses: actions/download-artifact@v4
+        if: matrix.platform == 'windows'
+        with:
+          name: NorieLearning-Windows-offline
+          path: tested-input
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.provenance.outputs.windows_run }}
+      - name: Sign and verify real signatures with pinned production certificates
+        shell: pwsh
+        env:
+          NORIE_PROTECTED_ENVIRONMENT: production
+          NORIE_ANDROID_KEYSTORE_BASE64: ${{ matrix.platform == 'android' && secrets.NORIE_ANDROID_KEYSTORE_BASE64 || '' }}
+          NORIE_ANDROID_KEYSTORE_PASSWORD: ${{ matrix.platform == 'android' && secrets.NORIE_ANDROID_KEYSTORE_PASSWORD || '' }}
+          NORIE_ANDROID_KEY_ALIAS: ${{ matrix.platform == 'android' && secrets.NORIE_ANDROID_KEY_ALIAS || '' }}
+          NORIE_ANDROID_KEY_PASSWORD: ${{ matrix.platform == 'android' && secrets.NORIE_ANDROID_KEY_PASSWORD || '' }}
+          NORIE_ANDROID_CERT_SHA256: ${{ matrix.platform == 'android' && vars.NORIE_ANDROID_CERT_SHA256 || '' }}
+          NORIE_WINDOWS_CERT_BASE64: ${{ matrix.platform == 'windows' && secrets.NORIE_WINDOWS_CERT_BASE64 || '' }}
+          NORIE_WINDOWS_CERT_PASSWORD: ${{ matrix.platform == 'windows' && secrets.NORIE_WINDOWS_CERT_PASSWORD || '' }}
+          NORIE_WINDOWS_CERT_SHA256: ${{ matrix.platform == 'windows' && vars.NORIE_WINDOWS_CERT_SHA256 || '' }}
+          NORIE_WINDOWS_TIMESTAMP_URL: ${{ matrix.platform == 'windows' && vars.NORIE_WINDOWS_TIMESTAMP_URL || '' }}
+          PLATFORM: ${{ matrix.platform }}
+          REVISION: ${{ inputs.revision }}
+        run: |
+          $version = ((Get-Content pubspec.yaml | Select-String '^version:').Line -replace '^version:\s*','').Trim()
+          $artifact = if ($env:PLATFORM -eq 'android') { 'tested-input/app-release.apk' } else { 'tested-input/NorieLearning-Windows.zip' }
+          python scripts/release/sign_candidate.py $env:PLATFORM $artifact --revision $env:REVISION --version $version --output signed-candidates
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-candidate-${{ matrix.platform }}
+          path: signed-candidates/*
+          if-no-files-found: error
+          retention-days: 30
+# Deliberately no publish step: signed bytes still require physical evidence and human review.

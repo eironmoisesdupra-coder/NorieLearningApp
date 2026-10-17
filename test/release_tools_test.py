@@ -25,6 +25,7 @@ class ReleaseToolsTest(unittest.TestCase):
             (root/'NorieLearning-Android.apk').write_bytes(b'abc')
             data = module.metadata(root, '0.5.0+8', 'v0.5.0', 'a'*40)
             self.assertEqual(data['revision'], 'a'*40)
+            self.assertEqual(data['channel'], 'preview')
             self.assertEqual(data['assets'][0]['sha256'], 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')
             self.assertEqual(data['assets'][0]['bytes'], 3)
             (root/'NorieLearning-Android.apk').unlink()

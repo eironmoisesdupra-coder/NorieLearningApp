@@ -100,7 +100,8 @@ jobs:
       - name: Test offline web cache
         run: |
           node --test test/norie_service_worker_test.mjs test/norie_updates_test.mjs test/downloads_test.mjs test/release_shell_test.mjs
-          python -m unittest discover -s test -p release_tools_test.py
+          python -m unittest discover -s test -p '*release*test.py'
+          python -m unittest discover -s test -p device_certification_tools_test.py
 
       - name: Verify private league scoring and database permissions
         run: |
