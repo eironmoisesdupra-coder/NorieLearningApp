@@ -79,7 +79,10 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
   Future<void> _next() async {
     if (!_quiz.next()) return;
     final reward = _quiz.takeReward();
-    if (reward != null) NorieProgression.instance.addXp(reward);
+    if (reward != null) {
+      NorieProgression.instance
+          .addXp(reward, claimKey: 'anatomy-atlas:$_attemptId');
+    }
     setState(() {
       _choice = null;
       _modelReady = false;

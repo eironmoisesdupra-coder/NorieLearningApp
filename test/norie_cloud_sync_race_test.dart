@@ -39,6 +39,13 @@ class _Backend extends NorieCloudSyncBackend {
   final uploads = <Map<String, dynamic>>[];
   Future<Map<String, dynamic>?> Function(String)? fetch;
   Future<void> Function()? upload;
+  Future<void> Function(String, bool Function())? economy;
+  @override
+  Future<void> reconcileEconomy(
+      String userId, bool Function() stillCurrent) async {
+    await economy?.call(userId, stillCurrent);
+  }
+
   @override
   DateTime get modifiedAt => DateTime.utc(2026, 1, 1);
   @override
@@ -94,10 +101,62 @@ class _Backend extends NorieCloudSyncBackend {
 }
 
 void main() {
+  test('first account persists ownership before draining account rewards',
+      () async {
+    final backend = _Backend();
+    var calls = 0;
+    backend.economy = (user, current) async {
+      expect(current(), isTrue);
+      expect(backend.owner, user);
+      calls++;
+    };
+    final sync = NorieCloudSync(backend: backend);
+    addTearDown(sync.dispose);
+    await sync.initialize();
+    expect(calls, greaterThan(0));
+  });
+
   Map<String, dynamic> remote(int points) => {
         'state': {'points': points},
         'updated_at': '2026-10-01T00:00:00Z',
       };
+
+  test(
+      'account reset completes before economy reconciliation and snapshot read',
+      () async {
+    final order = <String>[];
+    final backend = _Backend()
+      ..owner = 'previous'
+      ..local = 99;
+    backend.economy = (user, current) async {
+      expect(current(), true);
+      expect(backend.local, 0);
+      expect(backend.owner, 'alice');
+      order.add('economy');
+    };
+    backend.fetch = (_) async {
+      order.add('snapshot');
+      return remote(10);
+    };
+    final sync = NorieCloudSync(backend: backend);
+    addTearDown(sync.dispose);
+    await sync.initialize();
+    expect(order.first, 'economy');
+    expect(backend.local, 10);
+  });
+
+  test('pending guest choice cannot reconcile account economy', () async {
+    final backend = _Backend()..requiresGuestTransfer = true;
+    var calls = 0;
+    backend.economy = (_, current) async {
+      calls++;
+    };
+    final sync = NorieCloudSync(backend: backend);
+    addTearDown(sync.dispose);
+    await sync.initialize();
+    expect(sync.guestTransferPending, true);
+    expect(calls, 0);
+  });
 
   test('signout invalidates a delayed read before importing or claiming sync',
       () async {

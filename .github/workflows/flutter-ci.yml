@@ -86,6 +86,17 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Check curriculum structure and produce editorial report
+        run: dart tool/curriculum_health.dart --json --output build/curriculum-health.json
+
+      - name: Upload curriculum health report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: curriculum-health
+          path: build/curriculum-health.json
+          if-no-files-found: warn
+
       - name: Test offline web cache
         run: |
           node --test test/norie_service_worker_test.mjs test/norie_updates_test.mjs test/downloads_test.mjs test/release_shell_test.mjs
@@ -100,6 +111,7 @@ jobs:
           node scripts/verify_league_database.mjs "$RUNNER_TEMP/norie-league-validation/node_modules/@electric-sql/pglite/dist/index.js"
           node scripts/verify_guarded_cloud_database.mjs "$RUNNER_TEMP/norie-league-validation/node_modules/@electric-sql/pglite/dist/index.js"
           node scripts/verify_feature_bundle_database.mjs "$RUNNER_TEMP/norie-league-validation/node_modules/@electric-sql/pglite/dist/index.js"
+          node scripts/verify_economy_database.mjs "$RUNNER_TEMP/norie-league-validation/node_modules/@electric-sql/pglite/dist/index.js"
 
       - name: Install local AI test dependencies
         working-directory: local-ai

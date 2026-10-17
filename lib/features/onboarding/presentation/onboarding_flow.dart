@@ -647,7 +647,7 @@ class _ReadyScreenState extends State<ReadyScreen>
             onPressed: () {
               final progression = NorieProgression.instance;
               if (!progression.onboardingComplete) {
-                progression.addXp(50);
+                progression.addXp(50, claimKey: 'onboarding');
                 progression.markOnboardingComplete();
               }
               _replaceAll(context, const MainShell());

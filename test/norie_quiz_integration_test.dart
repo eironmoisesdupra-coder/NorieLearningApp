@@ -36,12 +36,28 @@ Widget app(Widget child) => MaterialApp(
     home: child);
 
 Future<void> flush(WidgetTester tester) async {
-  for (var i = 0; i < 6; i++) {
+  var saved = false;
+  Object? failure;
+  NorieProgression.instance.flushPendingSaves().then((_) {
+    saved = true;
+  }, onError: (Object error) {
+    failure = error;
+    saved = true;
+  });
+  for (var i = 0; i < 30; i++) {
     await tester.pump(const Duration(milliseconds: 100));
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    if (saved && i >= 5) break;
   }
+  await tester.pump();
+  expect(failure, isNull);
+  expect(saved, isTrue);
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
   testWidgets('study details retain missed-item retry and source questions',
       (tester) async {
     final question = NorieStudyQuestion.fromMap({
@@ -125,7 +141,11 @@ void main() {
         isNot(norieQuestionSignature(
             question(['a', 'b'], ['yes', 'maybe']), 'ordering')));
   });
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() async {
+    NorieProgression.instance.resetAsyncQueuesForTesting();
+    SharedPreferences.setMockInitialValues({});
+    await NorieProgression.instance.load();
+  });
 
   testWidgets('empty curriculum quiz has a safe outro and awards no XP',
       (tester) async {

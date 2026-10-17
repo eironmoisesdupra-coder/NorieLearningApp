@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../sync/norie_feature_state.dart';
+import '../sync/norie_economy_store.dart';
 import 'norie_lesson_journey.dart';
 import 'norie_adventure_progress.dart';
 import '../../features/profile/data/norie_profile_appearance_store.dart';
@@ -76,6 +77,7 @@ abstract final class NorieProgressBackup {
 
   static void validateState(Map<String, dynamic> state) {
     const remaining = [
+      'economy_state',
       'schema_version',
       'credit_transactions',
       'topic_mastery',
@@ -170,6 +172,9 @@ abstract final class NorieProgressBackup {
     }
     if (state.containsKey('profile_appearance')) {
       NorieProfileAppearanceStore.validateState(state['profile_appearance']);
+    }
+    if (state.containsKey('economy_state')) {
+      NorieEconomyStore.validateState(state['economy_state']);
     }
     NorieFeatureState.validate(state);
     final attempts = state['rewarded_assessment_attempts'];

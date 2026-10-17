@@ -51,7 +51,8 @@ void main() {
     for (final key in [
       'sync_event_journal',
       'classroom_state',
-      'seasonal_state'
+      'seasonal_state',
+      'economy_state'
     ]) {
       legacy.remove(key);
     }
@@ -102,9 +103,8 @@ void main() {
     final ab = NorieProgression.mergePermanentCollections(a, b);
     final ba = NorieProgression.mergePermanentCollections(b, a);
     expect(ab['sync_event_journal'], ba['sync_event_journal']);
-    expect(ab['total_xp'], 40,
-        reason:
-            'Legacy scalar read model remains conservative, not additive replay');
+    expect(ab['total_xp'], 65,
+        reason: 'Independent pending earning receipts remain additive');
     expect(ab['completed_topic_ids'], containsAll(['lesson-a', 'lesson-b']));
     await progress.importCloudState(ab);
     expect(progress.claimAssessmentAttempt('a:attempt'), false);

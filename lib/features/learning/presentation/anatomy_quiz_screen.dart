@@ -139,7 +139,8 @@ class _AnatomyQuizScreenState extends State<AnatomyQuizScreen> {
     if (_index == _questions.length - 1) {
       // Lock completion before applying the existing reward owner.
       _finished = true;
-      NorieProgression.instance.addXp(_score * 10);
+      NorieProgression.instance
+          .addXp(_score * 10, claimKey: 'anatomy:$_attemptId');
       setState(() => _finished = true);
       final action = await NorieQuizOutro.show(context,
           summary: QuizResultSummary(

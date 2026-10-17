@@ -43,7 +43,13 @@ void main() {
     final export = find.text('Export progress backup');
     await tester.scrollUntilVisible(export, 300);
     await tester.tap(export);
-    await tester.pumpAndSettle();
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 10)));
+      if (find.textContaining('Could not finish.').evaluate().isNotEmpty) break;
+    }
+    await tester.pump();
     expect(picker.saves, 0,
         reason:
             'An incomplete feature placeholder must never be exported as a safe backup.');

@@ -5,7 +5,9 @@ import 'package:fsrs/fsrs.dart' as fsrs;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
+import '../../../core/account/norie_account_service.dart';
 import '../../../core/progression/norie_progression.dart';
+import '../../../core/sync/norie_economy_store.dart';
 import '../../../core/cloud/supabase_config.dart';
 import '../domain/norie_study_models.dart';
 import 'norie_study_offline_store.dart';
@@ -68,13 +70,30 @@ class NorieStudyService {
 
   Future<int> rewardAnswer(
       NorieStudySet studySet, NorieStudyAnswer answer) async {
-    final xp = await _storeFor(studySet).claimAnswerReward(studySet.id, answer);
-    if (xp > 0) {
-      NorieProgression.instance.addXp(xp);
-      NorieProgression.instance.addCredits(1);
-    }
-    return xp;
+    final sameLearner = NorieAccountService.instance.captureLearnerGuard();
+    final store = _storeFor(studySet);
+    await store.claimAnswerReward(studySet.id, answer);
+    if (!sameLearner() || store.userId != _offlineStore.userId) return 0;
+    final granted = await _drainRewards(store, sameLearner);
+    return granted['card:${studySet.id}:${answer.question.id}'] ?? 0;
   }
+
+  /// Call only after local progress belongs to the current learner. Works
+  /// offline and replays interrupted awards without recreating legacy rewards.
+  Future<void> drainPendingRewards() async {
+    final current = NorieAccountService.instance.captureLearnerGuard();
+    await _drainRewards(_offlineStore, current);
+  }
+
+  Future<Map<String, int>> _drainRewards(
+          NorieStudyOfflineStore store, bool Function() sameLearner) =>
+      store.drainRewardOutbox(
+        stillCurrent: () =>
+            sameLearner() && store.userId == _offlineStore.userId,
+        award: (claim, xp, credits) =>
+            NorieProgression.instance.reward(claim, xp: xp, credits: credits),
+        flushEconomy: () => NorieEconomyStore.instance.flush(retry: true),
+      );
 
   Future<NorieStudySet> editCard(
       NorieStudySet studySet, NorieStudyQuestion question,
@@ -410,6 +429,7 @@ class NorieStudyService {
     required NorieStudySet studySet,
     required List<NorieStudyAnswer> answers,
   }) async {
+    final sameLearner = NorieAccountService.instance.captureLearnerGuard();
     final store = _offlineStore;
     if (studySet.ownerId != null && studySet.ownerId != store.userId) {
       throw StateError(
@@ -419,16 +439,29 @@ class NorieStudyService {
       studySet: studySet,
       answers: answers,
     );
+    if (!sameLearner() || store.userId != _offlineStore.userId) {
+      throw StateError('Account changed. Reopen this study set to continue.');
+    }
 
+    final granted = await _drainRewards(store, sameLearner);
+    if (!sameLearner() || store.userId != _offlineStore.userId) {
+      throw StateError('Account changed. Reopen this study set to continue.');
+    }
     NorieProgression.instance.recordGeneratedStudyAttempt(
       correct: result.correct,
       total: result.total,
-      xpAwarded: result.xpAwarded,
+      xpAwarded: 0,
       topic: studySet.topicTag ?? studySet.title,
+      claimKey: 'study-set:${studySet.id}:completion',
     );
 
     unawaited(syncPendingAttempts());
-    return result;
+    return NorieStudyAttemptResult(
+      correct: result.correct,
+      total: result.total,
+      xpAwarded: granted['study-set:${studySet.id}:completion'] ?? 0,
+      firstRewardedCompletion: result.firstRewardedCompletion,
+    );
   }
 
   Future<void> syncPendingAttempts() async {

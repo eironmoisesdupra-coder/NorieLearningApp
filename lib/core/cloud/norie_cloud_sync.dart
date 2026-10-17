@@ -6,6 +6,9 @@ import '../account/norie_account_service.dart';
 import '../account/norie_demo_access_service.dart';
 import '../progression/norie_progression.dart';
 import '../progression/norie_progress_backup.dart';
+import '../sync/norie_economy_cloud.dart';
+import '../sync/norie_economy_store.dart';
+import '../../features/study/data/norie_study_service.dart';
 import 'supabase_config.dart';
 
 enum NorieCloudSyncStatus {
@@ -42,6 +45,11 @@ abstract class NorieCloudSyncBackend {
   Future<void> saveGuestRecovery(
       Map<String, dynamic> state, bool Function() stillCurrent) async {}
   Future<String?> readGuestRecovery() async => null;
+  Future<Map<String, dynamic>> prepareGuestAdoption(String userId,
+          Map<String, dynamic> guest, bool Function() stillCurrent) async =>
+      guest;
+  Future<void> reconcileEconomy(
+      String userId, bool Function() stillCurrent) async {}
   Map<String, dynamic> exportState();
   Map<String, dynamic> mergePermanentCollections(
           Map<String, dynamic> primary, Map<String, dynamic> secondary) =>
@@ -232,14 +240,19 @@ class NorieCloudSync extends ChangeNotifier {
         if (row != null && (raw is! Map || raw.isEmpty)) {
           throw const FormatException('Invalid saved learning state.');
         }
-        final adopted = raw is Map
-            ? _backend.mergePermanentCollections(
-                guest, Map<String, dynamic>.from(raw))
-            : guest;
         // Once the user opts in, their guest completion receipts may join this account.
         await _backend.writeOwner(user, current);
         if (!current()) return false;
         _localOwner = user;
+        // Bind ownership before the economy store can install this account's
+        // checkpoint. A switch while the durable write runs must isolate it.
+        final prepared =
+            await _backend.prepareGuestAdoption(user, guest, current);
+        if (!current()) return false;
+        final adopted = raw is Map
+            ? _backend.mergePermanentCollections(
+                prepared, Map<String, dynamic>.from(raw))
+            : prepared;
         await _backend.importState(adopted, DateTime.now().toUtc(), current);
         if (!_current(generation, user)) return false;
       } else {
@@ -377,7 +390,13 @@ class NorieCloudSync extends ChangeNotifier {
         await _backend.writeOwner(user, current);
         if (!current()) return;
       }
+      if (owner == null && _localOwner == user) {
+        await _backend.writeOwner(user, current);
+        if (!current()) return;
+      }
       final switching = _awaitingRestoreUser == user;
+      await _backend.reconcileEconomy(user, current);
+      if (!current()) return;
       final revisionBeforeRead = _revision;
       final row = await _backend.fetchState(user);
       if (!current()) return;
@@ -421,6 +440,10 @@ class NorieCloudSync extends ChangeNotifier {
     }
     if (shouldUpload) {
       if (!current()) return;
+      if (!reconcile) {
+        await _backend.reconcileEconomy(user, current);
+        if (!current()) return;
+      }
       // Every upload reads current server ownership collections, including
       // automatic reconnects with dirty local state. Keep explicit local looks.
       final latest = await _backend.fetchState(user);
@@ -512,6 +535,43 @@ class NorieCloudSync extends ChangeNotifier {
 }
 
 class _SupabaseSyncBackend extends NorieCloudSyncBackend {
+  late final _economy = NorieEconomyCloud(
+    rpc: (name, parameters) async =>
+        await NorieSupabase.client!.rpc(name, params: parameters),
+    legacyState: exportState,
+    apply: (result, current) => NorieProgression.instance
+        .reconcileEconomyResult(result, stillCurrent: current),
+  );
+
+  @override
+  Future<void> reconcileEconomy(
+      String userId, bool Function() stillCurrent) async {
+    bool current() => stillCurrent() && this.userId == userId && isAllowed;
+    if (!current()) return;
+    final owner = await readOwner();
+    if (!current()) return;
+    if (owner == userId) {
+      await NorieStudyService.instance.drainPendingRewards();
+    }
+    if (!current()) return;
+    await _economy.reconcile(userId, current);
+  }
+
+  @override
+  Future<Map<String, dynamic>> prepareGuestAdoption(String userId,
+      Map<String, dynamic> guest, bool Function() stillCurrent) async {
+    bool current() => stillCurrent() && this.userId == userId && isAllowed;
+    final checkpoint = await _economy.status(userId, current);
+    if (!current()) return guest;
+    NorieEconomyStore.instance.prepareGuestAdoption(checkpoint);
+    await NorieEconomyStore.instance.flush(retry: true);
+    if (!current()) return guest;
+    return {
+      ...guest,
+      'economy_state': NorieEconomyStore.instance.exportState()
+    };
+  }
+
   @override
   Map<String, dynamic> mergePermanentCollections(
           Map<String, dynamic> primary, Map<String, dynamic> secondary) =>

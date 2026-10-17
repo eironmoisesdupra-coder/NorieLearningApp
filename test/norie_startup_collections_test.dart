@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 import 'package:norie_learning/core/progression/norie_progression.dart';
+import 'package:norie_learning/core/sync/norie_economy_store.dart';
 import 'package:norie_learning/core/progression/norie_adventure_progress.dart';
 import 'package:norie_learning/core/progression/norie_startup_collections.dart';
 import 'package:norie_learning/features/profile/data/norie_profile_appearance_store.dart';
@@ -30,6 +31,8 @@ void main() {
         'norie.totalXp', NorieLevelSystem.totalXpRequiredForLevel(5));
     await prefs.setStringList(
         'norie.completedTopicIds', topics.take(5).map((t) => t.id).toList());
+    // Simulate a pre-ledger installation, whose scalar preferences are the baseline.
+    await prefs.remove(NorieEconomyStore.storageKey);
     await progression.load();
     storage.full = true;
 
