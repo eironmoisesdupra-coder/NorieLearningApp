@@ -16,6 +16,7 @@ import '../../study/presentation/study_hub_screen.dart';
 import '../../classroom/presentation/norie_classroom_hub_screen.dart';
 import '../../seasonal/presentation/norie_seasonal_hub_screen.dart';
 import 'anatomy_lab_placeholder_screen.dart';
+import 'learn_continue_card.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({
@@ -43,276 +44,293 @@ class _LearnScreenState extends State<LearnScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: NorieDrawer(
-        selectedSection: NorieDrawerSection.learn,
-        onTabSelected: widget.onTabSelected,
-      ),
-      drawerEdgeDragWidth: 48,
-      body: NorieTutorialEntry(
-        definition: NorieTutorialCatalog.learn,
-        autoStart: false,
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
-                children: [
-                  Builder(
-                    builder: (drawerContext) => _LearnHeader(
-                      onMenuPressed: () =>
-                          Scaffold.of(drawerContext).openDrawer(),
-                    ),
+  String _section = 'Subjects';
+  static const _sections = [
+    'Continue Learning',
+    'Subjects',
+    'Activities',
+    'Study Tools',
+    'Classroom',
+  ];
+
+  void _openAi() => Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) =>
+            StudyGeneratorScreen(initialQuestionCount: _questionCount),
+      ));
+
+  List<Widget> _sectionContents(BuildContext context) => switch (_section) {
+        'Continue Learning' => [
+            LearnContinueCard(
+              onChooseSubject: () => setState(() => _section = 'Subjects'),
+            )
+          ],
+        'Subjects' => [
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                leading: const Icon(Icons.map_rounded,
+                    color: NorieColors.cyan, size: 32),
+                title: const Text('Subject World Map',
+                    style: TextStyle(fontWeight: FontWeight.w900)),
+                subtitle: const Text(
+                    'Explore five islands · Choose a grade · Track real progress'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const NorieSubjectWorldMap(),
                   ),
-                  const SizedBox(height: 18),
-                  NorieTutorialTarget(
-                    id: 'learn.ai',
-                    child: _LearnHero(
-                      onAiTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => StudyGeneratorScreen(
-                              initialQuestionCount: _questionCount,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Card(
-                    clipBehavior: Clip.antiAlias,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: const Icon(Icons.map_rounded,
-                          color: NorieColors.cyan, size: 32),
-                      title: const Text('Subject World Map',
-                          style: TextStyle(fontWeight: FontWeight.w900)),
-                      subtitle: const Text(
-                          'Explore five islands · Choose a grade · Track real progress'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const NorieSubjectWorldMap(),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Explore Subjects',
-                    style: TextStyle(
-                      fontSize: 29,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -.7,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Science, Mathematics and English have authored journeys. Filipino and Araling Panlipunan begin with Grade 1 pilot lessons.',
-                    style: TextStyle(
-                      color: NorieColors.textSecondary,
-                      height: 1.45,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  NorieTutorialTarget(
-                    id: 'learn.subjects',
-                    child: _SubjectTile(
-                      title: 'Mathematics',
-                      subtitle: 'Grade 1–College · Authored lessons',
-                      icon: Icons.calculate_rounded,
-                      color: NorieColors.primary,
-                      progress: .68,
-                      badge: 'LIVE',
-                      onTap: () {
-                        NorieProgression.instance
-                            .recordSubjectExplored('Mathematics');
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const NorieGradeSelectScreen(
-                              subject: 'Mathematics',
-                              icon: Icons.calculate_rounded,
-                              accent: NorieColors.primary,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _SubjectTile(
-                    title: 'Science',
-                    subtitle: 'Chemistry · Biology · Physics · Earth Science',
-                    icon: Icons.science_rounded,
-                    color: NorieColors.green,
-                    progress: .72,
-                    badge: 'LIVE',
-                    onTap: () {
-                      NorieProgression.instance
-                          .recordSubjectExplored('Science');
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const NorieGradeSelectScreen(
-                            subject: 'Science',
-                            icon: Icons.science_rounded,
-                            accent: NorieColors.green,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _SubjectTile(
-                    title: '3D Anatomy Lab',
-                    subtitle:
-                        'Layered human anatomy · 3D viewer · Identification',
-                    icon: Icons.accessibility_new_rounded,
-                    color: NorieColors.cyan,
-                    progress: 0,
-                    badge: 'LIVE',
-                    onTap: () {
-                      NorieProgression.instance
-                          .recordSubjectExplored('3D Anatomy Lab');
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const AnatomyLabPlaceholderScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _SubjectTile(
-                    title: 'English',
-                    subtitle: 'Grade 1–College · Authored lessons',
-                    icon: Icons.menu_book_rounded,
-                    color: NorieColors.orange,
-                    progress: .45,
-                    badge: 'LIVE',
-                    onTap: () {
-                      NorieProgression.instance
-                          .recordSubjectExplored('English');
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const NorieGradeSelectScreen(
-                            subject: 'English',
-                            icon: Icons.menu_book_rounded,
-                            accent: NorieColors.orange,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _SubjectTile(
-                    title: 'Filipino',
-                    subtitle: 'Grade 1: Wika, Pagbasa, Pakikipag-usap',
-                    icon: Icons.translate_rounded,
-                    color: NorieColors.violet,
-                    progress: 0,
-                    badge: 'PILOT',
-                    onTap: () {
-                      NorieProgression.instance
-                          .recordSubjectExplored('Filipino');
-                      Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => const NorieGradeSelectScreen(
-                          subject: 'Filipino',
-                          icon: Icons.translate_rounded,
-                          accent: NorieColors.violet,
-                        ),
-                      ));
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _SubjectTile(
-                    title: 'Araling Panlipunan',
-                    subtitle: 'Grade 1: Sarili, Pamilya, Pamayanan, Mapa',
-                    icon: Icons.public_rounded,
-                    color: NorieColors.cyan,
-                    progress: 0,
-                    badge: 'PILOT',
-                    onTap: () {
-                      NorieProgression.instance
-                          .recordSubjectExplored('Araling Panlipunan');
-                      Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => const NorieGradeSelectScreen(
-                          subject: 'Araling Panlipunan',
-                          icon: Icons.public_rounded,
-                          accent: NorieColors.cyan,
-                        ),
-                      ));
-                    },
-                  ),
-                  const SizedBox(height: 28),
-                  _SubjectTile(
-                    title: 'Classroom',
-                    subtitle: 'Build, share and complete assignments offline',
-                    icon: Icons.school_rounded,
-                    color: NorieColors.cyan,
-                    progress: 0,
-                    badge: 'OFFLINE',
-                    onTap: () =>
-                        Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const NorieClassroomHubScreen(),
-                    )),
-                  ),
-                  const SizedBox(height: 12),
-                  _SubjectTile(
-                    title: 'Seasonal Learning',
-                    subtitle: 'Optional missions and lasting keepsakes',
-                    icon: Icons.celebration_outlined,
-                    color: NorieColors.violet,
-                    progress: 0,
-                    badge: 'DISCOVER',
-                    onTap: () =>
-                        Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const NorieSeasonalHubScreen(),
-                    )),
-                  ),
-                  const SizedBox(height: 28),
-                  _AiQaPreview(
-                    selectedCount: _questionCount,
-                    onCountSelected: (value) {
-                      if (value == 100) {
-                        _previewOnly(
-                          '100 questions is a Premium-plan preview option.',
-                        );
-                        return;
-                      }
-                      setState(() => _questionCount = value);
-                    },
-                    onPreviewTap: (action) {
-                      if (action == 'hub') {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const StudyHubScreen(),
-                          ),
-                        );
-                        return;
-                      }
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => StudyGeneratorScreen(
-                            initialQuestionCount: _questionCount,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
+            const SizedBox(height: 16),
+            const Text('Explore Subjects',
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            const Text(
+                'Choose a subject and grade. Lessons work offline; Filipino and Araling Panlipunan offer Grade 1 pilot lessons.'),
+            const SizedBox(height: 16),
+            _SubjectTile(
+              title: 'Mathematics',
+              subtitle: 'Grades 1 to College | Authored lessons',
+              icon: Icons.calculate_rounded,
+              color: NorieColors.primary,
+              badge: 'LIVE',
+              onTap: () {
+                NorieProgression.instance.recordSubjectExplored('Mathematics');
+                Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => const NorieGradeSelectScreen(
+                        subject: 'Mathematics',
+                        icon: Icons.calculate_rounded,
+                        accent: NorieColors.primary)));
+              },
+            ),
+            const SizedBox(height: 12),
+            _SubjectTile(
+              title: 'Science',
+              subtitle: 'Chemistry | Biology | Physics | Earth Science',
+              icon: Icons.science_rounded,
+              color: NorieColors.green,
+              badge: 'LIVE',
+              onTap: () {
+                NorieProgression.instance.recordSubjectExplored('Science');
+                Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => const NorieGradeSelectScreen(
+                        subject: 'Science',
+                        icon: Icons.science_rounded,
+                        accent: NorieColors.green)));
+              },
+            ),
+            const SizedBox(height: 12),
+            _SubjectTile(
+              title: 'English',
+              subtitle: 'Grades 1 to College | Authored lessons',
+              icon: Icons.menu_book_rounded,
+              color: NorieColors.orange,
+              badge: 'LIVE',
+              onTap: () {
+                NorieProgression.instance.recordSubjectExplored('English');
+                Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => const NorieGradeSelectScreen(
+                        subject: 'English',
+                        icon: Icons.menu_book_rounded,
+                        accent: NorieColors.orange)));
+              },
+            ),
+            const SizedBox(height: 12),
+            _SubjectTile(
+              title: 'Filipino',
+              subtitle: 'Grade 1: Wika, Pagbasa, Pakikipag-usap',
+              icon: Icons.translate_rounded,
+              color: NorieColors.violet,
+              badge: 'PILOT',
+              onTap: () {
+                NorieProgression.instance.recordSubjectExplored('Filipino');
+                Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => const NorieGradeSelectScreen(
+                        subject: 'Filipino',
+                        icon: Icons.translate_rounded,
+                        accent: NorieColors.violet)));
+              },
+            ),
+            const SizedBox(height: 12),
+            _SubjectTile(
+              title: 'Araling Panlipunan',
+              subtitle: 'Grade 1: Sarili, Pamilya, Pamayanan, Mapa',
+              icon: Icons.public_rounded,
+              color: NorieColors.cyan,
+              badge: 'PILOT',
+              onTap: () {
+                NorieProgression.instance
+                    .recordSubjectExplored('Araling Panlipunan');
+                Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => const NorieGradeSelectScreen(
+                        subject: 'Araling Panlipunan',
+                        icon: Icons.public_rounded,
+                        accent: NorieColors.cyan)));
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        'Activities' => [
+            _SubjectTile(
+              title: '3D Anatomy Lab',
+              subtitle: 'Layered human anatomy · 3D viewer · Identification',
+              icon: Icons.accessibility_new_rounded,
+              color: NorieColors.cyan,
+              badge: 'LIVE',
+              onTap: () {
+                NorieProgression.instance
+                    .recordSubjectExplored('3D Anatomy Lab');
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AnatomyLabPlaceholderScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _SubjectTile(
+              title: 'Seasonal Learning',
+              subtitle: 'Optional missions and lasting keepsakes',
+              icon: Icons.celebration_outlined,
+              color: NorieColors.violet,
+              badge: 'DISCOVER',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const NorieSeasonalHubScreen(),
+              )),
+            ),
+          ],
+        'Classroom' => [
+            _SubjectTile(
+              title: 'Classroom',
+              subtitle: 'Build, share and complete assignments offline',
+              icon: Icons.school_rounded,
+              color: NorieColors.cyan,
+              badge: 'OFFLINE',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const NorieClassroomHubScreen(),
+              )),
+            ),
+          ],
+        _ => [
+            _AiQaPreview(
+              selectedCount: _questionCount,
+              onCountSelected: (value) {
+                if (value == 100) {
+                  _previewOnly(
+                    '100 questions is a Premium-plan preview option.',
+                  );
+                  return;
+                }
+                setState(() => _questionCount = value);
+              },
+              onPreviewTap: (action) {
+                if (action == 'hub') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const StudyHubScreen(),
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => StudyGeneratorScreen(
+                      initialQuestionCount: _questionCount,
+                    ),
+                  ),
+                );
+              },
+            )
+          ],
+      };
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        drawer: NorieDrawer(
+            selectedSection: NorieDrawerSection.learn,
+            onTabSelected: widget.onTabSelected),
+        drawerEdgeDragWidth: 48,
+        body: NorieTutorialEntry(
+          definition: NorieTutorialCatalog.learn,
+          autoStart: false,
+          child: SafeArea(
+              child: Center(
+                  child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: LayoutBuilder(builder: (context, constraints) {
+              final header = Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Builder(
+                            builder: (drawerContext) => _LearnHeader(
+                                onMenuPressed: () =>
+                                    Scaffold.of(drawerContext).openDrawer())),
+                        const SizedBox(height: 10),
+                        NorieTutorialTarget(
+                            id: 'learn.ai',
+                            child: OutlinedButton.icon(
+                                onPressed: _openAi,
+                                icon: const Icon(Icons.auto_awesome_rounded),
+                                label: const Text('Create with Norie AI'))),
+                        const SizedBox(height: 6),
+                        Wrap(spacing: 8, runSpacing: 4, children: [
+                          for (final section in _sections)
+                            if (section == 'Subjects')
+                              NorieTutorialTarget(
+                                  id: 'learn.subjects',
+                                  child: _sectionChip(section))
+                            else
+                              _sectionChip(section),
+                        ]),
+                        const SizedBox(height: 8),
+                      ]));
+              final contents = _sectionContents(context);
+              if (constraints.maxHeight < 720) {
+                // Let the navigation and content share the same scroll on short
+                // screens. All tutorial targets remain mounted and focusable.
+                return SingleChildScrollView(
+                  key: PageStorageKey('learn-compact-$_section'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      header,
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: contents,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return Column(children: [
+                header,
+                Expanded(
+                    child: ListView(
+                  key: PageStorageKey('learn-section-$_section'),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
+                  children: contents,
+                )),
+              ]);
+            }),
+          ))),
         ),
-      ),
-      bottomNavigationBar: widget.embedded
-          ? null
-          : _LearnBottomNavigation(onTabSelected: widget.onTabSelected),
-    );
-  }
+        bottomNavigationBar: widget.embedded
+            ? null
+            : _LearnBottomNavigation(onTabSelected: widget.onTabSelected),
+      );
+
+  Widget _sectionChip(String section) => ChoiceChip(
+        label: Text(section),
+        selected: _section == section,
+        onSelected: (_) => setState(() => _section = section),
+      );
 }
 
 class _LearnHeader extends StatelessWidget {
@@ -380,175 +398,12 @@ class _LearnHeader extends StatelessWidget {
   }
 }
 
-class _LearnHero extends StatelessWidget {
-  const _LearnHero({required this.onAiTap});
-
-  final VoidCallback onAiTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF10295A),
-            Color(0xFF20235D),
-            Color(0xFF441A5F),
-          ],
-        ),
-        border: Border.all(
-          color: NorieColors.violet.withValues(alpha: .42),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: NorieColors.violet.withValues(alpha: .13),
-            blurRadius: 32,
-            offset: const Offset(0, 15),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          const Positioned(
-            right: -24,
-            top: -34,
-            child: _HeroGlow(
-              size: 150,
-              color: Color(0x3322D3EE),
-            ),
-          ),
-          const Positioned(
-            left: -38,
-            bottom: -70,
-            child: _HeroGlow(
-              size: 180,
-              color: Color(0x22EC4899),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 10, 18),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: .07),
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: .10),
-                          ),
-                        ),
-                        child: const Text(
-                          'YOUR LEARNING UNIVERSE',
-                          style: TextStyle(
-                            fontSize: 8,
-                            letterSpacing: 1.35,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFFB7F5FF),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 11),
-                      const Text(
-                        'Choose a path.\nBuild real mastery.',
-                        style: TextStyle(
-                          fontSize: 25,
-                          height: 1.02,
-                          letterSpacing: -.65,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 9),
-                      const Text(
-                        'Lessons, challenges, AI study tools, and future interactive labs all connect to one progression system.',
-                        style: TextStyle(
-                          color: Color(0xFFC5D0EA),
-                          fontSize: 11,
-                          height: 1.42,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      FilledButton.icon(
-                        onPressed: onAiTap,
-                        icon: const Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 17,
-                        ),
-                        label: const Text('Create with Norie AI'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: NorieColors.cyan,
-                          foregroundColor: NorieColors.background,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 13,
-                            vertical: 11,
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 4),
-                SizedBox(
-                  width: 124,
-                  height: 150,
-                  child: Image.asset(
-                    NorieAssets.mascotStudying,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroGlow extends StatelessWidget {
-  const _HeroGlow({
-    required this.size,
-    required this.color,
-  });
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
-    );
-  }
-}
-
 class _SubjectTile extends StatelessWidget {
   const _SubjectTile({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.color,
-    required this.progress,
     required this.onTap,
     this.badge,
   });
@@ -557,170 +412,119 @@ class _SubjectTile extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Color color;
-  final double progress;
   final VoidCallback onTap;
   final String? badge;
 
   @override
   Widget build(BuildContext context) {
-    final safeProgress = progress.clamp(0.0, 1.0).toDouble();
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          padding: const EdgeInsets.all(17),
-          decoration: BoxDecoration(
+    return Semantics(
+        button: true,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withValues(alpha: .13),
-                NorieColors.surface.withValues(alpha: .96),
-                NorieColors.surface.withValues(alpha: .82),
-              ],
-            ),
-            border: Border.all(
-              color: color.withValues(alpha: .33),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: .055),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      color.withValues(alpha: .30),
-                      color.withValues(alpha: .08),
-                    ],
-                  ),
-                  border: Border.all(
-                    color: color.withValues(alpha: .34),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: .14),
-                      blurRadius: 18,
-                    ),
+            child: Ink(
+              padding: const EdgeInsets.all(17),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    color.withValues(alpha: .13),
+                    NorieColors.surface.withValues(alpha: .96),
+                    NorieColors.surface.withValues(alpha: .82),
                   ],
                 ),
-                child: Icon(icon, color: color, size: 30),
+                border: Border.all(
+                  color: color.withValues(alpha: .33),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: .055),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          color.withValues(alpha: .30),
+                          color.withValues(alpha: .08),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: color.withValues(alpha: .34),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: .14),
+                          blurRadius: 18,
                         ),
-                        if (badge != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: .10),
-                              borderRadius: BorderRadius.circular(99),
-                              border: Border.all(
-                                color: color.withValues(alpha: .27),
-                              ),
-                            ),
-                            child: Text(
-                              badge!,
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 7,
-                                letterSpacing: .7,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: NorieColors.textSecondary,
-                        fontSize: 10.5,
-                        height: 1.35,
+                    child: Icon(icon, color: color, size: 30),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w900)),
+                        if (badge != null) ...[
+                          const SizedBox(height: 4),
+                          Text(badge!,
+                              style: TextStyle(
+                                  color: color,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900)),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            color: NorieColors.textSecondary,
+                            fontSize: 10.5,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .04),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: .08),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: LinearProgressIndicator(
-                            value: safeProgress,
-                            minHeight: 5,
-                            borderRadius: BorderRadius.circular(99),
-                            color: color,
-                            backgroundColor: color.withValues(alpha: .10),
-                          ),
-                        ),
-                        const SizedBox(width: 9),
-                        Text(
-                          safeProgress == 0
-                              ? 'Preview'
-                              : '${(safeProgress * 100).round()}%',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: color,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 17,
+                      color: NorieColors.textSecondary,
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .04),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: .08),
                   ),
-                ),
-                child: const Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 17,
-                  color: NorieColors.textSecondary,
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 }
 
@@ -794,7 +598,7 @@ class _AiQaPreview extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               SizedBox(
-                width: 100,
+                width: MediaQuery.sizeOf(context).width < 480 ? 64 : 100,
                 height: 100,
                 child: Image.asset(
                   NorieAssets.mascotStudying,
@@ -905,8 +709,9 @@ class _AiQaPreview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 9),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          const Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Icon(
                 Icons.fact_check_outlined,

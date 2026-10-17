@@ -46,11 +46,10 @@ async function main() {
   }
   async function checkAnatomy() {
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
-    const lab = page.getByRole('progressbar', { name: /3D Anatomy Lab/ });
+    await page.getByRole('checkbox', { name: 'Activities', exact: true }).click();
+    const lab = page.getByRole('button', { name: /^3D Anatomy Lab/ });
     await lab.waitFor();
-    await page.mouse.move(700, 500);
-    await page.mouse.wheel(0, 450);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(350);
     await lab.click({ position: { x: 40, y: 20 } });
     await page.getByRole('button', { name: /Open 3D Viewer/ }).click();
     const viewer = page.frameLocator('iframe[title="NorieLearning interactive anatomy atlas"]');
@@ -241,7 +240,8 @@ async function main() {
     await enableAccessibility();
     await checkAnatomy();
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
-    await page.getByRole('progressbar', { name: /Mathematics/ }).click();
+    await page.getByRole('checkbox', { name: 'Subjects', exact: true }).click();
+    await page.getByRole('button', { name: /^Mathematics\b/ }).click();
     await page.getByRole('button', { name: /Grade 1 / }).first().click();
     await page.getByRole('button', { name: /Counting to 100/ }).click();
     await page.getByRole('button', { name: 'Start mission', exact: true }).click();

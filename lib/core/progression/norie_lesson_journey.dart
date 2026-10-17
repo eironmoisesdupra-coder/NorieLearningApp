@@ -53,8 +53,9 @@ class NorieLessonJourney extends ChangeNotifier {
 
   static NorieTopicContent? resolveTopic(String? id) {
     if (id == null) return null;
-    for (final subject in ['Science', 'Mathematics', 'English']) {
-      for (final grade in NorieFoundationCurriculum.gradeLevels) {
+    for (final subject in NorieFoundationCurriculum.supportedSubjects) {
+      for (final grade
+          in NorieFoundationCurriculum.availableGradeLevels(subject)) {
         for (final topic
             in NorieFoundationCurriculum.topicsFor(subject, grade.id)) {
           if (topic.id == id && topic.available) return topic;

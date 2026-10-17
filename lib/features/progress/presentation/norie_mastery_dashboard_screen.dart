@@ -147,9 +147,17 @@ class _NorieMasteryDashboardScreenState
                                         fontSize: 25,
                                         fontWeight: FontWeight.w900)),
                                 const SizedBox(height: 12),
+                                const Text('Where you are',
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900)),
                                 Text(
                                     '${dashboard.completedLessons} of ${dashboard.totalLessons} published lessons completed · ${dashboard.availablePaths} grade paths · ${dashboard.subjects.length} subjects'),
                                 const SizedBox(height: 14),
+                                const Text('Your next step',
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900)),
                                 const NorieMentorCard(),
                                 section(
                                     'Review priorities',
