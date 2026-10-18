@@ -26,12 +26,39 @@ class _AnatomyAtlasQuizSetupScreenState
     extends State<AnatomyAtlasQuizSetupScreen> {
   late String _reference = widget.reference;
   late Set<String> _systems = {...widget.systems};
+  int _requestedCount = AtlasQuizSession.questionCount;
+  AtlasQuizDifficulty _difficulty = AtlasQuizDifficulty.standard;
+  final _kinds = <AtlasQuestionKind>{AtlasQuestionKind.identify};
 
   int _count(Set<String> systems) =>
-      AtlasQuizSession.eligibleStructures(widget.catalog, _reference, systems)
+      AtlasQuizSession.eligibleStructures(widget.catalog, _reference, systems,
+              kinds: _kinds)
           .map((structure) => structure.name)
           .toSet()
           .length;
+
+  bool get _canStartShort =>
+      _kinds.isNotEmpty &&
+      _count(_systems) >= (_kinds.contains(AtlasQuestionKind.identify) ? 2 : 1);
+
+  void _start() {
+    final audio = NorieAudioManager.instance;
+    audio.unlock();
+    audio.playChallengeStart();
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => AnatomyAtlasQuizScreen(
+          catalog: widget.catalog,
+          reference: _reference,
+          systems: {..._systems},
+          requestedCount: _requestedCount,
+          difficulty: _difficulty,
+          kinds: {..._kinds},
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +127,81 @@ class _AnatomyAtlasQuizSetupScreenState
                                   : _systems.remove(system.id.name);
                             }),
                   ),
+                const SizedBox(height: 16),
+                Text('Number of questions',
+                    style: Theme.of(context).textTheme.titleMedium),
+                Wrap(spacing: 8, children: [
+                  for (final count in [5, 10, 20])
+                    ChoiceChip(
+                      label: Text('$count questions'),
+                      selected: _requestedCount == count,
+                      onSelected: (_) =>
+                          setState(() => _requestedCount = count),
+                    ),
+                ]),
+                const SizedBox(height: 12),
+                Text('Difficulty',
+                    style: Theme.of(context).textTheme.titleMedium),
+                Wrap(spacing: 8, children: [
+                  for (final entry in const {
+                    AtlasQuizDifficulty.guided: 'Guided',
+                    AtlasQuizDifficulty.standard: 'Standard',
+                    AtlasQuizDifficulty.challenge: 'Challenge',
+                  }.entries)
+                    ChoiceChip(
+                      label: Text(entry.value),
+                      selected: _difficulty == entry.key,
+                      onSelected: (_) =>
+                          setState(() => _difficulty = entry.key),
+                    ),
+                ]),
+                Text(switch (_difficulty) {
+                  AtlasQuizDifficulty.guided =>
+                    'Two answer choices and hints shown automatically.',
+                  AtlasQuizDifficulty.standard =>
+                    'Up to four answer choices. Open a hint when needed.',
+                  AtlasQuizDifficulty.challenge =>
+                    'Up to six answer choices. Try answering before opening a hint.',
+                }),
+                const SizedBox(height: 12),
+                Text('Question types',
+                    style: Theme.of(context).textTheme.titleMedium),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Identify structures'),
+                  value: _kinds.contains(AtlasQuestionKind.identify),
+                  onChanged: (selected) => setState(() {
+                    selected == true
+                        ? _kinds.add(AtlasQuestionKind.identify)
+                        : _kinds.remove(AtlasQuestionKind.identify);
+                  }),
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('System membership'),
+                  subtitle: const Text(
+                      'Use atlas catalog groups. Parts listed under several systems are identified instead, or excluded in system-only quizzes.'),
+                  value: _kinds.contains(AtlasQuestionKind.system),
+                  onChanged: (selected) => setState(() {
+                    selected == true
+                        ? _kinds.add(AtlasQuestionKind.system)
+                        : _kinds.remove(AtlasQuestionKind.system);
+                  }),
+                ),
+                if (_kinds.isEmpty)
+                  const Text('Choose at least one question type.'),
+                if (available < _requestedCount) ...[
+                  Text(
+                      'Only $available distinct parts are available for these settings. '
+                      'Select more systems or references, or choose a shorter quiz. '
+                      'Parts will not repeat.'),
+                  if (_canStartShort)
+                    OutlinedButton.icon(
+                      onPressed: _start,
+                      icon: const Icon(Icons.play_arrow),
+                      label: Text('Start shorter $available-question quiz'),
+                    ),
+                ],
                 ListenableBuilder(
                   listenable: audio,
                   builder: (context, _) => SwitchListTile(
@@ -120,31 +222,15 @@ class _AnatomyAtlasQuizSetupScreenState
             padding: const EdgeInsets.all(16),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Text('$available distinct parts selected'),
-              if (available < AtlasQuizSession.questionCount)
-                const Text(
-                    'Select more systems or references to reach 20 distinct parts.',
-                    textAlign: TextAlign.center),
               const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text('Start 20-question quiz'),
-                  onPressed: available < AtlasQuizSession.questionCount
+                  label: Text('Start $_requestedCount-question quiz'),
+                  onPressed: _kinds.isEmpty || available < _requestedCount
                       ? null
-                      : () {
-                          audio.unlock();
-                          audio.playChallengeStart();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => AnatomyAtlasQuizScreen(
-                                  catalog: widget.catalog,
-                                  reference: _reference,
-                                  systems: {..._systems}),
-                            ),
-                          );
-                        },
+                      : _start,
                 ),
               ),
             ]),

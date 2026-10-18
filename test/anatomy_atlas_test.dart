@@ -46,4 +46,12 @@ void main() {
             }),
         throwsFormatException);
   });
+  test('search supports model IDs and strips control characters', () {
+    final catalog = AnatomyAtlasCatalog.fromJson(data);
+    expect(
+        catalog.search('male', {'skeletal'}, 'femur-r').single.id, 'femur-r');
+    expect(
+        catalog.search('male', {'skeletal'}, '\u0000FMA24474\u0007').single.id,
+        'femur-r');
+  });
 }

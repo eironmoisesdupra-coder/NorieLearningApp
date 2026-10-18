@@ -66,13 +66,16 @@ class AnatomyAtlasCatalog {
 
   List<AtlasStructure> search(
       String reference, Set<String> systems, String query) {
-    final term = query.trim().toLowerCase();
+    final cleaned = query.replaceAll(RegExp(r'[\x00-\x1f\x7f]'), '').trim();
+    final term =
+        cleaned.substring(0, cleaned.length.clamp(0, 160)).toLowerCase();
     return structures
         .where((s) =>
             s.reference == reference &&
             s.systems.intersection(systems).isNotEmpty &&
             (term.isEmpty ||
                 s.name.toLowerCase().contains(term) ||
+                s.id.toLowerCase().contains(term) ||
                 s.ontology.toLowerCase().contains(term)))
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
