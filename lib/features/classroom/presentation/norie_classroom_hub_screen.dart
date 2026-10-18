@@ -1,4 +1,5 @@
 import 'norie_classroom_identity_guard.dart';
+import '../../../core/release/norie_setup_screen.dart';
 import 'package:flutter/material.dart';
 import '../data/norie_classroom_file_bridge.dart';
 import '../data/norie_classroom_store.dart';
@@ -109,6 +110,14 @@ class _HubState extends State<NorieClassroomHubScreen>
                     icon: const Icon(Icons.wifi_tethering_rounded),
                     label: const Text('Local Wi-Fi Classroom')),
               ]),
+              TextButton.icon(
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                        builder: (_) => const NorieSetupScreen())),
+                icon: const Icon(Icons.cloud_off_rounded),
+                label: const Text('Cloud Classroom: not configured'),
+              ),
               if (busy) const LinearProgressIndicator(),
               if (error != null)
                 Text(error!,
