@@ -1,8 +1,8 @@
 abstract final class NorieAppInfo {
   static const version =
-      String.fromEnvironment('FLUTTER_BUILD_NAME', defaultValue: '0.15.0');
+      String.fromEnvironment('FLUTTER_BUILD_NAME', defaultValue: '0.15.1');
   static const build =
-      String.fromEnvironment('FLUTTER_BUILD_NUMBER', defaultValue: '19');
+      String.fromEnvironment('FLUTTER_BUILD_NUMBER', defaultValue: '20');
   static final downloads = Uri.parse(
       'https://eironmoisesdupra-coder.github.io/NorieLearningApp/downloads.html');
 }
