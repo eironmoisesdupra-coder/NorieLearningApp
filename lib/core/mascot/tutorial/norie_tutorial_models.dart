@@ -466,7 +466,7 @@ abstract final class NorieTutorialCatalog {
             id: 'shop-membership',
             title: 'Membership is a preview',
             message:
-                'The Membership screen previews Free, Plus, and Pro. Subscription checkout is disabled in this build: preview prices, premium labels, and proposed benefits are not an active subscription or a purchase. Current AI allowances depend on the deployed service, not this tutorial; the local AI prototype does not enforce account-based daily plans.'),
+                'The Membership screen previews Free, Plus, Pro, and Family. Subscription checkout is disabled in this build: preview prices, premium labels, and proposed benefits are not an active subscription or a purchase. Current AI allowances depend on the deployed service, not this tutorial; the local AI prototype does not enforce account-based daily plans.'),
       ]);
 
   static const settings = NorieTutorialDefinition(

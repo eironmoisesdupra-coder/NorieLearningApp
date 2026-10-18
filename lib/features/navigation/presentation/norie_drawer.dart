@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/account/norie_account_service.dart';
 import '../../../core/release/norie_app_progress_screen.dart';
+import '../../../core/release/norie_setup_screen.dart';
+import '../../curriculum/presentation/norie_curriculum_library_screen.dart';
 import '../../../core/mascot/norie_mascot_scope.dart';
 import '../../../core/mascot/tutorial/norie_tutorial_models.dart';
 import '../../../core/audio/norie_audio_settings_screen.dart';
@@ -83,6 +85,18 @@ class NorieDrawer extends StatelessWidget {
                       onTap: () => _open(context, const ChemistryScreen()),
                     ),
                     const SizedBox(height: 14),
+                    _MenuItem(
+                      icon: Icons.library_books_rounded,
+                      label: 'Curriculum workspace',
+                      color: NorieColors.cyan,
+                      onTap: () => _open(
+                          context,
+                          Builder(
+                              builder: (_) => NorieCurriculumLibraryScreen(
+                                  ownerId:
+                                      NorieAccountService.instance.user?.id ??
+                                          'guest'))),
+                    ),
                     const _SectionLabel('AI TOOLS'),
                     _MenuItem(
                       icon: Icons.auto_awesome_rounded,
@@ -171,6 +185,12 @@ class NorieDrawer extends StatelessWidget {
                     const SizedBox(height: 18),
                     const _SectionLabel('ACCOUNT'),
                     _MenuItem(
+                      icon: Icons.checklist_rounded,
+                      label: 'Preview configuration',
+                      color: NorieColors.cyan,
+                      onTap: () => _open(context, const NorieSetupScreen()),
+                    ),
+                    _MenuItem(
                       icon: Icons.save_alt_rounded,
                       label: 'App & progress',
                       color: NorieColors.cyan,
@@ -213,7 +233,6 @@ class NorieDrawer extends StatelessWidget {
                       icon: Icons.storefront_rounded,
                       label: 'Norie Shop',
                       color: NorieColors.orange,
-                      trailing: const _SampleBadge(),
                       onTap: () => _open(
                         context,
                         const NorieShopPlaceholderScreen(),

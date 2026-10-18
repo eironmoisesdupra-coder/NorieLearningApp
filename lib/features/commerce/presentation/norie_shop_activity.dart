@@ -41,12 +41,12 @@ class NorieShopActivityStatus extends StatelessWidget {
         accent: NorieColors.cyan,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(economy.lastError != null
-              ? 'Device save needs attention. Keep this device data and retry.'
+              ? 'Credit ledger save needs attention. Keep this device data and retry.'
               : !economy.available
                   ? 'Loading wallet…'
                   : economy.hasPendingWrites
                       ? 'Saving on this device…'
-                      : 'Saved on this device.'),
+                      : 'Credit ledger saved on this device.'),
           const SizedBox(height: 6),
           Text(status),
           if (!NorieShopCatalog.accountPricingReady &&
