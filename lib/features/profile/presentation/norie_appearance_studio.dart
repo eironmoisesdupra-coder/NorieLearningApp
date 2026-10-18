@@ -1,5 +1,6 @@
 import '../../../core/widgets/norie_animated_rank_badge.dart';
 import 'dart:math' as math;
+import '../../commerce/presentation/norie_shop_cosmetics.dart';
 import 'package:flutter/material.dart';
 import '../../../core/assets/norie_assets.dart';
 import '../../../core/account/norie_account_service.dart';
@@ -521,14 +522,21 @@ class NorieAppearancePreview extends StatelessWidget {
       required this.displayName,
       required this.subtitle,
       this.trophyLabels = const [],
-      this.rankLevel});
+      this.rankLevel,
+      this.shopFrameId,
+      this.shopBadgeId,
+      this.shopThemeId});
   final NorieProfileAppearance value;
   final int? rankLevel;
+  final String? shopFrameId, shopBadgeId, shopThemeId;
   final String displayName, subtitle;
   final List<String> trophyLabels;
   @override
   Widget build(BuildContext context) {
-    final color = NorieAppearanceCatalog.accent(value);
+    final color = NorieShopCosmetics.themeColor(shopThemeId) ??
+        NorieAppearanceCatalog.accent(value);
+    final shopFrame = NorieShopCosmetics.frameColor(shopFrameId);
+    final shopBadge = NorieShopCosmetics.badgeLabel(shopBadgeId);
     final frame = NorieAppearanceCatalog.bundle(value.frameId);
     final backgroundTail = switch (value.backgroundId) {
       'stars' => const Color(0xFF202A55),
@@ -555,7 +563,7 @@ class NorieAppearancePreview extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [
                   color.withValues(alpha: .18),
-                  backgroundTail,
+                  NorieShopCosmetics.themeTail(shopThemeId) ?? backgroundTail,
                   frame.colors.last.withValues(alpha: .12)
                 ]),
             border: Border.all(color: color.withValues(alpha: .6)),
@@ -580,7 +588,7 @@ class NorieAppearancePreview extends StatelessWidget {
                           children: [
                             Semantics(
                                 label:
-                                    '${NorieAppearanceCatalog.avatars[value.avatarId]} avatar, ${frame.title} frame',
+                                    '${NorieAppearanceCatalog.avatars[value.avatarId]} avatar, ${shopFrameId ?? frame.title} frame',
                                 child: Container(
                                     width: 88,
                                     height: 88,
@@ -594,8 +602,13 @@ class NorieAppearancePreview extends StatelessWidget {
                                                 frame.level >= 50 ? 16 : 28)
                                             : null,
                                         border: Border.all(
-                                            color: frame.colors.first,
-                                            width: frame.level >= 30 ? 4 : 2),
+                                            color:
+                                                shopFrame ?? frame.colors.first,
+                                            width: shopFrame != null
+                                                ? 4
+                                                : frame.level >= 30
+                                                    ? 4
+                                                    : 2),
                                         boxShadow: [
                                           BoxShadow(
                                               color:
@@ -627,6 +640,12 @@ class NorieAppearancePreview extends StatelessWidget {
                           color: color,
                           name: displayName),
                       const SizedBox(height: 4),
+                      if (shopBadge != null)
+                        Chip(
+                            avatar: Icon(
+                                NorieShopCosmetics.badgeIcon(shopBadgeId),
+                                color: color),
+                            label: Text(shopBadge)),
                       Text(subtitle,
                           style: const TextStyle(
                               color: NorieColors.textSecondary)),
