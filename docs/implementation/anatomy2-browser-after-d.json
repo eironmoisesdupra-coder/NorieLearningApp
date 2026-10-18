@@ -1,0 +1,72 @@
+{
+  "reference": "male",
+  "systems": [
+    "skeletal",
+    "muscular"
+  ],
+  "viewport": [
+    800,
+    800
+  ],
+  "devicePixelRatio": 1,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+  "gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A1) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "loadMs": 1011.2999999988824,
+  "visibleStructures": 640,
+  "loadedAssets": 2,
+  "idle": {
+    "elapsedMs": 2011.2999999988824,
+    "renderedFrames": 1,
+    "meanRenderMs": 234.90000000037253,
+    "p95RenderMs": 234.90000000037253,
+    "lastDrawCalls": 640,
+    "lastTriangles": 2658030,
+    "firstRenderAfterActionMs": null,
+    "retainedTimingSamples": 1
+  },
+  "camera": {
+    "elapsedMs": 2008.0999999996275,
+    "renderedFrames": 1,
+    "meanRenderMs": 14.900000000372529,
+    "p95RenderMs": 14.900000000372529,
+    "lastDrawCalls": 640,
+    "lastTriangles": 2658030,
+    "firstRenderAfterActionMs": 24.299999998882413,
+    "retainedTimingSamples": 1
+  },
+  "qualityProfile": "high",
+  "renderPixelRatio": 1,
+  "diagnostics": {
+    "renderedFrames": 5,
+    "frameJsMs": [
+      7.5,
+      0.7000000011175871,
+      356.30000000074506,
+      235.09999999962747,
+      15.199999999254942
+    ],
+    "loadMs": [
+      1008.7999999988824
+    ],
+    "drawCalls": 640,
+    "triangles": 2658030,
+    "geometries": 639,
+    "textures": 1,
+    "peakMemoryBytes": null,
+    "memoryStatus": "unavailable: WebGL resource counts do not measure total CPU/GPU memory"
+  },
+  "errors": [],
+  "scope": "Headless desktop browser only; no physical-device, FPS, memory, power, or thermal certification.",
+  "browserVersion": "155.0.4283.45",
+  "loadedAssetBytes": [
+    {
+      "file": "male-skeletal.glb",
+      "bytes": 2980044
+    },
+    {
+      "file": "male-muscular.glb",
+      "bytes": 12337156
+    }
+  ],
+  "recordedAt": "2026-10-18T07:30:18.520Z"
+}

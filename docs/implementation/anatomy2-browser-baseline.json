@@ -1,0 +1,37 @@
+{
+  "reference": "male",
+  "systems": [
+    "skeletal",
+    "muscular"
+  ],
+  "viewport": [
+    800,
+    800
+  ],
+  "devicePixelRatio": 1,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+  "gpu": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x0000A7A1) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "loadMs": 1010.2000000011176,
+  "visibleStructures": 640,
+  "loadedAssets": 2,
+  "idle": {
+    "elapsedMs": 2016.9000000003725,
+    "renderedFrames": 106,
+    "meanRenderMs": 14.364150943480572,
+    "p95RenderMs": 24.300000000745058,
+    "lastDrawCalls": 640,
+    "lastTriangles": 2658030
+  },
+  "camera": {
+    "elapsedMs": 2019.800000000745,
+    "renderedFrames": 128,
+    "meanRenderMs": 13.604687500017462,
+    "p95RenderMs": 23.09999999962747,
+    "lastDrawCalls": 640,
+    "lastTriangles": 2658030
+  },
+  "errors": [],
+  "scope": "Headless desktop browser only; no physical-device, FPS, memory, power, or thermal certification.",
+  "browserVersion": "155.0.4283.45",
+  "recordedAt": "2026-10-18T07:22:33.457Z"
+}

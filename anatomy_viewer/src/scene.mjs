@@ -3,6 +3,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { AtlasState, isSelectionGesture, validPayload } from './state.mjs';
+import { FrameScheduler } from './render_scheduler.mjs';
+import { qualityPixelRatio } from './render_quality.mjs';
+import { RenderMetrics } from './render_metrics.mjs';
 
 export class AtlasScene {
   constructor(canvas, catalog, emit) {
@@ -14,19 +17,40 @@ export class AtlasScene {
     this.assets = new Map(catalog.assets.map(a => [a.id, a]));
     this.loaded = new Map();
     this.disposed = false;
+    this.contextLost = false;
+    this.document = canvas.ownerDocument;
+    this.metrics = new RenderMetrics();
+    // Preserve the existing DPR ceiling until the learner opts into a profile.
+    this.qualityProfile = 'high';
     this.alpha = 1;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color('#0b1629');
     this.camera = new THREE.PerspectiveCamera(40, 1, .001, 100);
     this.camera.position.set(0, 1, 3);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    this.renderer.setPixelRatio(qualityPixelRatio(this.qualityProfile, globalThis.devicePixelRatio));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
     this.controls.target.set(0, .9, 0);
     this.controls.minDistance = .005;
     this.controls.maxDistance = 8;
+    this.scheduler = new FrameScheduler({
+      update: () => {
+        this.frameStarted = performance.now();
+        return this.controls.update();
+      },
+      render: () => {
+        this.renderer.render(this.scene, this.camera);
+        this.metrics.frame(performance.now() - this.frameStarted, this.renderer.info);
+      },
+    });
+    this.onControlsChange = () => this.scheduler.invalidate();
+    this.onControlsStart = () => { this.controlInteracting = true; this.syncActivity(); };
+    this.onControlsEnd = () => { this.controlInteracting = false; this.syncActivity(); };
+    this.controls.addEventListener('change', this.onControlsChange);
+    this.controls.addEventListener('start', this.onControlsStart);
+    this.controls.addEventListener('end', this.onControlsEnd);
     this.scene.add(new THREE.HemisphereLight(0xddeeff, 0x4c4050, 2.1));
     for (const [x, y, z, intensity] of [[2, 3, 4, 2.8], [-3, 1, -2, 1.8]]) {
       const light = new THREE.DirectionalLight(0xffffff, intensity);
@@ -38,6 +62,7 @@ export class AtlasScene {
     this.pointerCount = 0;
     this.onDown = event => {
       this.pointerCount++;
+      this.syncActivity();
       if (this.pointerCount === 1) this.gesture = { x: event.clientX, y: event.clientY, pointers: 1 };
       else if (this.gesture) this.gesture.pointers = this.pointerCount;
     };
@@ -45,35 +70,66 @@ export class AtlasScene {
       this.pointerCount = Math.max(0, this.pointerCount - 1);
       if (this.pointerCount === 0 && isSelectionGesture(this.gesture, { x: event.clientX, y: event.clientY })) this.pick(event);
       if (this.pointerCount === 0) this.gesture = null;
+      this.syncActivity();
     };
-    this.onCancel = () => { this.pointerCount = 0; this.gesture = null; };
+    this.onCancel = () => { this.pointerCount = 0; this.gesture = null; this.syncActivity(); };
     this.onMove = event => {
       if (this.gesture && Math.hypot(event.clientX - this.gesture.x, event.clientY - this.gesture.y) > 6) this.gesture.moved = true;
+      if (this.pointerCount) this.scheduler.invalidate();
     };
     canvas.addEventListener('pointerdown', this.onDown);
     canvas.addEventListener('pointerup', this.onUp);
     canvas.addEventListener('pointercancel', this.onCancel);
     canvas.addEventListener('pointermove', this.onMove);
+    this.onVisibility = () => {
+      if (this.document.hidden) {
+        this.controlInteracting = false;
+        this.onCancel();
+      }
+      this.scheduler.setVisible(!this.document.hidden);
+    };
+    this.onContextLost = event => {
+      event.preventDefault();
+      if (this.disposed) return;
+      this.contextLost = true;
+      this.scheduler.setPaused(true);
+      this.emit('error', { message: 'The 3D graphics context was interrupted. Wait for recovery or retry this view.' });
+    };
+    this.onContextRestored = () => {
+      if (this.disposed) return;
+      this.contextLost = false;
+      this.resize();
+      this.scheduler.setPaused(false);
+      if (this.lastLoaded?.generation === this.state.generation) {
+        this.emit('loaded', { ...this.lastLoaded.payload, count: this.state.visibleIds().length });
+      }
+    };
+    this.document.addEventListener('visibilitychange', this.onVisibility);
+    canvas.addEventListener('webglcontextlost', this.onContextLost);
+    canvas.addEventListener('webglcontextrestored', this.onContextRestored);
+    this.onVisibility();
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
     this.resize();
-    this.renderer.setAnimationLoop(() => {
-      this.controls.update();
-      this.renderer.render(this.scene, this.camera);
-    });
   }
+
+  syncActivity() { this.scheduler.setActive(this.pointerCount > 0 || this.controlInteracting === true); }
 
   resize() {
     if (this.disposed) return;
     const width = Math.max(1, this.canvas.clientWidth), height = Math.max(1, this.canvas.clientHeight);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
+    const ratio = qualityPixelRatio(this.qualityProfile, globalThis.devicePixelRatio);
+    if (this.renderer.getPixelRatio() !== ratio) this.renderer.setPixelRatio(ratio);
     this.renderer.setSize(width, height, false);
+    this.scheduler.invalidate();
   }
 
   async configure(payload) {
     if (this.disposed) return false;
     if (!validPayload('configure', payload)) throw Error('Invalid atlas selection');
+    const loadStarted = performance.now();
     const { reference, systems, target = null, quiz = false, requestId = 0 } = payload;
     const knownSystems = new Set(this.catalog.structures.flatMap(s => s.systems));
     if (!this.catalog.references.some(r => r.id === reference) || !systems.every(s => knownSystems.has(s)) ||
@@ -116,6 +172,7 @@ export class AtlasScene {
         for (const material of originalMaterials) material.dispose();
         this.loaded.set(id, gltf.scene);
         this.scene.add(gltf.scene);
+        this.scheduler?.invalidate();
       }
       this.emit('loading', { requestId, completed: ++completed, total: wanted.size });
     }
@@ -127,7 +184,9 @@ export class AtlasScene {
     }
     else if (this.state.selected) this.focus(this.state.selected);
     else this.frame();
-    this.emit('loaded', { requestId, count: this.state.visibleIds().length });
+    this.metrics?.load(performance.now() - loadStarted);
+    this.lastLoaded = { generation, payload: { requestId, count: this.state.visibleIds().length } };
+    if (!this.contextLost) this.emit('loaded', this.lastLoaded.payload);
   }
 
   meshes() {
@@ -150,6 +209,7 @@ export class AtlasScene {
       mesh.material.opacity = alpha;
       mesh.material.depthWrite = alpha >= 1;
     }
+    this.scheduler?.invalidate();
   }
   pick(event) {
     if (this.disposed || this.quiz) return;
@@ -170,6 +230,7 @@ export class AtlasScene {
     return box;
   }
   frame(id = null, direction = null) {
+    if (this.disposed) return;
     const box = this.box(id);
     if (box.isEmpty() || ![...box.min, ...box.max].every(Number.isFinite)) return;
     const center = box.getCenter(new THREE.Vector3());
@@ -179,12 +240,18 @@ export class AtlasScene {
     this.controls.target.copy(center);
     this.camera.position.copy(center).addScaledVector(offset, Math.max(distance, .02));
     this.controls.update();
+    this.scheduler?.invalidate();
   }
   focus(id) { this.frame(id); }
   command(type, payload = {}) {
     if (this.disposed || !validPayload(type, payload)) return false;
     if (type === 'configure') return this.configure(payload);
     if (type === 'dispose') return this.dispose();
+    if (type === 'quality') {
+      this.qualityProfile = payload.profile;
+      this.resize();
+      return true;
+    }
     if (type === 'select' && !this.state.reveal(payload.id)) return false;
     if (type === 'focus') {
       if (!this.state.visibleIds().includes(payload.id)) return false;
@@ -225,8 +292,11 @@ export class AtlasScene {
     if (this.disposed) return;
     this.disposed = true;
     this.state.generation++;
-    this.renderer.setAnimationLoop(null);
+    this.scheduler?.dispose();
     this.resizeObserver.disconnect();
+    this.controls.removeEventListener?.('change', this.onControlsChange);
+    this.controls.removeEventListener?.('start', this.onControlsStart);
+    this.controls.removeEventListener?.('end', this.onControlsEnd);
     this.controls.dispose();
     for (const root of this.loaded.values()) this.release(root);
     this.loaded.clear();
@@ -234,6 +304,9 @@ export class AtlasScene {
     this.canvas.removeEventListener('pointerup', this.onUp);
     this.canvas.removeEventListener('pointercancel', this.onCancel);
     this.canvas.removeEventListener('pointermove', this.onMove);
+    this.canvas.removeEventListener('webglcontextlost', this.onContextLost);
+    this.canvas.removeEventListener('webglcontextrestored', this.onContextRestored);
+    this.document?.removeEventListener('visibilitychange', this.onVisibility);
     this.renderer.dispose();
   }
 }

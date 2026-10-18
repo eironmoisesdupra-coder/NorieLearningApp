@@ -33,6 +33,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   AtlasStructure? _selected;
   double _opacity = 1;
   bool _advanced = false;
+  String _quality = 'high';
   bool _showSystems = true;
   String? _tutorialStructureId;
   AnatomyAtlasToolsState? _tools;
@@ -176,6 +177,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   }
 
   void _tutorialModelLoaded(bool loaded) {
+    if (loaded) _send('quality', {'profile': _quality});
     final bookmark = _pendingBookmark;
     if (loaded && bookmark != null && bookmark.reference == _reference) {
       final validOwner = _pendingBookmarkGuard?.call() ?? false;
@@ -294,6 +296,21 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                       const Text('Explorer presentation',
                           style: TextStyle(
                               fontSize: 20, fontWeight: FontWeight.bold)),
+                      const Text('Render quality'),
+                      Wrap(spacing: 8, children: [
+                        for (final profile in ['low', 'balanced', 'high'])
+                          ChoiceChip(
+                              label: Text(profile[0].toUpperCase() +
+                                  profile.substring(1)),
+                              selected: _quality == profile,
+                              onSelected: (_) {
+                                setState(() => _quality = profile);
+                                update(() {});
+                                _send('quality', {'profile': profile});
+                              }),
+                      ]),
+                      const Text(
+                          'Lower quality limits render resolution. All model parts remain available.'),
                       SwitchListTile(
                           title: const Text('Advanced identifiers'),
                           subtitle: const Text(
