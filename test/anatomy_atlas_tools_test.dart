@@ -70,6 +70,185 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  test(
+      'fresh renderer replay preserves layer, hide, selection and comparison snapshot',
+      () {
+    final controller = AnatomyAtlasController();
+    final tools = AnatomyAtlasToolsState(fixture(), controller)
+      ..configure('male', {'skeletal', 'articular'})
+      ..select('bone')
+      ..setLayer('skeletal', opacity: .4)
+      ..setLayer('articular', visible: false, opacity: .3)
+      ..setGlobalOpacity(.6)
+      ..hide('ligament')
+      ..compare('bone', 'joint')
+      ..camera('back');
+    final commands = <Map<String, dynamic>>[];
+    controller.addListener(() => commands.add({
+          'type': controller.lastCommand!['type'],
+          'payload': controller.lastCommand!['payload'],
+        }));
+    var changes = 0;
+    tools.addListener(() => changes++);
+    tools.replayToRenderer();
+    expect(commands, [
+      {
+        'type': 'select',
+        'payload': {'id': 'bone'}
+      },
+      {
+        'type': 'systemLayer',
+        'payload': {'system': 'skeletal', 'opacity': .4}
+      },
+      {
+        'type': 'systemLayer',
+        'payload': {'system': 'articular', 'visible': false, 'opacity': .3}
+      },
+      {
+        'type': 'opacity',
+        'payload': {'value': .6}
+      },
+      {
+        'type': 'hide',
+        'payload': {'id': 'ligament'}
+      },
+      {
+        'type': 'compare',
+        'payload': {
+          'ids': ['bone', 'joint']
+        }
+      },
+      {
+        'type': 'camera',
+        'payload': {'view': 'back'}
+      },
+    ]);
+    expect(changes, 0);
+    expect(tools.selectedId, 'bone');
+    expect(tools.visibleIds, {'bone', 'joint'});
+    expect(tools.compareIds, ['bone', 'joint']);
+    expect(tools.globalOpacity, .6);
+    expect(tools.layerVisible('articular'), isFalse);
+    expect(tools.layerOpacity('skeletal'), .4);
+  });
+
+  test('fresh renderer replay keeps a hidden isolated part hidden', () {
+    final controller = AnatomyAtlasController();
+    final tools = AnatomyAtlasToolsState(fixture(), controller)
+      ..configure('male', {'skeletal'})
+      ..isolate('bone')
+      ..hide('bone');
+    final commands = <Map<String, dynamic>>[];
+    controller.addListener(() => commands.add({
+          'type': controller.lastCommand!['type'],
+          'payload': controller.lastCommand!['payload'],
+        }));
+    tools.replayToRenderer();
+    expect(commands, [
+      {
+        'type': 'isolate',
+        'payload': {'id': 'bone'}
+      },
+      {
+        'type': 'opacity',
+        'payload': {'value': 1.0}
+      },
+      {
+        'type': 'hide',
+        'payload': {'id': 'bone'}
+      },
+      {
+        'type': 'compare',
+        'payload': {'ids': <String>[]}
+      },
+      {
+        'type': 'camera',
+        'payload': {'view': 'reset'}
+      },
+    ]);
+    expect(tools.visibleIds, isEmpty);
+    expect(tools.selectedId, isNull);
+    expect(tools.isolatedId, 'bone');
+  });
+
+  test(
+      'reference reset prevents replay of prior-reference layer and part commands',
+      () {
+    final controller = AnatomyAtlasController();
+    final tools = AnatomyAtlasToolsState(fixture(), controller)
+      ..configure('male', {'skeletal', 'articular'})
+      ..setLayer('skeletal', visible: false)
+      ..setGlobalOpacity(.35)
+      ..hide('ligament')
+      ..isolate('joint')
+      ..camera('back')
+      ..configure('female', {'skeletal'});
+    final commands = <Map<String, dynamic>>[];
+    controller.addListener(() => commands.add({
+          'type': controller.lastCommand!['type'],
+          'payload': controller.lastCommand!['payload'],
+        }));
+    tools.replayToRenderer();
+    expect(commands, [
+      {
+        'type': 'opacity',
+        'payload': {'value': 1.0}
+      },
+      {
+        'type': 'compare',
+        'payload': {'ids': <String>[]}
+      },
+      {
+        'type': 'camera',
+        'payload': {'view': 'back'}
+      },
+    ]);
+    expect(tools.visibleIds, {'other'});
+    expect(tools.selectedId, isNull);
+    expect(tools.compareIds, isEmpty);
+  });
+
+  test(
+      'replay applies isolation before a layer override that would reject isolate',
+      () {
+    final controller = AnatomyAtlasController();
+    final tools = AnatomyAtlasToolsState(fixture(), controller)
+      ..configure('male', {'skeletal', 'articular'})
+      ..isolate('bone')
+      ..setLayer('skeletal', visible: false);
+    final commands = <Map<String, dynamic>>[];
+    controller.addListener(() => commands.add({
+          'type': controller.lastCommand!['type'],
+          'payload': controller.lastCommand!['payload'],
+        }));
+    tools.replayToRenderer();
+    expect(commands, [
+      {
+        'type': 'isolate',
+        'payload': {'id': 'bone'}
+      },
+      {
+        'type': 'systemLayer',
+        'payload': {'system': 'skeletal', 'visible': false}
+      },
+      {
+        'type': 'opacity',
+        'payload': {'value': 1.0}
+      },
+      {
+        'type': 'compare',
+        'payload': {'ids': <String>[]}
+      },
+      {
+        'type': 'camera',
+        'payload': {'view': 'reset'}
+      },
+    ]);
+    expect(tools.visibleIds, isEmpty);
+    expect(tools.isolatedId, 'bone');
+    expect(tools.selectedId, isNull);
+  });
+
   test('layer composition keeps shared anatomy visible and prunes comparison',
       () {
     final controller = AnatomyAtlasController();

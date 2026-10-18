@@ -11,6 +11,7 @@ class AnatomyAtlasModelView extends StatefulWidget {
       this.quiz = false,
       this.onSelected,
       this.onLoaded,
+      this.onRendererReady,
       super.key});
   final AnatomyAtlasController controller;
   final String reference;
@@ -19,6 +20,7 @@ class AnatomyAtlasModelView extends StatefulWidget {
   final bool quiz;
   final ValueChanged<String>? onSelected;
   final ValueChanged<bool>? onLoaded;
+  final VoidCallback? onRendererReady;
   @override
   State<AnatomyAtlasModelView> createState() => _AnatomyAtlasModelViewState();
 }
@@ -64,6 +66,7 @@ class _AnatomyAtlasModelViewState extends State<AnatomyAtlasModelView> {
     if (message['type'] == 'loaded') widget.onLoaded?.call(true);
     if (message['type'] == 'ready') {
       _ready = true;
+      widget.onRendererReady?.call();
       _configure();
     }
     if (message['type'] == 'selected' &&
