@@ -54,7 +54,10 @@ jobs:
       - name: Verify private diagnostics export and offline reward controls
         run: node desktop/test/economy-diagnostics-web.cjs
       - name: Exercise every atlas system with networking blocked
-        run: node anatomy_viewer/test/browser-smoke.mjs
+        run: |
+          node anatomy_viewer/test/browser-smoke.mjs
+          node anatomy_viewer/test/browser-interactions.mjs
+          node anatomy_viewer/test/browser-performance.mjs
       - name: Package Windows app
         working-directory: desktop
         run: npm run package:windows

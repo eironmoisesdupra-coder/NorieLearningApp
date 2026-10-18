@@ -13,6 +13,7 @@ import '../domain/anatomy_atlas_catalog.dart';
 import '../domain/anatomy_models.dart';
 import 'anatomy_atlas_controller.dart';
 import 'anatomy_atlas_details.dart';
+import 'anatomy_atlas_coverage_panel.dart';
 import 'anatomy_atlas_model_view.dart';
 import 'anatomy_atlas_quiz_setup_screen.dart';
 import 'anatomy_guided_learning_screen.dart';
@@ -38,6 +39,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   String? _tutorialStructureId;
   AnatomyAtlasToolsState? _tools;
   bool _syncingTools = false;
+  bool _rendererNeedsRestore = false;
+  bool _needsSelection = true;
   AnatomyAtlasBookmark? _pendingBookmark;
   bool Function()? _pendingBookmarkGuard;
 
@@ -56,6 +59,11 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
         _pendingBookmark = null;
         _pendingBookmarkGuard = null;
       }
+    }
+    if (_tools!.reference != _reference ||
+        _tools!.systems.length != _systems.length ||
+        !_tools!.systems.containsAll(_systems)) {
+      _needsSelection = true;
     }
     _syncingTools = true;
     _tools!.configure(_reference, _systems);
@@ -177,9 +185,14 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   }
 
   void _tutorialModelLoaded(bool loaded) {
-    if (loaded) _send('quality', {'profile': _quality});
+    if (!loaded) return;
+    _send('quality', {'profile': _quality});
+    final freshRenderer = _rendererNeedsRestore;
+    _rendererNeedsRestore = false;
+    final needsSelection = _needsSelection;
+    _needsSelection = false;
     final bookmark = _pendingBookmark;
-    if (loaded && bookmark != null && bookmark.reference == _reference) {
+    if (bookmark != null && bookmark.reference == _reference) {
       final validOwner = _pendingBookmarkGuard?.call() ?? false;
       _pendingBookmark = null;
       _pendingBookmarkGuard = null;
@@ -192,15 +205,16 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
       _send('camera', {'view': bookmark.view});
       return;
     }
-    if (loaded &&
+    if (freshRenderer) {
+      _tools?.replayToRenderer();
+    } else if (needsSelection &&
         _selected != null &&
         _selected!.reference == _reference &&
         _selected!.systems.intersection(_systems).isNotEmpty) {
       _send('select', {'id': _selected!.id});
     }
     final coordinator = NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
-    if (loaded &&
-        coordinator?.currentStep?.destination ==
+    if (coordinator?.currentStep?.destination ==
             NorieTutorialDestination.anatomy &&
         coordinator?.showingContents == false) {
       _focusTutorialModel();
@@ -542,6 +556,23 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   String _systemLabel(String id) =>
       AnatomyCatalog.systems.firstWhere((s) => s.id.name == id).label;
 
+  void _coverage(AnatomyAtlasCatalog catalog) {
+    showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+                title: const Text('Model coverage'),
+                content: SizedBox(
+                    width: 560,
+                    height: MediaQuery.sizeOf(context).height * .65,
+                    child: AnatomyAtlasCoveragePanel(
+                        catalog: catalog, reference: _reference)),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close coverage'))
+                ]));
+  }
+
   void _credits(AnatomyAtlasCatalog catalog) {
     showDialog<void>(
         context: context,
@@ -572,6 +603,9 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                             }, '').length} modeled parts'),
                     ])),
                 actions: [
+                  TextButton(
+                      onPressed: () => _coverage(catalog),
+                      child: const Text('Detailed coverage')),
                   TextButton(
                       onPressed: () => _licenseTerms(),
                       child: const Text('Full license terms')),
@@ -799,6 +833,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                   reference: _reference,
                                   systems: _systems,
                                   onLoaded: _tutorialModelLoaded,
+                                  onRendererReady: () =>
+                                      _rendererNeedsRestore = true,
                                   onSelected: (id) {
                                     final values = catalog.structures
                                         .where((s) => s.id == id);

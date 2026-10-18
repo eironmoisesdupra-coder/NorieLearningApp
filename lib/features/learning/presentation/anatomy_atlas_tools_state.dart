@@ -185,6 +185,60 @@ class AnatomyAtlasToolsState extends ChangeNotifier {
     return true;
   }
 
+  /// Rehydrates a freshly configured renderer after retry/recreation. The host
+  /// calls this only after its current request really loads, never for a context
+  /// restoration that retained the scene. Replaying does not edit this mirror.
+  void replayToRenderer() {
+    if (!catalog.references.any((r) => r.id == reference)) return;
+    final entries = eligible.toList();
+    final ids = entries.map((s) => s.id).toSet();
+    final visible = visibleIds;
+    final commands = <({String type, Map<String, dynamic> payload})>[];
+    void queue(String type, Map<String, dynamic> payload) =>
+        commands.add((type: type, payload: payload));
+
+    final selected = _selectedId;
+    if (selected != null && visible.contains(selected)) {
+      queue('select', {'id': selected});
+    }
+    // Isolate must precede layers: the fresh scene can accept a target which a
+    // saved layer override will hide. Later hides also preserve hidden isolation.
+    final isolated = _isolated;
+    if (isolated != null && ids.contains(isolated)) {
+      queue('isolate', {'id': isolated});
+    }
+    for (final system in _systems) {
+      if (!entries.any((s) => s.systems.contains(system))) continue;
+      if (_visibility.containsKey(system) || _opacity.containsKey(system)) {
+        queue('systemLayer', {
+          'system': system,
+          if (_visibility.containsKey(system)) 'visible': _visibility[system],
+          if (_opacity.containsKey(system)) 'opacity': _opacity[system],
+        });
+      }
+    }
+    queue('opacity', {'value': _globalOpacity});
+    for (final hidden in _hidden.where(ids.contains)) {
+      queue('hide', {'id': hidden});
+    }
+    final comparison = List<String>.of(_compareIds);
+    queue('compare', {
+      'ids': comparison.length == 2 &&
+              comparison[0] != comparison[1] &&
+              comparison.every(visible.contains)
+          ? comparison
+          : <String>[],
+    });
+    if (atlasNamedViews.contains(_cameraView)) {
+      queue('camera', {'view': _cameraView});
+    }
+    // Capture all payloads before sending: controller listeners may themselves
+    // trigger host callbacks, and must not change the snapshot being replayed.
+    for (final command in commands) {
+      controller.send(command.type, command.payload);
+    }
+  }
+
   void _resetOverrides() {
     _hidden.clear();
     _visibility.clear();

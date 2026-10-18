@@ -61,3 +61,6 @@ npm ci --prefix anatomy_viewer
 node anatomy_viewer/convert-models.mjs
 node anatomy_viewer/build.mjs
 python3 scripts/anatomy/catalog.py
+
+# Fail closed on catalog, source-pin and license provenance drift.
+python3 scripts/anatomy/audit.py --output build/anatomy-coverage-audit.json

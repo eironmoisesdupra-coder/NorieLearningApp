@@ -64,6 +64,13 @@ jobs:
       - name: Fetch anatomy 3D assets
         run: bash scripts/fetch_anatomy_assets.sh
 
+      - name: Upload anatomy provenance and coverage audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: Anatomy-coverage-audit
+          path: build/anatomy-coverage-audit.json
+          if-no-files-found: error
+
       - name: Configure Android for 3D viewer
         run: |
           python - <<'PY'
@@ -133,7 +140,7 @@ jobs:
 
       - name: Verify detailed atlas
         run: |
-          python -m unittest discover -s test -p anatomy_pipeline_test.py
+          python -m unittest discover -s test -p 'anatomy*_test.py'
           node --test anatomy_viewer/test/*.test.mjs
           python scripts/anatomy/catalog.py
 
