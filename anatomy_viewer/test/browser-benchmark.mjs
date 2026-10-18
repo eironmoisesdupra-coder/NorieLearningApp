@@ -34,25 +34,34 @@ try {
     const atlas = new window.AtlasScene(document.querySelector('canvas'), catalog, (type, payload) => events.push({ type, payload }));
     window.benchmarkAtlas = atlas;
     let frames = [];
+    let renderedFrames = 0;
+    let actionStarted = null, firstRenderAfterActionMs = null;
     const render = atlas.renderer.render.bind(atlas.renderer);
     atlas.renderer.render = (...args) => {
       const started = performance.now();
       render(...args);
+      renderedFrames++;
       frames.push({ ms: performance.now() - started, calls: atlas.renderer.info.render.calls, triangles: atlas.renderer.info.render.triangles });
+      if (frames.length > 240) frames.shift();
+      if (actionStarted !== null && firstRenderAfterActionMs === null) firstRenderAfterActionMs = performance.now() - actionStarted;
     };
     const loadStarted = performance.now();
     await atlas.configure({ reference: 'male', systems: ['skeletal', 'muscular'], requestId: 1 });
     const loadMs = performance.now() - loadStarted;
     const sample = async action => {
       frames = [];
+      renderedFrames = 0;
+      firstRenderAfterActionMs = null;
       const started = performance.now();
+      actionStarted = action ? started : null;
       action?.();
       await new Promise(resolve => setTimeout(resolve, 2000));
       const elapsedMs = performance.now() - started;
       const timings = frames.map(f => f.ms).sort((a, b) => a - b);
-      return { elapsedMs, renderedFrames: frames.length, meanRenderMs: timings.length ? timings.reduce((a, b) => a + b, 0) / timings.length : 0,
+      return { elapsedMs, renderedFrames, meanRenderMs: timings.length ? timings.reduce((a, b) => a + b, 0) / timings.length : 0,
         p95RenderMs: timings[Math.max(0, Math.ceil(timings.length * .95) - 1)] ?? 0,
-        lastDrawCalls: frames.at(-1)?.calls ?? null, lastTriangles: frames.at(-1)?.triangles ?? null };
+        lastDrawCalls: frames.at(-1)?.calls ?? null, lastTriangles: frames.at(-1)?.triangles ?? null,
+        firstRenderAfterActionMs, retainedTimingSamples: timings.length };
     };
     const idle = await sample();
     const camera = await sample(() => atlas.command('camera', { view: 'left' }));
@@ -61,11 +70,16 @@ try {
     const gpu = debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
     const result = { reference: 'male', systems: ['skeletal', 'muscular'], viewport: [800, 800], devicePixelRatio, userAgent: navigator.userAgent,
       gpu, loadMs, visibleStructures: atlas.state.visibleIds().length, loadedAssets: atlas.loaded.size, idle, camera,
+      qualityProfile: atlas.qualityProfile, renderPixelRatio: atlas.renderer.getPixelRatio(),
+      diagnostics: atlas.metrics.snapshot(),
       errors: events.filter(e => e.type === 'error'), scope: 'Headless desktop browser only; no physical-device, FPS, memory, power, or thermal certification.' };
     atlas.dispose();
     return result;
   });
   report.browserVersion = browser.version();
+  report.loadedAssetBytes = await Promise.all(['male-skeletal.glb', 'male-muscular.glb'].map(async name => {
+    try { return { file: name, bytes: (await fs.stat(path.join(assets, name))).size }; } catch { return { file: name, bytes: null }; }
+  }));
   report.recordedAt = new Date().toISOString();
   const json = JSON.stringify(report, null, 2);
   if (output) await fs.writeFile(output, json + '\n');

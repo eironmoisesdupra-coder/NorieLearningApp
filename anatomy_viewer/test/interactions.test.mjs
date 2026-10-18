@@ -39,7 +39,7 @@ test('command schema rejects malformed payloads and accepts only bounded finite 
     ['systemLayer', { system: 'skeletal' }], ['systemLayer', { system: 'skeletal', visible: 1 }],
     ['systemLayer', { system: 'skeletal', opacity: -0.1 }], ['systemLayer', { system: 'skeletal', opacity: Infinity }],
     ['compare', { ids: ['bone'] }], ['compare', { ids: ['bone', 'bone'] }], ['compare', { ids: ['bone', 7] }],
-    ['restore', []], ['dispose', { unexpected: true }], ['quality', { profile: 'low' }],
+    ['restore', []], ['dispose', { unexpected: true }], ['quality', { profile: 'ultra' }],
   ]) assert.equal(validCommand(command(type, payload), 'test'), false, `${type}: ${JSON.stringify(payload)}`);
   for (const [type, payload] of [
     ['systemLayer', { system: 'skeletal', visible: false, opacity: .4 }], ['systemLayer', { system: 'skeletal', opacity: 0 }],

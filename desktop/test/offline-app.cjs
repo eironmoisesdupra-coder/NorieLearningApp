@@ -65,7 +65,7 @@ async function main() {
     await canvas.click({ position: { x: size.width / 2, y: size.height / 2 } });
     const atlasFrame = page.frames().find(frame => frame.url().includes('atlas-viewer.html'));
     await atlasFrame.waitForFunction(() => window.atlasEvents.some(e => e.type === 'selected'));
-    await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-anatomy.png') });
+    await captureHiddenPage('windows-offline-anatomy.png');
     console.log('PASS: detailed atlas loaded, searched, isolated and picked a real mesh offline');
     // The retained skeleton lesson must never fall back to painted body layers.
     for (const exitLabel of ['Articular', 'Open full 3D atlas']) {
@@ -87,10 +87,10 @@ async function main() {
     console.log('PASS: skeleton fundamentals category and full-atlas exits use real geometry offline');
     // Exercise the same responsive UI at a small phone's CSS viewport width.
     const originalSize = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
-    await page.setViewportSize({ width: 390, height: 844 });
+    await setHiddenViewport({ width: 390, height: 844 });
     await page.waitForTimeout(300);
     assert.ok((await canvas.boundingBox()).height > 150, 'The model retains usable phone space');
-    await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-anatomy-phone.png') });
+    await captureHiddenPage('windows-offline-anatomy-phone.png');
     const catalog = JSON.parse(await fs.readFile(path.resolve(__dirname, '../../assets/anatomy/atlas-catalog.json')));
     const beforeXp = await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp')));
     await page.getByRole('button', { name: 'Quiz', exact: true }).click();
@@ -140,10 +140,11 @@ async function main() {
       await canvas.click({ position: { x: detailSize.width / 2, y: detailSize.height / 2 } });
       const target = catalog.structures.find(s => s.name === name);
       await detailFrame.waitForFunction(id => window.atlasEvents.some(e => e.type === 'selected' && e.payload.id === id), target.id);
-      await page.screenshot({ path: path.resolve(__dirname, `../../build/windows-offline-${target.reference}-phone.png`) });
+      await captureHiddenPage(`windows-offline-${target.reference}-phone.png`);
       console.log(`PASS: ${label} searched, focused and picked offline at phone size`);
     }
-    await page.setViewportSize(originalSize);
+    // Windows display scaling can round restored content bounds by one CSS pixel.
+    await setHiddenViewport(originalSize, 1);
     const sounds = await page.evaluate(() => window.norieAudioEvents);
     assert.ok(sounds.some(e => e.played && e.volume > 0 && e.source.endsWith('/correct.mp3')),
       'Actual offline correct-answer audio must play after a gesture');
@@ -152,32 +153,57 @@ async function main() {
     await page.reload();
     await enableAccessibility();
   }
-  async function captureHiddenResult() {
-    // CDP Page.captureScreenshot stalls on this animated Flutter dialog in a
-    // hidden Electron window. Native capture owns a capturer handle so the
-    // hidden surface paints; never show the CI window or relax offline checks.
+  let originalMinimum;
+  async function setHiddenViewport(size, tolerance = 0) {
+    // Native capture and the rendered surface must share the same viewport/DPR.
+    // CDP emulation can crop a hidden Electron surface on scaled Windows displays.
+    const window = await application.browserWindow(page);
+    const browser = await application.context().newCDPSession(page);
+    try {
+      originalMinimum ??= await window.evaluate(browserWindow => browserWindow.getMinimumSize());
+      await browser.send('Emulation.clearDeviceMetricsOverride');
+      await window.evaluate((browserWindow, { size, minimum }) => {
+        browserWindow.setMinimumSize(0, 0);
+        browserWindow.setContentSize(size.width, size.height);
+        if (size.width >= minimum[0] && size.height >= minimum[1]) {
+          browserWindow.setMinimumSize(...minimum);
+        }
+      }, { size, minimum: originalMinimum });
+      await page.waitForFunction(({ size, tolerance }) =>
+        Math.abs(innerWidth - size.width) <= tolerance &&
+        Math.abs(innerHeight - size.height) <= tolerance, { size, tolerance });
+    } finally {
+      await browser.detach();
+      await window.dispose();
+    }
+  }
+  async function captureHiddenPage(fileName, settleMs = 100, timeoutMs = 30000) {
+    // CDP capture stalls on idle WebGL and animated Flutter surfaces in a
+    // hidden Electron window. Native capture validates the same real scene
+    // without showing the window or changing demand rendering/offline checks.
     const window = await application.browserWindow(page);
     let captureTimeout;
     try {
       const image = await Promise.race([
-        window.evaluate(async browserWindow => {
+        window.evaluate(async (browserWindow, delay) => {
           await browserWindow.webContents.capturePage(undefined,
             { stayHidden: true, stayAwake: true });
           // The first capture wakes painting but can return the preceding frame.
-          // Allow the existing 1800ms outro reveal to paint before the artifact.
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Let the requested UI transition paint before the artifact.
+          if (delay) await new Promise(resolve => setTimeout(resolve, delay));
           const snapshot = await browserWindow.webContents.capturePage(undefined,
             { stayHidden: true, stayAwake: true });
-          return { png: snapshot.toDataURL(), size: snapshot.getSize(), empty: snapshot.isEmpty() };
-        }),
+          return { png: snapshot.toDataURL(), size: snapshot.getSize(), empty: snapshot.isEmpty(), visible: browserWindow.isVisible() };
+        }, settleMs),
         new Promise((_, reject) => {
-          captureTimeout = setTimeout(() => reject(new Error('Hidden result capture timed out')), 30000);
+          captureTimeout = setTimeout(() => reject(new Error('Hidden page capture timed out')), timeoutMs);
         }),
       ]);
       assert.equal(image.empty, false);
+      assert.equal(image.visible, false);
       assert.ok(image.size.width > 0 && image.size.height > 0);
       assert.ok(image.png.startsWith('data:image/png;base64,'));
-      await fs.writeFile(path.resolve(__dirname, '../../build/windows-offline-quiz-outro.png'),
+      await fs.writeFile(path.resolve(__dirname, '../../build', fileName),
         Buffer.from(image.png.split(',')[1], 'base64'));
     } finally {
       clearTimeout(captureTimeout);
@@ -276,7 +302,7 @@ async function main() {
     await page.waitForFunction(() => Number(localStorage.getItem('flutter.norie.totalXp')) > 0);
     await page.getByRole('button', { name: 'Continue', exact: true }).waitFor();
     assert.deepEqual([...externalFontRequests], [], 'Core lessons/results must use bundled fonts, without online fallback attempts');
-    await captureHiddenResult();
+    await captureHiddenPage('windows-offline-quiz-outro.png', 2000);
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     const xp = await page.evaluate(() => JSON.parse(localStorage.getItem('flutter.norie.totalXp')));
     assert.ok(xp > 0);
@@ -305,13 +331,13 @@ async function main() {
     await page.getByRole('button', { name: 'Progress Progress', exact: true }).click();
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('flutter.norie.totalXp'))), xp);
     console.log(`PASS: ${xp} XP persisted after closing and reopening offline`);
-    await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-progress.png') });
+    await captureHiddenPage('windows-offline-progress.png');
     assert.deepEqual([...externalFontRequests], [], 'Restarted offline app must not request online fonts');
     assert.deepEqual(errors, []);
   } catch (error) {
     if (page) {
       console.error(await page.locator('body').first().innerText());
-      await page.screenshot({ path: path.resolve(__dirname, '../../build/windows-offline-failure.png'), timeout: 5000 })
+      await captureHiddenPage('windows-offline-failure.png', 0, 5000)
         .catch(screenshotError => console.error('Failure screenshot:', screenshotError.message));
     }
     throw error;

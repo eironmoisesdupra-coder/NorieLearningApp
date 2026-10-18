@@ -28,6 +28,7 @@ export function validPayload(type, payload = {}) {
         (payload.ids.length === 0 || (payload.ids.length === 2 && payload.ids.every(identifier) && payload.ids[0] !== payload.ids[1]));
     case 'opacity': return only(payload, ['value']) && opacity(payload.value, .15);
     case 'camera': return only(payload, ['view']) && cameraViews.has(payload.view);
+    case 'quality': return only(payload, ['profile']) && ['low', 'balanced', 'high'].includes(payload.profile);
     case 'restore': case 'dispose': return Object.keys(payload).length === 0;
     default: return false;
   }
