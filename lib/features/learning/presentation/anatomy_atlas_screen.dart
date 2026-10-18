@@ -8,6 +8,7 @@ import '../../../core/theme/norie_theme.dart';
 import '../domain/anatomy_atlas_catalog.dart';
 import '../domain/anatomy_models.dart';
 import 'anatomy_atlas_controller.dart';
+import 'anatomy_atlas_details.dart';
 import 'anatomy_atlas_model_view.dart';
 import 'anatomy_atlas_quiz_setup_screen.dart';
 import 'anatomy_viewer_screen.dart';
@@ -26,6 +27,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   String _reference = 'male';
   AtlasStructure? _selected;
   double _opacity = 1;
+  bool _advanced = false;
+  bool _showSystems = true;
   String? _tutorialStructureId;
 
   void _focusTutorialModel() {
@@ -39,6 +42,12 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   }
 
   void _tutorialModelLoaded(bool loaded) {
+    if (loaded &&
+        _selected != null &&
+        _selected!.reference == _reference &&
+        _selected!.systems.intersection(_systems).isNotEmpty) {
+      _controller.send('select', {'id': _selected!.id});
+    }
     final coordinator = NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
     if (loaded &&
         coordinator?.currentStep?.destination ==
@@ -87,6 +96,184 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
     _controller.send('focus', {'id': structure.id});
   }
 
+  void _details(AnatomyAtlasCatalog catalog) {
+    final selected = _selected;
+    if (selected == null) return;
+    showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (context) => SafeArea(
+            child: SizedBox(
+                height: MediaQuery.sizeOf(context).height * .64,
+                child: Column(children: [
+                  Expanded(
+                      child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: AnatomyAtlasDetails(
+                              structure: selected,
+                              reference: catalog.references.firstWhere(
+                                  (r) => r.id == selected.reference),
+                              advanced: _advanced))),
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close details'))
+                ]))));
+  }
+
+  void _options() {
+    showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (context) => StatefulBuilder(
+            builder: (context, update) => SafeArea(
+                child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      const Text('Explorer presentation',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
+                      SwitchListTile(
+                          title: const Text('Advanced identifiers'),
+                          subtitle: const Text(
+                              'Show source identifiers and terminology in details and search results.'),
+                          value: _advanced,
+                          onChanged: (value) {
+                            setState(() => _advanced = value);
+                            update(() {});
+                          }),
+                      const ListTile(
+                          leading: Icon(Icons.touch_app_outlined),
+                          title: Text(
+                              'Drag to rotate. Pinch or scroll to zoom. Use two fingers or right-drag to pan. Tap a part to select it.')),
+                      const ListTile(
+                          leading: Icon(Icons.school_outlined),
+                          title: Text(
+                              'Beginner mode keeps the same real models and labels. Presentation settings do not affect XP or access.')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Close options')),
+                    ])))));
+  }
+
+  void _compactControls(AnatomyAtlasCatalog catalog) {
+    showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (sheetContext) => StatefulBuilder(
+            builder: (context, update) => SafeArea(
+                child: SizedBox(
+                    height: MediaQuery.sizeOf(context).height * .7,
+                    child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TextButton.icon(
+                                  icon: const Icon(Icons.unfold_more),
+                                  label: const Text('Choose reference'),
+                                  onPressed: () {
+                                    Navigator.pop(sheetContext);
+                                    _chooseReference(catalog);
+                                  }),
+                              const Text('Systems',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
+                              Wrap(spacing: 8, runSpacing: 8, children: [
+                                for (final system in AnatomyCatalog.systems)
+                                  FilterChip(
+                                      label: Text(system.label),
+                                      selected:
+                                          _systems.contains(system.id.name),
+                                      onSelected: catalog
+                                              .search(_reference,
+                                                  {system.id.name}, '')
+                                              .isEmpty
+                                          ? null
+                                          : (enabled) {
+                                              if (!enabled &&
+                                                  _systems.length == 1) {
+                                                return;
+                                              }
+                                              setState(() {
+                                                _systems = {..._systems};
+                                                enabled
+                                                    ? _systems
+                                                        .add(system.id.name)
+                                                    : _systems
+                                                        .remove(system.id.name);
+                                                if (_selected != null &&
+                                                    _selected!.systems
+                                                        .intersection(_systems)
+                                                        .isEmpty) {
+                                                  _selected = null;
+                                                }
+                                                _opacity = 1;
+                                              });
+                                              update(() {});
+                                            })
+                              ]),
+                              const SizedBox(height: 12),
+                              const Text('Opacity'),
+                              Slider(
+                                  value: [.15, .35, .6, .8, 1.0]
+                                      .indexOf(_opacity)
+                                      .clamp(0, 4)
+                                      .toDouble(),
+                                  min: 0,
+                                  max: 4,
+                                  divisions: 4,
+                                  label: '${(_opacity * 100).round()}%',
+                                  onChanged: (value) {
+                                    final opacity = [
+                                      .15,
+                                      .35,
+                                      .6,
+                                      .8,
+                                      1.0
+                                    ][value.round().clamp(0, 4)];
+                                    setState(() => _opacity = opacity);
+                                    update(() {});
+                                    _controller
+                                        .send('opacity', {'value': opacity});
+                                  }),
+                              if (_selected case final selected?) ...[
+                                Text(selected.name),
+                                Wrap(children: [
+                                  TextButton(
+                                      onPressed: () => _controller
+                                          .send('focus', {'id': selected.id}),
+                                      child: const Text('Focus')),
+                                  TextButton(
+                                      onPressed: () => _controller
+                                          .send('isolate', {'id': selected.id}),
+                                      child: const Text('Isolate')),
+                                  TextButton(
+                                      onPressed: () {
+                                        _controller
+                                            .send('hide', {'id': selected.id});
+                                        setState(() => _selected = null);
+                                        update(() {});
+                                      },
+                                      child: const Text('Hide')),
+                                ]),
+                              ],
+                              TextButton.icon(
+                                  icon: const Icon(Icons.restore),
+                                  onPressed: () {
+                                    _controller.send('restore');
+                                    setState(() => _opacity = 1);
+                                    update(() {});
+                                  },
+                                  label: const Text('Restore')),
+                              TextButton(
+                                  onPressed: () => Navigator.pop(sheetContext),
+                                  child: const Text('Close controls')),
+                            ]))))));
+  }
+
   Future<void> _browse(AnatomyAtlasCatalog catalog) async {
     String query = '';
     final result = await showModalBottomSheet<AtlasStructure>(
@@ -95,44 +282,55 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
         showDragHandle: true,
         builder: (context) => StatefulBuilder(builder: (context, update) {
               final results = catalog.search(_reference, _systems, query);
+              final screen = MediaQuery.sizeOf(context).height;
+              final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+              final available = (screen - keyboard - 64).clamp(0.0, screen);
+              final height = available < screen * .7 ? available : screen * .7;
               return SafeArea(
-                  child: SizedBox(
-                      height: MediaQuery.sizeOf(context).height * .76,
-                      child: Padding(
-                          padding: EdgeInsets.fromLTRB(16, 0, 16,
-                              MediaQuery.viewInsetsOf(context).bottom),
-                          child: Column(children: [
-                            TextField(
-                                autofocus: true,
-                                decoration: const InputDecoration(
-                                    prefixIcon: Icon(Icons.search),
-                                    hintText:
-                                        'Search anatomy or anatomical ID'),
-                                onChanged: (value) =>
-                                    update(() => query = value)),
-                            Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                                child: Text(
-                                    '${results.length} structures in selected systems')),
-                            Expanded(
-                                child: results.isEmpty
-                                    ? const Center(
-                                        child: Text('No matching structures'))
-                                    : ListView.builder(
-                                        itemCount: results.length,
-                                        itemBuilder: (context, index) {
-                                          final structure = results[index];
-                                          return ListTile(
-                                              title: Text(structure.name),
-                                              subtitle: Text(_systemLabel(
-                                                  structure.systems.first)),
-                                              trailing: const Icon(
-                                                  Icons.center_focus_strong),
-                                              onTap: () => Navigator.pop(
-                                                  context, structure));
-                                        })),
-                          ]))));
+                  child: Padding(
+                      padding: EdgeInsets.only(bottom: keyboard),
+                      child: SizedBox(
+                          height: height,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            itemCount: results.isEmpty ? 3 : results.length + 2,
+                            itemBuilder: (context, index) {
+                              if (index == 0) {
+                                return TextField(
+                                    key: const ValueKey('atlas-search-field'),
+                                    autofocus: true,
+                                    decoration: const InputDecoration(
+                                        prefixIcon: Icon(Icons.search),
+                                        hintText:
+                                            'Search anatomy or anatomical ID'),
+                                    onChanged: (value) =>
+                                        update(() => query = value));
+                              }
+                              if (index == 1) {
+                                return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
+                                    child: Text(
+                                        '${results.length} structures in selected systems'));
+                              }
+                              if (results.isEmpty) {
+                                return const ListTile(
+                                    title: Text('No matching structures'));
+                              }
+                              final structure = results[index - 2];
+                              return ListTile(
+                                  title: Text(structure.name),
+                                  subtitle: Text(_advanced
+                                      ? '${_systemLabel(structure.systems.first)} ? ${structure.ontology} ? ${structure.id}'
+                                      : _systemLabel(structure.systems.first)),
+                                  trailing:
+                                      const Icon(Icons.center_focus_strong),
+                                  onTap: () =>
+                                      Navigator.pop(context, structure));
+                            },
+                          ))));
             }));
     if (mounted && result != null) _select(result);
   }
@@ -236,19 +434,27 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Anatomy Atlas'), actions: [
-          const NorieTutorialReplayButton(
-              definition: NorieTutorialCatalog.anatomy),
-          IconButton(
-              tooltip: 'Skeleton fundamentals',
-              icon: const Icon(Icons.school_outlined),
-              onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                      builder: (_) => const AnatomyViewerScreen(
-                          skeletonFundamentals: true,
-                          initialSystems: {AnatomySystemId.skeletal})))),
-        ]),
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+            title: const Text('Anatomy Atlas',
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            actions: [
+              IconButton(
+                  tooltip: 'Explorer options',
+                  onPressed: _options,
+                  icon: const Icon(Icons.tune_rounded)),
+              const NorieTutorialReplayButton(
+                  definition: NorieTutorialCatalog.anatomy),
+              IconButton(
+                  tooltip: 'Skeleton fundamentals',
+                  icon: const Icon(Icons.school_outlined),
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                          builder: (_) => const AnatomyViewerScreen(
+                              skeletonFundamentals: true,
+                              initialSystems: {AnatomySystemId.skeletal})))),
+            ]),
         body: SafeArea(
             child: FutureBuilder<AnatomyAtlasCatalog>(
                 future: _future,
@@ -269,6 +475,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                   if (catalog == null) {
                     return const Center(child: CircularProgressIndicator());
                   }
+                  final compact = MediaQuery.sizeOf(context).height < 500;
                   final count = catalog.search(_reference, _systems, '').length;
                   _tutorialStructureId = catalog
                       .search(_reference, _systems, 'femur')
@@ -284,29 +491,40 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                           _systems.contains(link.$1) && _reference != link.$2)
                       .toList();
                   return Column(children: [
-                    NorieTutorialTarget(
-                        id: 'anatomy.settings',
-                        child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Row(children: [
-                              Expanded(
-                                  child: TextButton.icon(
-                                      onPressed: () =>
-                                          _chooseReference(catalog),
-                                      icon: const Icon(Icons.unfold_more),
-                                      label: Text(
-                                          catalog.references
-                                              .firstWhere(
-                                                  (r) => r.id == _reference)
-                                              .label,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis))),
-                              IconButton(
-                                  tooltip: 'Sources and coverage',
-                                  onPressed: () => _credits(catalog),
-                                  icon: const Icon(Icons.info_outline)),
-                            ]))),
-                    if (_reference == 'female')
+                    if (!compact)
+                      NorieTutorialTarget(
+                          id: 'anatomy.settings',
+                          child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              child: Row(children: [
+                                Expanded(
+                                    child: TextButton.icon(
+                                        onPressed: () =>
+                                            _chooseReference(catalog),
+                                        icon: const Icon(Icons.unfold_more),
+                                        label: Text(
+                                            catalog.references
+                                                .firstWhere(
+                                                    (r) => r.id == _reference)
+                                                .label,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis))),
+                                IconButton(
+                                    tooltip: _showSystems
+                                        ? 'Hide systems'
+                                        : 'Show systems',
+                                    onPressed: () => setState(
+                                        () => _showSystems = !_showSystems),
+                                    icon: const Icon(Icons.category_outlined)),
+                                IconButton(
+                                    tooltip: 'Sources and coverage',
+                                    onPressed: () => _credits(catalog),
+                                    icon: const Icon(Icons.info_outline)),
+                              ]))),
+                    if (!compact &&
+                        _reference == 'female' &&
+                        MediaQuery.sizeOf(context).width >= 600)
                       const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
@@ -314,7 +532,9 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                               style: TextStyle(
                                   fontSize: 12,
                                   color: NorieColors.textSecondary))),
-                    if (detailLinks.isNotEmpty)
+                    if (!compact &&
+                        detailLinks.isNotEmpty &&
+                        MediaQuery.sizeOf(context).width >= 600)
                       SizedBox(
                           height: 48,
                           child: ListView(
@@ -328,7 +548,9 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                           _changeReference(link.$2),
                                       child: Text(link.$3)),
                               ])),
-                    if (_reference == 'joints' || _reference == 'glands')
+                    if (!compact &&
+                        (_reference == 'joints' || _reference == 'glands') &&
+                        MediaQuery.sizeOf(context).width >= 600)
                       Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
@@ -338,47 +560,59 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                               style: const TextStyle(
                                   fontSize: 12,
                                   color: NorieColors.textSecondary))),
-                    NorieTutorialTarget(
-                        id: 'anatomy.systems',
-                        child: SizedBox(
-                            height: 49,
-                            child: ListView(
-                                scrollDirection: Axis.horizontal,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
-                                children: [
-                                  for (final system in AnatomyCatalog.systems)
-                                    Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 7),
-                                        child: FilterChip(
-                                            label: Text(system.label),
-                                            selected: _systems
-                                                .contains(system.id.name),
-                                            onSelected: catalog
-                                                    .search(_reference,
-                                                        {system.id.name}, '')
-                                                    .isEmpty
-                                                ? null
-                                                : (enabled) => setState(() {
-                                                      if (!enabled &&
-                                                          _systems.length ==
-                                                              1) {
-                                                        return;
-                                                      }
-                                                      NorieAudioManager.instance
-                                                          .playUiSelect();
-                                                      _systems = {..._systems};
-                                                      enabled
-                                                          ? _systems.add(
-                                                              system.id.name)
-                                                          : _systems.remove(
-                                                              system.id.name);
-                                                      _selected = null;
-                                                      _opacity = 1;
-                                                    }))),
-                                ]))),
+                    if (_showSystems && !compact)
+                      NorieTutorialTarget(
+                          id: 'anatomy.systems',
+                          child: SizedBox(
+                              height: 49 *
+                                  MediaQuery.textScalerOf(context).scale(1),
+                              child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  children: [
+                                    for (final system in AnatomyCatalog.systems)
+                                      Padding(
+                                          padding:
+                                              const EdgeInsets.only(right: 7),
+                                          child: FilterChip(
+                                              label: Text(system.label),
+                                              selected: _systems
+                                                  .contains(system.id.name),
+                                              onSelected: catalog
+                                                      .search(_reference,
+                                                          {system.id.name}, '')
+                                                      .isEmpty
+                                                  ? null
+                                                  : (enabled) => setState(() {
+                                                        if (!enabled &&
+                                                            _systems.length ==
+                                                                1) {
+                                                          return;
+                                                        }
+                                                        NorieAudioManager
+                                                            .instance
+                                                            .playUiSelect();
+                                                        _systems = {
+                                                          ..._systems
+                                                        };
+                                                        enabled
+                                                            ? _systems.add(
+                                                                system.id.name)
+                                                            : _systems.remove(
+                                                                system.id.name);
+                                                        if (_selected != null &&
+                                                            _selected!.systems
+                                                                .intersection(
+                                                                    _systems)
+                                                                .isEmpty) {
+                                                          _selected = null;
+                                                        }
+                                                        _opacity = 1;
+                                                      }))),
+                                  ]))),
                     Expanded(
+                        key: const ValueKey('atlas-model-viewport'),
                         child: NorieTutorialTarget(
                             id: 'anatomy.explore',
                             onFocus: _focusTutorialModel,
@@ -392,16 +626,22 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                   onSelected: (id) {
                                     final values = catalog.structures
                                         .where((s) => s.id == id);
-                                    if (values.isNotEmpty) {
+                                    if (values.isNotEmpty &&
+                                        values.first.reference == _reference &&
+                                        values.first.systems
+                                            .intersection(_systems)
+                                            .isNotEmpty) {
                                       setState(() => _selected = values.first);
                                     }
                                   },
                                 )))),
                     NorieTutorialTarget(
+                        key: const ValueKey('atlas-camera-toolbar'),
                         id: 'anatomy.camera',
                         onFocus: _focusTutorialModel,
                         child: SizedBox(
-                            height: 46,
+                            height:
+                                46 * MediaQuery.textScalerOf(context).scale(1),
                             child: ListView(
                                 scrollDirection: Axis.horizontal,
                                 padding:
@@ -431,6 +671,18 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                                               }))),
                                           icon: const Icon(Icons.quiz_outlined),
                                           label: const Text('Quiz'))),
+                                  if (compact) ...[
+                                    IconButton(
+                                        tooltip: 'View controls',
+                                        onPressed: () =>
+                                            _compactControls(catalog),
+                                        icon: const Icon(Icons.tune_rounded)),
+                                    if (_selected != null)
+                                      IconButton(
+                                          tooltip: 'Selected details',
+                                          onPressed: () => _details(catalog),
+                                          icon: const Icon(Icons.info_outline)),
+                                  ],
                                   for (final view in [
                                     'front',
                                     'back',
@@ -449,95 +701,102 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                         child: Text(view[0].toUpperCase() +
                                             view.substring(1))),
                                 ]))),
-                    if (_selected case final selected?)
-                      Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(14, 9, 14, 4),
-                          color: NorieColors.surface,
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(selected.name,
-                                    style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.bold)),
-                                Text(
-                                    selected.systems
-                                        .map(_systemLabel)
-                                        .join(' · '),
-                                    style: const TextStyle(
-                                        color: NorieColors.textSecondary)),
-                                SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: Row(children: [
-                                      TextButton(
-                                          onPressed: () {
-                                            NorieAudioManager.instance
-                                                .playUiTap();
-                                            _controller.send(
-                                                'focus', {'id': selected.id});
-                                          },
-                                          child: const Text('Focus')),
-                                      TextButton(
-                                          onPressed: () {
-                                            NorieAudioManager.instance
-                                                .playUiSelect();
-                                            _controller.send(
-                                                'isolate', {'id': selected.id});
-                                          },
-                                          child: const Text('Isolate')),
-                                      TextButton(
-                                          onPressed: () {
-                                            NorieAudioManager.instance
-                                                .playUiSelect();
-                                            _controller.send(
-                                                'hide', {'id': selected.id});
-                                            setState(() => _selected = null);
-                                          },
-                                          child: const Text('Hide')),
-                                      TextButton(
-                                          onPressed: () {
-                                            NorieAudioManager.instance
-                                                .playUiTap();
-                                            _controller.send('restore');
-                                            setState(() => _opacity = 1);
-                                          },
-                                          child: const Text('Restore')),
-                                    ])),
-                              ])),
-                    Row(children: [
-                      const SizedBox(width: 16),
-                      const Text('Opacity'),
-                      Expanded(
-                          child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: DropdownButton<double>(
-                                  isExpanded: true,
-                                  value: _opacity,
-                                  items: [1.0, .8, .6, .35, .15]
-                                      .map((value) => DropdownMenuItem(
-                                            value: value,
-                                            child: Text(
-                                                '${(value * 100).round()}%'),
-                                          ))
-                                      .toList(),
-                                  onChanged: (value) {
-                                    if (value == null) return;
-                                    NorieAudioManager.instance.playUiSelect();
-                                    setState(() => _opacity = value);
-                                    _controller
-                                        .send('opacity', {'value': value});
-                                  }))),
-                      IconButton(
-                          tooltip: 'Restore hidden structures',
-                          onPressed: () {
-                            NorieAudioManager.instance.playUiTap();
-                            _controller.send('restore');
-                            setState(() => _opacity = 1);
-                          },
-                          icon: const Icon(Icons.layers_outlined)),
-                    ]),
+                    if (!compact && _selected != null)
+                      Builder(builder: (context) {
+                        final selected = _selected!;
+                        return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.fromLTRB(14, 9, 14, 4),
+                            color: NorieColors.surface,
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: [
+                                    Expanded(
+                                        child: Text(selected.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.bold))),
+                                    IconButton(
+                                        tooltip: 'Selected details',
+                                        onPressed: () => _details(catalog),
+                                        icon: const Icon(Icons.info_outline))
+                                  ]),
+                                  SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(children: [
+                                        TextButton(
+                                            onPressed: () {
+                                              NorieAudioManager.instance
+                                                  .playUiTap();
+                                              _controller.send(
+                                                  'focus', {'id': selected.id});
+                                            },
+                                            child: const Text('Focus')),
+                                        TextButton(
+                                            onPressed: () {
+                                              NorieAudioManager.instance
+                                                  .playUiSelect();
+                                              _controller.send('isolate',
+                                                  {'id': selected.id});
+                                            },
+                                            child: const Text('Isolate')),
+                                        TextButton(
+                                            onPressed: () {
+                                              NorieAudioManager.instance
+                                                  .playUiSelect();
+                                              _controller.send(
+                                                  'hide', {'id': selected.id});
+                                              setState(() => _selected = null);
+                                            },
+                                            child: const Text('Hide')),
+                                        TextButton(
+                                            onPressed: () {
+                                              NorieAudioManager.instance
+                                                  .playUiTap();
+                                              _controller.send('restore');
+                                              setState(() => _opacity = 1);
+                                            },
+                                            child: const Text('Restore')),
+                                      ])),
+                                ]));
+                      }),
+                    if (!compact)
+                      Row(children: [
+                        const SizedBox(width: 16),
+                        const Text('Opacity'),
+                        Expanded(
+                            child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: DropdownButton<double>(
+                                    isExpanded: true,
+                                    value: _opacity,
+                                    items: [1.0, .8, .6, .35, .15]
+                                        .map((value) => DropdownMenuItem(
+                                              value: value,
+                                              child: Text(
+                                                  '${(value * 100).round()}%'),
+                                            ))
+                                        .toList(),
+                                    onChanged: (value) {
+                                      if (value == null) return;
+                                      NorieAudioManager.instance.playUiSelect();
+                                      setState(() => _opacity = value);
+                                      _controller
+                                          .send('opacity', {'value': value});
+                                    }))),
+                        IconButton(
+                            tooltip: 'Restore hidden structures',
+                            onPressed: () {
+                              NorieAudioManager.instance.playUiTap();
+                              _controller.send('restore');
+                              setState(() => _opacity = 1);
+                            },
+                            icon: const Icon(Icons.layers_outlined)),
+                      ]),
                   ]);
                 })),
       );

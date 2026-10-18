@@ -1,0 +1,15 @@
+{
+  "base_develop_sha": "3b614d783ef4ce78609be382d4d81882d2e3c6a8",
+  "base_version": "0.15.1+20",
+  "bundle_kind": "codex_implementation_plan_only",
+  "implemented_by_this_zip": false,
+  "roadmap": {
+    "28_anatomy_explorer_ui": "proposed",
+    "29_guided_anatomy_learning": "proposed",
+    "30_flexible_anatomy_quizzes": "proposed",
+    "31_advanced_3d_interactions": "proposed",
+    "32_anatomy_performance": "proposed",
+    "33_anatomy_accuracy_coverage": "proposed"
+  },
+  "external_gates": ["human_editorial_review", "physical_device_performance_evidence", "owner_approval_for_publication"]
+}
