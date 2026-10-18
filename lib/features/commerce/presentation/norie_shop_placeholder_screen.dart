@@ -12,6 +12,8 @@ import '../../profile/data/norie_profile_appearance_store.dart';
 import '../../profile/presentation/norie_appearance_studio.dart';
 import '../domain/norie_shop_models.dart';
 import 'norie_shop_activity.dart';
+import 'norie_commerce_art.dart';
+import '../../content/presentation/norie_subject_world_map.dart';
 
 class NorieShopPlaceholderScreen extends StatefulWidget {
   const NorieShopPlaceholderScreen({super.key});
@@ -23,7 +25,6 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
   final progression = NorieProgression.instance;
   final economy = NorieEconomyStore.instance;
   String category = 'All';
-  NorieShopItem? preview;
   bool busy = false;
   String? notice;
   final Set<String> buying = {};
@@ -70,6 +71,10 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                      Center(
+                          child: NorieCommerceArt(
+                              icon: NorieCommerceArt.itemIcon(item),
+                              color: NorieCommerceArt.itemColor(item))),
                       Text('Price: ${item.price} Credits'),
                       Text('Balance before: $before Credits'),
                       Text('Balance after: ${before - item.price} Credits'),
@@ -130,6 +135,113 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
     }
   }
 
+  Future<void> showPreview(NorieShopItem item) async {
+    final current = NorieAccountService.instance.captureLearnerGuard();
+    await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Text('Preview: ${item.title}'),
+              content: SingleChildScrollView(
+                  child: SizedBox(
+                      width: 420,
+                      child: AnimatedBuilder(
+                          animation: NorieAccountService.instance,
+                          builder: (context, _) {
+                            if (!current()) {
+                              return const Text(
+                                  'Account changed. Close this preview to continue.');
+                            }
+                            return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                      'Temporary try-on. Your saved appearance stays the same.'),
+                                  const SizedBox(height: 12),
+                                  NorieAppearancePreview(
+                                      value: NorieProfileAppearanceStore
+                                          .instance.value,
+                                      displayName: NorieAccountService
+                                              .instance.displayName ??
+                                          'Norie Learner',
+                                      subtitle: 'Shop preview',
+                                      shopFrameId: item.type ==
+                                              NorieShopItemType.profileFrame
+                                          ? item.id
+                                          : progression.equippedFrameId,
+                                      shopBadgeId:
+                                          item.type == NorieShopItemType.badge
+                                              ? item.id
+                                              : progression.equippedBadgeId,
+                                      shopThemeId:
+                                          item.type == NorieShopItemType.theme
+                                              ? item.id
+                                              : progression.equippedThemeId),
+                                ]);
+                          }))),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close preview'))
+              ],
+            ));
+  }
+
+  Future<void> reviewUnavailable(NorieShopItem item) async {
+    final shortfall = item.price - progression.credits;
+    final current = NorieAccountService.instance.captureLearnerGuard();
+    final explore = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Text(item.title),
+              content: SingleChildScrollView(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                NorieCommerceArt(
+                    icon: NorieCommerceArt.itemIcon(item),
+                    color: NorieCommerceArt.itemColor(item),
+                    frame: item.type == NorieShopItemType.profileFrame),
+                Text(item.description),
+                const SizedBox(height: 12),
+                Text('${item.price} Credits',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w900, fontSize: 22)),
+                Text('Your balance: ${progression.credits} Credits'),
+                const SizedBox(height: 12),
+                Text(shortfall > 0
+                    ? 'You need $shortfall more Credits'
+                    : 'Purchase temporarily unavailable'),
+                const SizedBox(height: 8),
+                Text(shortfall > 0
+                    ? 'Earn Credits through learning rewards. Explore your lessons and continue your progress.'
+                    : !NorieShopCatalog.accountPricingReady &&
+                            (economy.active ||
+                                NorieAccountService.instance.isSignedIn)
+                        ? 'Account purchases are waiting for the updated catalog. You can preview rewards and equip items you already own.'
+                        : 'Your wallet needs to finish saving or syncing. Close this panel and use Retry save / sync.'),
+                if (shortfall > 0 &&
+                    !NorieShopCatalog.accountPricingReady &&
+                    (economy.active || NorieAccountService.instance.isSignedIn))
+                  const Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: Text(
+                          'Account purchases are also paused while the catalog is updated. Earning more Credits will not remove this pause.')),
+              ])),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Keep browsing')),
+                if (shortfall > 0)
+                  FilledButton.icon(
+                      onPressed: () => Navigator.pop(context, true),
+                      icon: const Icon(Icons.explore_rounded),
+                      label: const Text('Explore lessons'))
+              ],
+            ));
+    if (explore == true && mounted && current()) {
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const NorieSubjectWorldMap()));
+    }
+  }
+
   Future<void> retry() async {
     if (busy) return;
     final current = NorieAccountService.instance.captureLearnerGuard();
@@ -176,7 +288,6 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
                       builder: (context, _) {
                         if (!learner()) {
                           // Never carry a previous learner's try-on or messages to a new owner.
-                          preview = null;
                           notice = null;
                           category = 'All';
                           learner = NorieAccountService.instance
@@ -212,6 +323,9 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
                                             fontWeight: FontWeight.w900)))
                               ]),
                               const SizedBox(height: 16),
+                              const Icon(Icons.toll_rounded,
+                                  color: NorieColors.orange, size: 44),
+                              const SizedBox(height: 8),
                               NorieGlassCard(
                                   accent: NorieColors.orange,
                                   child: Column(
@@ -229,11 +343,26 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
                                             'Earn Credits by learning. Cosmetics never change lesson access or XP.'),
                                       ])),
                               const SizedBox(height: 12),
-                              NorieShopActivityStatus(
-                                  economy: economy,
-                                  cloud: NorieCloudSync.instance,
-                                  busy: busy,
-                                  onRetry: retry),
+                              ExpansionTile(
+                                leading: const Icon(
+                                    Icons.account_balance_wallet_rounded,
+                                    color: NorieColors.cyan),
+                                title: const Text('Wallet & purchase status'),
+                                subtitle: Text(!NorieShopCatalog
+                                            .accountPricingReady &&
+                                        (economy.active ||
+                                            NorieAccountService
+                                                .instance.isSignedIn)
+                                    ? 'Account purchases paused. Owned rewards are ready to equip.'
+                                    : 'Device saves, sync and purchase receipts'),
+                                children: [
+                                  NorieShopActivityStatus(
+                                      economy: economy,
+                                      cloud: NorieCloudSync.instance,
+                                      busy: busy,
+                                      onRetry: retry)
+                                ],
+                              ),
                               if (notice != null)
                                 Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -255,6 +384,20 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
                                   'Owned'
                                 ])
                                   ChoiceChip(
+                                      avatar: Icon(
+                                          switch (label) {
+                                            'Frames' =>
+                                              Icons.account_circle_rounded,
+                                            'Badges' =>
+                                              Icons.workspace_premium_rounded,
+                                            'Themes' => Icons.palette_rounded,
+                                            'Protection' =>
+                                              Icons.shield_rounded,
+                                            'Owned' =>
+                                              Icons.inventory_2_rounded,
+                                            _ => Icons.storefront_rounded
+                                          },
+                                          size: 18),
                                       label: Text(label),
                                       selected: category == label,
                                       onSelected: (_) =>
@@ -274,38 +417,6 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
                                 Padding(
                                     padding: const EdgeInsets.only(bottom: 10),
                                     child: itemCard(item)),
-                              if (preview != null) ...[
-                                const SizedBox(height: 12),
-                                Text('Preview: ${preview!.title}',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w900)),
-                                const Text(
-                                    'Temporary try-on. Your saved appearance stays the same.'),
-                                const SizedBox(height: 8),
-                                NorieAppearancePreview(
-                                    value: NorieProfileAppearanceStore
-                                        .instance.value,
-                                    displayName: NorieAccountService
-                                            .instance.displayName ??
-                                        'Norie Learner',
-                                    subtitle: 'Shop preview',
-                                    shopFrameId: preview!.type ==
-                                            NorieShopItemType.profileFrame
-                                        ? preview!.id
-                                        : progression.equippedFrameId,
-                                    shopBadgeId:
-                                        preview!.type == NorieShopItemType.badge
-                                            ? preview!.id
-                                            : progression.equippedBadgeId,
-                                    shopThemeId:
-                                        preview!.type == NorieShopItemType.theme
-                                            ? preview!.id
-                                            : progression.equippedThemeId),
-                                TextButton(
-                                    onPressed: () =>
-                                        setState(() => preview = null),
-                                    child: const Text('Close preview')),
-                              ],
                               const SizedBox(height: 20),
                               NorieShopTransactionHistory(
                                   progression: progression),
@@ -318,8 +429,13 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
     final owned = progression.ownsShopItem(item.id) && !item.consumable;
     final pending = economy.pendingPurchases.contains(item.id);
     return NorieGlassCard(
-        accent: NorieColors.violet,
+        accent: NorieCommerceArt.itemColor(item),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Center(
+              child: NorieCommerceArt(
+                  icon: NorieCommerceArt.itemIcon(item),
+                  color: NorieCommerceArt.itemColor(item),
+                  frame: item.type == NorieShopItemType.profileFrame)),
           Text(item.title,
               style:
                   const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
@@ -336,10 +452,11 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
                 'Earn ${item.price - progression.credits} more Credits to buy.'),
           Wrap(spacing: 8, runSpacing: 8, children: [
             if (!item.consumable)
-              OutlinedButton(
+              OutlinedButton.icon(
+                  icon: const Icon(Icons.visibility_rounded),
                   key: ValueKey('preview-${item.id}'),
-                  onPressed: () => setState(() => preview = item),
-                  child: const Text('Preview')),
+                  onPressed: () => showPreview(item),
+                  label: const Text('Preview')),
             if (owned)
               FilledButton(
                   key: ValueKey(
@@ -363,16 +480,24 @@ class _NorieShopState extends State<NorieShopPlaceholderScreen> {
                   },
                   child: Text(equipped(item) ? 'Unequip' : 'Equip'))
             else
-              FilledButton(
+              FilledButton.icon(
+                  icon: Icon(canBuy(item)
+                      ? Icons.shopping_bag_rounded
+                      : Icons.info_outline_rounded),
+                  style:
+                      FilledButton.styleFrom(minimumSize: const Size(148, 48)),
                   key: ValueKey('buy-${item.id}'),
-                  onPressed: canBuy(item) ? () => buy(item) : null,
-                  child: Text(pending
+                  onPressed: pending || buying.contains(item.id)
+                      ? null
+                      : () =>
+                          canBuy(item) ? buy(item) : reviewUnavailable(item),
+                  label: Text(pending
                       ? 'Pending'
                       : buying.contains(item.id)
                           ? 'Reviewing…'
                           : item.consumable
-                              ? 'Buy'
-                              : 'Unlock')),
+                              ? 'Buy shield'
+                              : 'Unlock reward')),
           ]),
         ]));
   }

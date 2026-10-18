@@ -101,7 +101,8 @@ void main() {
     await finish(tester);
   });
 
-  testWidgets('insufficient balance disables unlock without changing wallet',
+  testWidgets(
+      'insufficient balance opens useful purchase review without changing wallet',
       (tester) async {
     await open(tester);
     await tester.scrollUntilVisible(
@@ -112,7 +113,18 @@ void main() {
         find.byKey(const ValueKey('buy-frame-cyan-orbit')), 250);
     final button = tester.widget<FilledButton>(
         find.byKey(const ValueKey('buy-frame-cyan-orbit')));
-    expect(button.onPressed, isNull);
+    expect(button.onPressed, isNotNull);
+    await tester.tap(find.byKey(const ValueKey('buy-frame-cyan-orbit')));
+    await tester.pumpAndSettle();
+    expect(find.text('You need 200 more Credits'), findsOneWidget);
+    expect(find.text('Explore lessons'), findsOneWidget);
+    expect(find.text('Confirm purchase'), findsNothing);
+    await tester.tap(find.text('Explore lessons'));
+    await tester.pumpAndSettle();
+    expect(find.text('Subject World Map'), findsOneWidget);
+    expect(NorieProgression.instance.credits, 0);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     expect(NorieProgression.instance.credits, 0);
     await finish(tester);
   });
@@ -130,8 +142,8 @@ void main() {
         find.byKey(const ValueKey('preview-frame-cyan-orbit')), 250);
     await tester.tap(find.byKey(const ValueKey('preview-frame-cyan-orbit')));
     await tester.pump();
-    await tester.scrollUntilVisible(
-        find.text('Preview: Cyan Orbit Frame'), 250);
+    expect(
+        find.text('Preview: Cyan Orbit Frame').hitTestable(), findsOneWidget);
     expect(find.text('Preview: Cyan Orbit Frame'), findsOneWidget);
     expect(store.exportState(), before);
     expect(NorieProgression.instance.equippedFrameId, isNull);
@@ -199,6 +211,15 @@ void main() {
     await tester.scrollUntilVisible(
         find.byKey(const ValueKey('preview-frame-cyan-orbit')), 250);
     expect(tester.takeException(), isNull);
+    await tester
+        .ensureVisible(find.byKey(const ValueKey('buy-frame-cyan-orbit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('buy-frame-cyan-orbit')));
+    await tester.pumpAndSettle();
+    expect(find.text('You need 200 more Credits'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Keep browsing'));
+    await tester.pumpAndSettle();
     await finish(tester);
   });
 }

@@ -4,6 +4,7 @@ import '../../../core/theme/norie_theme.dart';
 import '../../../core/widgets/norie_ambient_backdrop.dart';
 import '../../../core/widgets/norie_glass_card.dart';
 import '../domain/norie_membership.dart';
+import 'norie_commerce_art.dart';
 
 class SubscriptionPlaceholderScreen extends StatelessWidget {
   const SubscriptionPlaceholderScreen({super.key});
@@ -121,29 +122,120 @@ class _MembershipPlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isFree = plan.id == MembershipPlanId.free;
+    final icon = switch (plan.id) {
+      MembershipPlanId.free => Icons.menu_book_rounded,
+      MembershipPlanId.plus => Icons.auto_awesome_rounded,
+      MembershipPlanId.pro => Icons.workspace_premium_rounded,
+      MembershipPlanId.family => Icons.family_restroom_rounded
+    };
+    final accent = switch (plan.id) {
+      MembershipPlanId.free => NorieColors.cyan,
+      MembershipPlanId.plus => NorieColors.violet,
+      MembershipPlanId.pro => NorieColors.orange,
+      MembershipPlanId.family => NorieColors.magenta
+    };
     return NorieGlassCard(
-      accent: isFree ? NorieColors.cyan : NorieColors.violet,
+      accent: accent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Center(child: NorieCommerceArt(icon: icon, color: accent)),
           Text(plan.title,
               style:
                   const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          Text('PROPOSED: PHP ${plan.monthlyPhp} / month',
+          Text(
+              isFree
+                  ? 'PHP 0 / month'
+                  : 'PROPOSED: PHP ${plan.monthlyPhp} / month',
               style:
                   const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
           for (final benefit in plan.benefits)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text('\u2022 $benefit'),
+              child:
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(
+                    isFree
+                        ? Icons.check_circle_rounded
+                        : Icons.auto_awesome_rounded,
+                    color: accent,
+                    size: 20),
+                const SizedBox(width: 10),
+                Expanded(child: Text(benefit)),
+              ]),
             ),
           Text(
               isFree
                   ? 'Available without a subscription. No monthly charge.'
                   : 'Proposed benefits only. Not available to purchase.',
               style: const TextStyle(color: NorieColors.textSecondary)),
+          const SizedBox(height: 16),
+          SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: ValueKey('plan-${plan.id.name}'),
+                style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 52),
+                    backgroundColor: accent,
+                    foregroundColor: NorieColors.background),
+                icon: Icon(isFree
+                    ? Icons.check_circle_rounded
+                    : Icons.shopping_bag_rounded),
+                label: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Text(
+                        isFree ? 'Explore Free' : 'Explore ${plan.title}')),
+                onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                          title: Text(isFree
+                              ? 'Your free learning plan'
+                              : 'Review ${plan.title}'),
+                          content: SingleChildScrollView(
+                              child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                Center(
+                                    child: NorieCommerceArt(
+                                        icon: icon, color: accent)),
+                                Text(
+                                    isFree
+                                        ? 'PHP 0 / month'
+                                        : 'Proposed: PHP ${plan.monthlyPhp} / month',
+                                    style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w900)),
+                                const SizedBox(height: 12),
+                                for (final benefit in plan.benefits)
+                                  Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 10),
+                                      child: Text(benefit)),
+                                Text(
+                                    isFree
+                                        ? 'Ready to learn offline'
+                                        : 'Checkout not connected',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w900)),
+                                const SizedBox(height: 8),
+                                Text(isFree
+                                    ? 'Your core lessons, quizzes and progress are available without a subscription.'
+                                    : 'Paid plans are previews while secure billing is being set up. Norie Credits cannot pay for a peso subscription.'),
+                                const SizedBox(height: 10),
+                                const Text(
+                                    'No charge. No subscription has started.'),
+                              ])),
+                          actions: [
+                            FilledButton.icon(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.arrow_back_rounded),
+                                label: const Text('Keep exploring'))
+                          ],
+                        )),
+              )),
         ],
       ),
     );
