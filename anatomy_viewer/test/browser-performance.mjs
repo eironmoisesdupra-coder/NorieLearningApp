@@ -49,6 +49,8 @@ try {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.locator('canvas').click({ position: { x: 400, y: 400 } });
   await page.waitForFunction(() => events.some(e => e.type === 'selected' && e.payload.id === window.femur));
+  // Selection is emitted synchronously; the invalidated render runs on the next RAF.
+  await page.waitForFunction(previous => frames > previous, before);
   assert.ok(await count() > before, 'mesh picking must refresh after idle');
   if (process.argv[3]) await page.screenshot({ path: process.argv[3] });
   const position = await page.evaluate(() => [...atlas.camera.position]);
