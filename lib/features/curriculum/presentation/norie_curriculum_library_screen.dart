@@ -134,6 +134,7 @@ class _NorieCurriculumLibraryScreenState
   Widget _tile(CurriculumRevision revision) {
     final topic = revision.topic;
     return ListTile(
+        key: ValueKey('curriculum-topic-${topic.id}'),
         isThreeLine: true,
         title: Text(topic.title),
         subtitle: Text(

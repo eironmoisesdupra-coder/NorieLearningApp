@@ -21,11 +21,11 @@ void main() {
     await tester.enterText(
         find.byKey(const Key('curriculum-search')), 'Atomic Structure');
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.widgetWithText(ListTile, 'Atomic Structure'), 180,
+    await tester.scrollUntilVisible(find.byKey(const Key('curriculum-topic-science.chemistry.atomic-structure')), 180,
         scrollable: find.byType(Scrollable).first);
-    await tester.ensureVisible(find.widgetWithText(ListTile, 'Atomic Structure'));
+    await tester.ensureVisible(find.byKey(const Key('curriculum-topic-science.chemistry.atomic-structure')));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(ListTile, 'Atomic Structure').hitTestable(), findsOneWidget);
+    expect(find.byKey(const Key('curriculum-topic-science.chemistry.atomic-structure')).hitTestable(), findsOneWidget);
     await tester.tap(find.byTooltip('Local studio'));
     await tester.pumpAndSettle();
     expect(find.text('Curriculum Studio'), findsOneWidget);
