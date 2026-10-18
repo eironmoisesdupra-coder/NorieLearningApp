@@ -24,6 +24,42 @@ void main() {
         NorieAnimatedRankBadge.assetForLevel(1));
   });
 
+  testWidgets(
+      'crystal and Scholar layers repaint independently and freeze with reduced motion',
+      (tester) async {
+    Widget app(bool reduced) => MaterialApp(
+        home: MediaQuery(
+            data: MediaQueryData(disableAnimations: reduced),
+            child: const NorieAnimatedRankBadge(level: 30)));
+    await tester.pumpWidget(app(false));
+    final layers = ['rank-crystal-layer', 'rank-wing-layer', 'rank-book-layer'];
+    final before = <String, CustomPainter>{};
+    for (final key in layers) {
+      before[key] =
+          tester.widget<CustomPaint>(find.byKey(ValueKey(key))).painter!;
+    }
+    await tester.pump(const Duration(milliseconds: 350));
+    for (final key in layers) {
+      final after =
+          tester.widget<CustomPaint>(find.byKey(ValueKey(key))).painter!;
+      expect(after.shouldRepaint(before[key]!), isTrue,
+          reason: '$key must animate');
+    }
+    await tester.pumpWidget(app(true));
+    final frozen = <String, CustomPainter>{
+      for (final key in layers)
+        key: tester.widget<CustomPaint>(find.byKey(ValueKey(key))).painter!,
+    };
+    await tester.pump(const Duration(milliseconds: 350));
+    for (final key in layers) {
+      expect(tester.widget<CustomPaint>(find.byKey(ValueKey(key))).painter,
+          same(frozen[key]),
+          reason: '$key must remain frozen');
+    }
+    expect(tester.binding.transientCallbackCount, 0);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('native animation moves, stops off-route, and restarts safely',
       (tester) async {
     Widget app(bool enabled, bool animate) => MaterialApp(

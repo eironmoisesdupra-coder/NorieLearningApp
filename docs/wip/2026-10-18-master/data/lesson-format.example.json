@@ -1,0 +1,20 @@
+{
+  "id": "example.math.g7.linear_equations",
+  "status": "draft_sample_not_published",
+  "revision": 1,
+  "flow": [
+    "discover",
+    "understand",
+    "worked_example",
+    "guided_try",
+    "independent_try",
+    "apply",
+    "review"
+  ],
+  "quiz_mix": {
+    "concept": 0.25,
+    "solving": 0.5,
+    "application": 0.15,
+    "error_analysis": 0.1
+  }
+}

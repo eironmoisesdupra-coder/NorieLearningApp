@@ -1,0 +1,13 @@
+{
+  "currency": "Norie Credits",
+  "live": false,
+  "prices": {
+    "streak-shield": 250,
+    "frame-cyan-orbit": 200,
+    "frame-violet-scholar": 400,
+    "badge-atom": 300,
+    "badge-streak": 350,
+    "theme-aurora": 600,
+    "theme-ember": 750
+  }
+}

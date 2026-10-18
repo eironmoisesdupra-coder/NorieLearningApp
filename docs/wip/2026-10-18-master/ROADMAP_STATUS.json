@@ -1,0 +1,17 @@
+{
+  "base_sha": "6219b60f198fab7732e3d4c8ac66a20c7e60645d",
+  "version": "0.14.0+18",
+  "wip": true,
+  "live_integration": false,
+  "packets": {
+    "00": "spec_ready_not_implemented_as_part_of_this_bundle",
+    "01": "spec_ready_not_implemented_as_part_of_this_bundle",
+    "02": "spec_ready_not_implemented_as_part_of_this_bundle",
+    "03": "spec_ready_not_implemented_as_part_of_this_bundle",
+    "04": "spec_ready_not_implemented_as_part_of_this_bundle",
+    "05": "spec_ready_not_implemented_as_part_of_this_bundle",
+    "06": "spec_ready_not_implemented_as_part_of_this_bundle",
+    "07": "spec_ready_not_implemented_as_part_of_this_bundle",
+    "08": "spec_ready_not_implemented_as_part_of_this_bundle"
+  }
+}
