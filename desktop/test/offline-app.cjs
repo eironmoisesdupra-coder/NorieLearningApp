@@ -143,7 +143,8 @@ async function main() {
       await captureHiddenPage(`windows-offline-${target.reference}-phone.png`);
       console.log(`PASS: ${label} searched, focused and picked offline at phone size`);
     }
-    await setHiddenViewport(originalSize);
+    // Windows display scaling can round restored content bounds by one CSS pixel.
+    await setHiddenViewport(originalSize, 1);
     const sounds = await page.evaluate(() => window.norieAudioEvents);
     assert.ok(sounds.some(e => e.played && e.volume > 0 && e.source.endsWith('/correct.mp3')),
       'Actual offline correct-answer audio must play after a gesture');
@@ -153,7 +154,7 @@ async function main() {
     await enableAccessibility();
   }
   let originalMinimum;
-  async function setHiddenViewport(size) {
+  async function setHiddenViewport(size, tolerance = 0) {
     // Native capture and the rendered surface must share the same viewport/DPR.
     // CDP emulation can crop a hidden Electron surface on scaled Windows displays.
     const window = await application.browserWindow(page);
@@ -168,8 +169,9 @@ async function main() {
           browserWindow.setMinimumSize(...minimum);
         }
       }, { size, minimum: originalMinimum });
-      await page.waitForFunction(expected =>
-        innerWidth === expected.width && innerHeight === expected.height, size);
+      await page.waitForFunction(({ size, tolerance }) =>
+        Math.abs(innerWidth - size.width) <= tolerance &&
+        Math.abs(innerHeight - size.height) <= tolerance, { size, tolerance });
     } finally {
       await browser.detach();
       await window.dispose();
