@@ -11,6 +11,7 @@ import 'anatomy_atlas_controller.dart';
 import 'anatomy_atlas_details.dart';
 import 'anatomy_atlas_model_view.dart';
 import 'anatomy_atlas_quiz_setup_screen.dart';
+import 'anatomy_guided_learning_screen.dart';
 import 'anatomy_viewer_screen.dart';
 
 class AnatomyAtlasScreen extends StatefulWidget {
@@ -119,6 +120,14 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Close details'))
                 ]))));
+  }
+
+  void _guidedLearning(AnatomyAtlasCatalog catalog) {
+    Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+            builder: (_) => AnatomyGuidedLearningScreen(
+                catalog: catalog, initialStructureId: _selected?.id)));
   }
 
   void _options() {
@@ -700,6 +709,10 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                         },
                                         child: Text(view[0].toUpperCase() +
                                             view.substring(1))),
+                                  TextButton.icon(
+                                      onPressed: () => _guidedLearning(catalog),
+                                      icon: const Icon(Icons.school_outlined),
+                                      label: const Text('Guided Learn')),
                                 ]))),
                     if (!compact && _selected != null)
                       Builder(builder: (context) {
