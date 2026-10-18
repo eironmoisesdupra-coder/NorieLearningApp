@@ -6,7 +6,10 @@ const session = params.get('session') ?? '';
 const parentOrigin = params.get('parentOrigin') ?? location.origin;
 const status = document.getElementById('status');
 let atlas;
+let closed = false;
+const catalogRequest = new AbortController();
 function emit(type, payload = {}) {
+  if (closed) return;
   const message = { version: 1, session, type, payload };
   if (type === 'loading') {
     status.hidden = false;
@@ -19,29 +22,46 @@ function emit(type, payload = {}) {
   window.dispatchEvent(new CustomEvent('atlas-event', { detail: message }));
 }
 function receive(value) {
+  if (closed) return;
   if (typeof value === 'string') {
     try { value = JSON.parse(value); } catch { return; }
   }
   if (!validCommand(value, session) || !atlas) return;
-  Promise.resolve().then(() => atlas.command(value.type, value.payload)).catch(error => {
+  Promise.resolve().then(() => {
+    if (!closed && !atlas.disposed) return atlas.command(value.type, value.payload);
+  }).catch(error => {
+    if (closed || atlas.disposed) return;
     console.error('Atlas command failed', error);
     emit('error', { requestId: value.payload?.requestId, message: 'The local anatomy model could not be opened. Retry this view.' });
   });
 }
 window.norieAtlasCommand = receive;
-window.addEventListener('message', event => {
+function onMessage(event) {
   if (event.source === parent && event.origin === parentOrigin) receive(event.data);
-});
-window.addEventListener('pagehide', () => atlas?.dispose());
+}
+function onPageHide() {
+  if (closed) return;
+  closed = true;
+  catalogRequest.abort();
+  atlas?.dispose();
+  window.removeEventListener('message', onMessage);
+  window.removeEventListener('pagehide', onPageHide);
+  if (window.norieAtlasCommand === receive) delete window.norieAtlasCommand;
+}
+window.addEventListener('message', onMessage);
+window.addEventListener('pagehide', onPageHide);
 try {
-  const response = await fetch(new URL('atlas-catalog.json', location.href));
+  const response = await fetch(new URL('atlas-catalog.json', location.href), { signal: catalogRequest.signal });
   if (!response.ok) throw Error('Missing atlas catalog');
   const catalog = await response.json();
+  if (closed) throw Error('Atlas closed');
   if (catalog.schemaVersion !== 1) throw Error('Unsupported atlas catalog');
   atlas = new AtlasScene(document.getElementById('anatomy'), catalog, emit);
   status.textContent = 'Choose an anatomy system';
   emit('ready');
 } catch (error) {
-  console.error('Atlas initialization failed', error);
-  emit('error', { message: 'The 3D atlas could not start. Check WebGL support or reopen Anatomy Lab.' });
+  if (!closed) {
+    console.error('Atlas initialization failed', error);
+    emit('error', { message: 'The 3D atlas could not start. Check WebGL support or reopen Anatomy Lab.' });
+  }
 }

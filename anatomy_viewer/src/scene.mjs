@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'meshoptimizer';
-import { AtlasState, isSelectionGesture } from './state.mjs';
+import { AtlasState, isSelectionGesture, validPayload } from './state.mjs';
 
 export class AtlasScene {
   constructor(canvas, catalog, emit) {
@@ -64,14 +64,22 @@ export class AtlasScene {
   }
 
   resize() {
+    if (this.disposed) return;
     const width = Math.max(1, this.canvas.clientWidth), height = Math.max(1, this.canvas.clientHeight);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
   }
 
-  async configure({ reference, systems, target = null, quiz = false, requestId = 0 }) {
-    if (!this.catalog.references.some(r => r.id === reference) || !Array.isArray(systems)) throw Error('Invalid atlas selection');
+  async configure(payload) {
+    if (this.disposed) return false;
+    if (!validPayload('configure', payload)) throw Error('Invalid atlas selection');
+    const { reference, systems, target = null, quiz = false, requestId = 0 } = payload;
+    const knownSystems = new Set(this.catalog.structures.flatMap(s => s.systems));
+    if (!this.catalog.references.some(r => r.id === reference) || !systems.every(s => knownSystems.has(s)) ||
+        (target && !this.catalog.structures.some(s => s.id === target && s.reference === reference && s.systems.some(x => systems.includes(x))))) {
+      throw Error('Invalid atlas selection');
+    }
     const generation = this.state.configure(reference, systems);
     this.quiz = quiz === true;
     this.alpha = 1;
@@ -111,7 +119,7 @@ export class AtlasScene {
       }
       this.emit('loading', { requestId, completed: ++completed, total: wanted.size });
     }
-    if (!this.state.accepts(generation)) return;
+    if (this.disposed || !this.state.accepts(generation)) return;
     this.updateVisibility();
     if (target && this.state.select(target)) {
       if (this.quiz) this.state.isolate(target);
@@ -133,16 +141,20 @@ export class AtlasScene {
       const id = mesh.userData.structureId;
       mesh.visible = visible.has(id);
       const selected = !this.quiz && this.state.selected === id;
-      mesh.material.color.copy(selected ? new THREE.Color('#42e8e0') : mesh.userData.baseColor);
-      mesh.material.emissive.set(selected ? '#104d53' : '#000000');
-      mesh.material.transparent = this.alpha < 1;
-      mesh.material.opacity = this.alpha;
-      mesh.material.depthWrite = this.alpha >= 1;
+      const compared = !this.quiz ? this.state.compareIds.indexOf(id) : -1;
+      const color = selected ? '#42e8e0' : compared === 0 ? '#70c8ff' : compared === 1 ? '#ffc477' : null;
+      mesh.material.color.copy(color ? new THREE.Color(color) : mesh.userData.baseColor);
+      mesh.material.emissive.set(color ? '#104d53' : '#000000');
+      const alpha = this.state.effectiveOpacity(id, this.alpha);
+      mesh.material.transparent = alpha < 1;
+      mesh.material.opacity = alpha;
+      mesh.material.depthWrite = alpha >= 1;
     }
   }
   pick(event) {
-    if (this.quiz) return;
+    if (this.disposed || this.quiz) return;
     const rect = this.canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
     this.raycaster.setFromCamera(new THREE.Vector2((event.clientX - rect.left) / rect.width * 2 - 1,
       -(event.clientY - rect.top) / rect.height * 2 + 1), this.camera);
     const hit = this.raycaster.intersectObjects(this.meshes().filter(m => m.visible), false)[0];
@@ -159,7 +171,7 @@ export class AtlasScene {
   }
   frame(id = null, direction = null) {
     const box = this.box(id);
-    if (box.isEmpty()) return;
+    if (box.isEmpty() || ![...box.min, ...box.max].every(Number.isFinite)) return;
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
     const distance = Math.max(size.y, size.x / this.camera.aspect, size.z) / (2 * Math.tan(THREE.MathUtils.degToRad(20))) * 1.25;
@@ -170,15 +182,23 @@ export class AtlasScene {
   }
   focus(id) { this.frame(id); }
   command(type, payload = {}) {
-    if (this.disposed) return;
+    if (this.disposed || !validPayload(type, payload)) return false;
     if (type === 'configure') return this.configure(payload);
     if (type === 'dispose') return this.dispose();
-    if (type === 'select') this.state.reveal(payload.id);
-    if (type === 'focus') this.focus(payload.id);
-    if (type === 'hide') this.state.hide(payload.id);
-    if (type === 'isolate') { this.state.isolate(payload.id); this.updateVisibility(); this.focus(payload.id); }
+    if (type === 'select' && !this.state.reveal(payload.id)) return false;
+    if (type === 'focus') {
+      if (!this.state.visibleIds().includes(payload.id)) return false;
+      this.focus(payload.id);
+    }
+    if (type === 'hide' && !this.state.hide(payload.id)) return false;
+    if (type === 'isolate') {
+      if (!this.state.isolate(payload.id)) return false;
+      this.updateVisibility(); this.focus(payload.id);
+    }
+    if (type === 'systemLayer' && !this.state.systemLayer(payload)) return false;
+    if (type === 'compare' && !this.state.compare(payload.ids)) return false;
     if (type === 'restore') { this.state.restore(); this.alpha = 1; }
-    if (type === 'opacity' && Number.isFinite(payload.value)) this.alpha = THREE.MathUtils.clamp(payload.value, .15, 1);
+    if (type === 'opacity') this.alpha = payload.value;
     if (type === 'camera') {
       // Reference axes are +X patient-left, +Y superior, +Z anterior.
       const directions = { front: [0, 0, 1], back: [0, 0, -1], left: [1, 0, 0], right: [-1, 0, 0], top: [0, 1, .001] };
@@ -186,6 +206,7 @@ export class AtlasScene {
       if (payload.view === 'reset') this.frame(null, new THREE.Vector3(0, 0, 1));
     }
     this.updateVisibility();
+    return true;
   }
   release(root) {
     root.removeFromParent();
@@ -201,6 +222,7 @@ export class AtlasScene {
     for (const resource of [...geometries, ...materials, ...textures]) resource.dispose();
   }
   dispose() {
+    if (this.disposed) return;
     this.disposed = true;
     this.state.generation++;
     this.renderer.setAnimationLoop(null);

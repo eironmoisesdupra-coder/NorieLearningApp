@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/account/norie_account_service.dart';
+import '../data/anatomy_atlas_bookmark_store.dart';
+import 'anatomy_atlas_tools_state.dart';
+import 'anatomy_atlas_tools_sheet.dart';
 import 'package:flutter/services.dart';
 import '../../../core/audio/norie_audio_manager.dart';
 import '../../../core/mascot/norie_mascot_scope.dart';
@@ -31,23 +35,166 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   bool _advanced = false;
   bool _showSystems = true;
   String? _tutorialStructureId;
+  AnatomyAtlasToolsState? _tools;
+  bool _syncingTools = false;
+  AnatomyAtlasBookmark? _pendingBookmark;
+  bool Function()? _pendingBookmarkGuard;
+
+  void _ensureTools(AnatomyAtlasCatalog catalog) {
+    if (_tools == null) {
+      _tools = AnatomyAtlasToolsState(catalog, _controller);
+      _tools!.addListener(_toolsChanged);
+    }
+    final pending = _pendingBookmark;
+    if (pending != null) {
+      final part = _tools!.structure(pending.structureId);
+      if (part == null ||
+          pending.reference != _reference ||
+          part.systems.length != _systems.length ||
+          !_systems.containsAll(part.systems)) {
+        _pendingBookmark = null;
+        _pendingBookmarkGuard = null;
+      }
+    }
+    _syncingTools = true;
+    _tools!.configure(_reference, _systems);
+    if (_selected != null && _tools!.selectedId != _selected!.id) {
+      _tools!.select(_selected!.id, sendCommand: false);
+    }
+    _syncingTools = false;
+  }
+
+  void _toolsChanged() {
+    if (_syncingTools || !mounted) return;
+    setState(() {
+      final id = _tools!.selectedId;
+      _selected = id == null ? null : _tools!.structure(id);
+      _opacity = _tools!.globalOpacity;
+    });
+  }
+
+  void _send(String type, [Map<String, dynamic> payload = const {}]) {
+    final tools = _tools;
+    if (tools == null) {
+      _controller.send(type, payload);
+      return;
+    }
+    switch (type) {
+      case 'select':
+        tools.select(payload['id'] as String);
+      case 'hide':
+        tools.hide(payload['id'] as String);
+      case 'isolate':
+        tools.isolate(payload['id'] as String);
+      case 'restore':
+        tools.restore();
+      case 'opacity':
+        tools.setGlobalOpacity((payload['value'] as num).toDouble());
+      case 'camera':
+        tools.camera(payload['view'] as String);
+      default:
+        _controller.send(type, payload);
+    }
+  }
+
+  Future<void> _advancedTools(AnatomyAtlasCatalog catalog) async {
+    _ensureTools(catalog);
+    final account = NorieAccountService.instance;
+    final guard = account.captureLearnerGuard();
+    final owner = account.user?.id;
+    final store = AnatomyAtlasBookmarkStore(
+        owner == null ? 'guest' : 'account.$owner', catalog,
+        stillCurrent: () => mounted && guard());
+    try {
+      await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          showDragHandle: true,
+          builder: (sheetContext) => SafeArea(
+              child: SizedBox(
+                  height: MediaQuery.sizeOf(sheetContext).height * .8,
+                  child: AnatomyAtlasToolsSheet(
+                      state: _tools!,
+                      bookmarks: store,
+                      selectedId: null,
+                      onOpenBookmark: (bookmark) async {
+                        if (!store.isCurrent) return;
+                        final part = _tools!.structure(bookmark.structureId);
+                        if (part == null) return;
+                        Navigator.pop(sheetContext);
+                        if (_reference == bookmark.reference &&
+                            _systems.containsAll(part.systems)) {
+                          _send('restore');
+                          _select(part);
+                          _send('camera', {'view': bookmark.view});
+                        } else {
+                          setState(() {
+                            _reference = bookmark.reference;
+                            _systems = {...part.systems};
+                            _selected = part;
+                            _opacity = 1;
+                            _pendingBookmark = bookmark;
+                            _pendingBookmarkGuard = guard;
+                          });
+                        }
+                      },
+                      onExport: (json) async {
+                        if (!store.isCurrent) return;
+                        await showDialog<void>(
+                            context: sheetContext,
+                            builder: (context) => AlertDialog(
+                                    title: const Text('Saved views export'),
+                                    content: SingleChildScrollView(
+                                        child: SelectableText(json)),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text('Close'))
+                                    ]));
+                      },
+                      onShowDetails: (id) {
+                        final part = _tools!.structure(id);
+                        if (part != null) {
+                          setState(() => _selected = part);
+                          _details(catalog);
+                        }
+                      }))));
+    } finally {
+      store.dispose();
+    }
+  }
 
   void _focusTutorialModel() {
     final step =
         NorieMascotScope.maybeOf(context)?.tutorialCoordinator.currentStep;
     if (step?.id == 'anatomy-camera' && _tutorialStructureId != null) {
-      _controller.send('focus', {'id': _tutorialStructureId});
+      _send('focus', {'id': _tutorialStructureId});
     } else {
-      _controller.send('camera', {'view': 'reset'});
+      _send('camera', {'view': 'reset'});
     }
   }
 
   void _tutorialModelLoaded(bool loaded) {
+    final bookmark = _pendingBookmark;
+    if (loaded && bookmark != null && bookmark.reference == _reference) {
+      final validOwner = _pendingBookmarkGuard?.call() ?? false;
+      _pendingBookmark = null;
+      _pendingBookmarkGuard = null;
+      if (!validOwner) {
+        _tools?.clearSelection();
+        setState(() => _selected = null);
+        return;
+      }
+      _send('select', {'id': bookmark.structureId});
+      _send('camera', {'view': bookmark.view});
+      return;
+    }
     if (loaded &&
         _selected != null &&
         _selected!.reference == _reference &&
         _selected!.systems.intersection(_systems).isNotEmpty) {
-      _controller.send('select', {'id': _selected!.id});
+      _send('select', {'id': _selected!.id});
     }
     final coordinator = NorieMascotScope.maybeOf(context)?.tutorialCoordinator;
     if (loaded &&
@@ -69,6 +216,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   void _changeReference(String value) {
     NorieAudioManager.instance.playUiSelect();
     setState(() {
+      _pendingBookmark = null;
+      _pendingBookmarkGuard = null;
       _reference = value;
       _selected = null;
       _systems = switch (value) {
@@ -86,6 +235,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   @override
   void dispose() {
     NorieAudioManager.instance.leaveContext(_audioContext);
+    _tools?.removeListener(_toolsChanged);
+    _tools?.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -93,8 +244,8 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
   void _select(AtlasStructure structure) {
     NorieAudioManager.instance.playUiSelect();
     setState(() => _selected = structure);
-    _controller.send('select', {'id': structure.id});
-    _controller.send('focus', {'id': structure.id});
+    _send('select', {'id': structure.id});
+    _send('focus', {'id': structure.id});
   }
 
   void _details(AnatomyAtlasCatalog catalog) {
@@ -245,24 +396,22 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                     ][value.round().clamp(0, 4)];
                                     setState(() => _opacity = opacity);
                                     update(() {});
-                                    _controller
-                                        .send('opacity', {'value': opacity});
+                                    _send('opacity', {'value': opacity});
                                   }),
                               if (_selected case final selected?) ...[
                                 Text(selected.name),
                                 Wrap(children: [
                                   TextButton(
-                                      onPressed: () => _controller
-                                          .send('focus', {'id': selected.id}),
+                                      onPressed: () =>
+                                          _send('focus', {'id': selected.id}),
                                       child: const Text('Focus')),
                                   TextButton(
-                                      onPressed: () => _controller
-                                          .send('isolate', {'id': selected.id}),
+                                      onPressed: () =>
+                                          _send('isolate', {'id': selected.id}),
                                       child: const Text('Isolate')),
                                   TextButton(
                                       onPressed: () {
-                                        _controller
-                                            .send('hide', {'id': selected.id});
+                                        _send('hide', {'id': selected.id});
                                         setState(() => _selected = null);
                                         update(() {});
                                       },
@@ -272,7 +421,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                               TextButton.icon(
                                   icon: const Icon(Icons.restore),
                                   onPressed: () {
-                                    _controller.send('restore');
+                                    _send('restore');
                                     setState(() => _opacity = 1);
                                     update(() {});
                                   },
@@ -484,6 +633,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                   if (catalog == null) {
                     return const Center(child: CircularProgressIndicator());
                   }
+                  _ensureTools(catalog);
                   final compact = MediaQuery.sizeOf(context).height < 500;
                   final count = catalog.search(_reference, _systems, '').length;
                   _tutorialStructureId = catalog
@@ -640,6 +790,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                         values.first.systems
                                             .intersection(_systems)
                                             .isNotEmpty) {
+                                      _tools?.select(id, sendCommand: false);
                                       setState(() => _selected = values.first);
                                     }
                                   },
@@ -704,8 +855,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                         onPressed: () {
                                           NorieAudioManager.instance
                                               .playUiTap();
-                                          _controller
-                                              .send('camera', {'view': view});
+                                          _send('camera', {'view': view});
                                         },
                                         child: Text(view[0].toUpperCase() +
                                             view.substring(1))),
@@ -713,6 +863,11 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                       onPressed: () => _guidedLearning(catalog),
                                       icon: const Icon(Icons.school_outlined),
                                       label: const Text('Guided Learn')),
+                                  TextButton.icon(
+                                      onPressed: () => _advancedTools(catalog),
+                                      icon: const Icon(Icons.layers_outlined),
+                                      label:
+                                          const Text('Layers & saved views')),
                                 ]))),
                     if (!compact && _selected != null)
                       Builder(builder: (context) {
@@ -744,7 +899,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                             onPressed: () {
                                               NorieAudioManager.instance
                                                   .playUiTap();
-                                              _controller.send(
+                                              _send(
                                                   'focus', {'id': selected.id});
                                             },
                                             child: const Text('Focus')),
@@ -752,7 +907,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                             onPressed: () {
                                               NorieAudioManager.instance
                                                   .playUiSelect();
-                                              _controller.send('isolate',
+                                              _send('isolate',
                                                   {'id': selected.id});
                                             },
                                             child: const Text('Isolate')),
@@ -760,7 +915,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                             onPressed: () {
                                               NorieAudioManager.instance
                                                   .playUiSelect();
-                                              _controller.send(
+                                              _send(
                                                   'hide', {'id': selected.id});
                                               setState(() => _selected = null);
                                             },
@@ -769,7 +924,7 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                             onPressed: () {
                                               NorieAudioManager.instance
                                                   .playUiTap();
-                                              _controller.send('restore');
+                                              _send('restore');
                                               setState(() => _opacity = 1);
                                             },
                                             child: const Text('Restore')),
@@ -798,14 +953,13 @@ class _AnatomyAtlasScreenState extends State<AnatomyAtlasScreen> {
                                       if (value == null) return;
                                       NorieAudioManager.instance.playUiSelect();
                                       setState(() => _opacity = value);
-                                      _controller
-                                          .send('opacity', {'value': value});
+                                      _send('opacity', {'value': value});
                                     }))),
                         IconButton(
                             tooltip: 'Restore hidden structures',
                             onPressed: () {
                               NorieAudioManager.instance.playUiTap();
-                              _controller.send('restore');
+                              _send('restore');
                               setState(() => _opacity = 1);
                             },
                             icon: const Icon(Icons.layers_outlined)),
