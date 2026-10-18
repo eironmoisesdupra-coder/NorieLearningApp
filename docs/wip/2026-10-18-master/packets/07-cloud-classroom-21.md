@@ -1,0 +1,2 @@
+# #21 Optional Cloud Classroom
+Preserve offline file exchange and LAN. Optional network classroom with teacher role verified server-side, class invitations, assignment share, consent-aware learner aliases, durable offline outbox, idempotent submissions, reports, restore. Backend authorization/RLS, class isolation, data minimization, abuse handling, retention/deletion, guardian privacy for minors, audit/replay protections. Do not present as high stakes proctoring or auto-upload learner private study data. No exposure of exact location/contact lists.

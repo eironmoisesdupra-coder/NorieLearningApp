@@ -1,0 +1,23 @@
+{
+  "currency": "PHP",
+  "checkout_enabled": false,
+  "plans": [
+    {
+      "id": "free",
+      "monthly": 0
+    },
+    {
+      "id": "plus",
+      "monthly": 79
+    },
+    {
+      "id": "pro",
+      "monthly": 149
+    },
+    {
+      "id": "family",
+      "monthly": 249,
+      "max_profiles": 4
+    }
+  ]
+}

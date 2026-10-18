@@ -1,0 +1,2 @@
+# #27 Future Grade/Subject Content Packs
+Publish vetted reusable core, enrichment, classroom, seasonal, exam-review and future-level packs. Expand Filipino and AP beyond Grade 1 with verified source-based real authored content, then higher grades. Require metadata, localization, licenses, offline file references, versioned manifest, prerequisites, accessibility checks, no data loss, size budget. Staging levels: draft, reviewed, approved-unpublished, published, retired. Never invent teacher approval or claim placeholders are lessons.

@@ -1,0 +1,2 @@
+# Rank Animation Phase 2
+Current base commit already adds independent crystal, Scholar/Master aura and wing/book animation. Inspect the code/tests and verify before changing. Preserve rank labels Rookie(1), Novice(5), Veteran(15), Scholar(30), Master(50) and stable stored bundle IDs explorer/curious/scholar/specialist/master. Motion complexity rises by tier. Test actual layer motion (not fake PNG layer claims), reduced-motion, TickerMode pause, hidden routes, 48px and 96px render, CPU/frame timing. No changed XP math or credit perks.
