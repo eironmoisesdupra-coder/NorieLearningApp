@@ -26,11 +26,15 @@ class NorieShopItem {
 }
 
 abstract final class NorieShopCatalog {
+  /// The owner-approved local prices differ from the deployed server catalog.
+  /// Enable only after its reviewed price migration has been applied and checked.
+  static const accountPricingReady = false;
+
   static const streakShield = NorieShopItem(
     id: 'streak-shield',
     title: 'Streak Shield',
     description: 'Protects one missed study day. One shield is consumed.',
-    price: 300,
+    price: 250,
     type: NorieShopItemType.consumable,
     iconName: 'shield',
     consumable: true,
@@ -40,7 +44,7 @@ abstract final class NorieShopCatalog {
     id: 'frame-cyan-orbit',
     title: 'Cyan Orbit Frame',
     description: 'A glowing cyan profile frame.',
-    price: 150,
+    price: 200,
     type: NorieShopItemType.profileFrame,
     iconName: 'frame',
   );
@@ -49,7 +53,7 @@ abstract final class NorieShopCatalog {
     id: 'frame-violet-scholar',
     title: 'Violet Scholar Frame',
     description: 'A violet profile frame for focused learners.',
-    price: 300,
+    price: 400,
     type: NorieShopItemType.profileFrame,
     iconName: 'frame',
   );
@@ -58,7 +62,7 @@ abstract final class NorieShopCatalog {
     id: 'badge-atom',
     title: 'Atomic Mind Badge',
     description: 'A collectible science profile badge.',
-    price: 200,
+    price: 300,
     type: NorieShopItemType.badge,
     iconName: 'badge',
   );
@@ -67,7 +71,7 @@ abstract final class NorieShopCatalog {
     id: 'badge-streak',
     title: 'Streak Keeper Badge',
     description: 'A collectible badge for consistent study.',
-    price: 250,
+    price: 350,
     type: NorieShopItemType.badge,
     iconName: 'badge',
   );
@@ -76,7 +80,7 @@ abstract final class NorieShopCatalog {
     id: 'theme-aurora',
     title: 'Aurora Theme',
     description: 'Unlock a cyan-violet cosmetic theme preset.',
-    price: 500,
+    price: 600,
     type: NorieShopItemType.theme,
     iconName: 'theme',
   );
@@ -85,7 +89,7 @@ abstract final class NorieShopCatalog {
     id: 'theme-ember',
     title: 'Ember Theme',
     description: 'Unlock an orange-magenta cosmetic theme preset.',
-    price: 650,
+    price: 750,
     type: NorieShopItemType.theme,
     iconName: 'theme',
   );

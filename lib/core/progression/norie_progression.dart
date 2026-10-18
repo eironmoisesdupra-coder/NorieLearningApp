@@ -662,6 +662,11 @@ class NorieProgression extends ChangeNotifier {
   }
 
   bool purchaseShopItem(NorieShopItem item) {
+    if (!NorieShopCatalog.accountPricingReady &&
+        (NorieAccountService.instance.isSignedIn ||
+            NorieEconomyStore.instance.active)) {
+      return false;
+    }
     if (!item.consumable && _ownedShopItems.contains(item.id)) return false;
     if (!NorieEconomyStore.instance.spend(item.price,
         itemId: item.id,
@@ -688,6 +693,24 @@ class NorieProgression extends ChangeNotifier {
         _equippedBadgeId = item.id;
       case NorieShopItemType.theme:
         _equippedThemeId = item.id;
+      case NorieShopItemType.consumable:
+        return false;
+    }
+    _changed();
+    return true;
+  }
+
+  bool unequipShopItem(NorieShopItem item) {
+    switch (item.type) {
+      case NorieShopItemType.profileFrame:
+        if (_equippedFrameId != item.id) return false;
+        _equippedFrameId = null;
+      case NorieShopItemType.badge:
+        if (_equippedBadgeId != item.id) return false;
+        _equippedBadgeId = null;
+      case NorieShopItemType.theme:
+        if (_equippedThemeId != item.id) return false;
+        _equippedThemeId = null;
       case NorieShopItemType.consumable:
         return false;
     }
