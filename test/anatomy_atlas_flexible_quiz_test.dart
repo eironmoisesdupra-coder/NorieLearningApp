@@ -213,4 +213,40 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  test('specific paid clue uses authored part facts and never names an option',
+      () {
+    final part = AtlasStructure.fromJson({
+      'id': 'test-mandible',
+      'name': 'Mandible',
+      'reference': 'male',
+      'systems': ['skeletal'],
+      'asset': 'bones',
+      'source': 'test',
+    });
+    final q = AtlasQuizQuestion(
+        part, const ['Mandible', 'Clavicle', 'Radius', 'Ulna']);
+    final clue = q.specificHint;
+    expect(clue, isNotNull);
+    expect(clue, contains('Look for:'));
+    expect(clue, contains('Did you know?'));
+    for (final option in q.options) {
+      expect(clue!.toLowerCase(), isNot(contains(option.toLowerCase())));
+    }
+  });
+
+  test('unmatched catalog part has no paid fact to charge for', () {
+    final part = AtlasStructure.fromJson({
+      'id': 'unreviewed-part',
+      'name': 'Structure without authored facts',
+      'reference': 'male',
+      'systems': ['skeletal'],
+      'asset': 'bones',
+      'source': 'test',
+    });
+    expect(AtlasQuizQuestion(
+      part, const ['Structure without authored facts', 'Other part'],
+    ).specificHint, isNull);
+  });
+
 }
