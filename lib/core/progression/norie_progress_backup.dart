@@ -59,7 +59,14 @@ abstract final class NorieProgressBackup {
     final doc = jsonDecode(text);
     if (doc is! Map<String, dynamic> ||
         doc['format'] != 'norie-learning-progress' ||
-        !const [1, 2].contains(doc['version'])) {
+        !const [1, 2].contains(doc['version']) ||
+        doc.keys.any((key) => !const {
+              'format',
+              'version',
+              'owner',
+              'exported_at',
+              'state'
+            }.contains(key))) {
       throw const FormatException('Choose a supported Norie progress backup.');
     }
     final owner = doc['owner'];

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/anatomy_atlas_catalog.dart';
+import 'anatomy_backup_persistence.dart';
 
 const _views = {'front', 'back', 'left', 'right', 'top', 'reset'};
 
@@ -34,14 +35,33 @@ class AnatomyAtlasBookmarkStore extends ChangeNotifier {
     bool Function()? stillCurrent,
     Future<String?> Function(String)? read,
     Future<bool> Function(String, String)? write,
+    AnatomyBackupPersistence? persistence,
   })  : _stillCurrent = stillCurrent ?? (() => true),
         _read = read ?? _readPreferences,
-        _write = write ?? _writePreferences {
+        _write = write ?? _writePreferences,
+        _persistence = persistence ??
+            (read == null && write == null
+                ? AnatomyBackupPersistence.instance
+                : null) {
     if (ownerId.trim().isEmpty ||
         ownerId.length > 256 ||
         RegExp(r'[\x00-\x1f\x7f]').hasMatch(ownerId)) {
       throw ArgumentError.value(ownerId, 'ownerId');
     }
+    _persistence?.register(this,
+        owner: () => isCurrent ? ownerId : null,
+        flush: () async {
+          await (_queues[_key] ?? Future<void>.value());
+        },
+        restored: (parts) {
+          if (!isCurrent) return;
+          _bookmarks = _decode(parts['bookmarks']);
+          _loaded = true;
+          notifyListeners();
+        },
+        transactionChanged: () {
+          if (!_disposed) notifyListeners();
+        });
   }
 
   static const maxBookmarks = 100;
@@ -53,9 +73,11 @@ class AnatomyAtlasBookmarkStore extends ChangeNotifier {
   final bool Function() _stillCurrent;
   final Future<String?> Function(String) _read;
   final Future<bool> Function(String, String) _write;
+  final AnatomyBackupPersistence? _persistence;
   List<AnatomyAtlasBookmark> _bookmarks = [];
   bool _loaded = false, _disposed = false;
-  bool get loaded => _loaded && isCurrent;
+  bool get loaded =>
+      _loaded && isCurrent && !(_persistence?.isRestoring(ownerId) ?? false);
   bool get isCurrent => !_disposed && _stillCurrent();
   List<AnatomyAtlasBookmark> get bookmarks =>
       isCurrent ? List.unmodifiable(_bookmarks) : const [];
@@ -140,7 +162,9 @@ class AnatomyAtlasBookmarkStore extends ChangeNotifier {
 
   Future<void> load() => _serial(() async {
         if (!isCurrent) return;
-        final raw = await _read(_key);
+        final raw = _persistence == null
+            ? await _read(_key)
+            : await _persistence.readPart(ownerId, 'bookmarks');
         if (!isCurrent) return;
         final restored = _decode(raw);
         if (!isCurrent) return;
@@ -173,36 +197,49 @@ class AnatomyAtlasBookmarkStore extends ChangeNotifier {
   Future<bool> reset() => _mutate((rows) => rows.clear(), reset: true);
 
   Future<bool> _mutate(void Function(List<AnatomyAtlasBookmark>) edit,
-          {bool reset = false}) =>
-      _serial(() async {
-        if (!isCurrent) return false;
-        final previousRaw = await _read(_key);
-        if (!isCurrent) return false;
-        final rows = reset ? <AnatomyAtlasBookmark>[] : _decode(previousRaw);
-        edit(rows);
-        final payload = _encode(rows);
-        if (utf8.encode(payload).length > maxBytes) {
-          throw StateError('Saved views exceed the local size limit.');
-        }
-        if (!isCurrent) return false;
-        if (!await _write(_key, payload)) {
+      {bool reset = false}) {
+    if (_persistence?.isRestoring(ownerId) ?? false) {
+      return Future<bool>.error(
+          StateError('Anatomy backup is being restored. Please wait.'));
+    }
+    final revision = _persistence?.revision(ownerId);
+    return _serial(() async {
+      if (!isCurrent) return false;
+      final previousRaw = _persistence == null
+          ? await _read(_key)
+          : await _persistence.readPart(ownerId, 'bookmarks');
+      if (!isCurrent) return false;
+      final rows = reset ? <AnatomyAtlasBookmark>[] : _decode(previousRaw);
+      edit(rows);
+      final payload = _encode(rows);
+      if (utf8.encode(payload).length > maxBytes) {
+        throw StateError('Saved views exceed the local size limit.');
+      }
+      if (!isCurrent) return false;
+      if (_persistence != null) {
+        final saved = await _persistence.writePart(
+            ownerId, 'bookmarks', payload,
+            stillCurrent: () => isCurrent, expectedRevision: revision);
+        if (!saved) return false;
+      } else if (!await _write(_key, payload)) {
+        throw StateError('Could not save views on this device. Please retry.');
+      }
+      if (!isCurrent) {
+        // Account changes cannot cancel an in-flight platform write. Per-key
+        // serialization keeps a newer store behind this compensation.
+        if (_persistence == null &&
+            !await _write(_key, previousRaw ?? _encode([]))) {
           throw StateError(
-              'Could not save views on this device. Please retry.');
+              'Could not restore views after the learner changed.');
         }
-        if (!isCurrent) {
-          // Account changes cannot cancel an in-flight platform write. Per-key
-          // serialization keeps a newer store behind this compensation.
-          if (!await _write(_key, previousRaw ?? _encode([]))) {
-            throw StateError(
-                'Could not restore views after the learner changed.');
-          }
-          return false;
-        }
-        _bookmarks = rows;
-        _loaded = true;
-        notifyListeners();
-        return true;
-      });
+        return false;
+      }
+      _bookmarks = rows;
+      _loaded = true;
+      notifyListeners();
+      return true;
+    });
+  }
 
   String exportJson() {
     if (!isCurrent) throw StateError('Learner changed. Reopen Explorer tools.');
@@ -213,6 +250,7 @@ class AnatomyAtlasBookmarkStore extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _persistence?.unregister(this);
     super.dispose();
   }
 }
