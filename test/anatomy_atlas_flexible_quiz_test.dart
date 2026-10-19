@@ -213,4 +213,39 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  test('coarse name matches cannot authorize paid anatomical claims', () {
+    for (final name in ['Mandible', 'Right mandible', 'Left mandible']) {
+      for (final reference in ['male', 'female']) {
+        final part = AtlasStructure.fromJson({
+          'id': 'unapproved-$reference-$name',
+          'name': name,
+          'reference': reference,
+          'systems': ['skeletal'],
+          'asset': 'bones',
+          'source': 'test',
+        });
+        expect(AtlasQuizQuestion(part, [name, 'Clavicle']).specificHint, isNull,
+            reason:
+                'A source name is not version-specific editorial approval.');
+      }
+    }
+  });
+
+  test('unmatched catalog part has no paid fact to charge for', () {
+    final part = AtlasStructure.fromJson({
+      'id': 'unreviewed-part',
+      'name': 'Structure without authored facts',
+      'reference': 'male',
+      'systems': ['skeletal'],
+      'asset': 'bones',
+      'source': 'test',
+    });
+    expect(
+        AtlasQuizQuestion(
+          part,
+          const ['Structure without authored facts', 'Other part'],
+        ).specificHint,
+        isNull);
+  });
 }

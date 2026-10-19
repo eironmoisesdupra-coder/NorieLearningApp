@@ -39,6 +39,28 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
   String? _choice;
   bool _modelReady = false;
   bool _hintVisible = false;
+  // A genuinely shorter fallback retains its existing free hint behavior.
+  bool get _paidHintMode => _quiz.questions.length == 20;
+
+  String? _safeHint(AtlasQuizQuestion question) =>
+      _paidHintMode && !_quiz.checked ? question.specificHint : question.hint;
+
+  void _toggleHint() {
+    if (!_stillCurrent() || _quiz.finished) return;
+    if (_hintVisible) {
+      setState(() => _hintVisible = false);
+      return;
+    }
+    if (_safeHint(_quiz.current) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Specific hint unavailable. No Credits were spent.')));
+      return;
+    }
+    // No payment path: this build has no trusted paid-hint fact bank or durable
+    // charge/reveal transaction. Do not use synchronous spendCredits here.
+    setState(() => _hintVisible = true);
+  }
+
   bool _outroShown = false;
   final _attemptId = const Uuid().v4();
   final _answers = <QuizAnswerRecord>[];
@@ -53,7 +75,8 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
         difficulty: widget.difficulty,
         kinds: widget.kinds,
         stillCurrent: _stillCurrent);
-    _hintVisible = widget.difficulty == AtlasQuizDifficulty.guided;
+    _hintVisible =
+        !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
     NorieAccountService.instance.addListener(_learnerChanged);
     _audioContext =
         NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
@@ -111,7 +134,8 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
     setState(() {
       _choice = null;
       _modelReady = false;
-      _hintVisible = widget.difficulty == AtlasQuizDifficulty.guided;
+      _hintVisible =
+          !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
     });
     if (_questionScroll.hasClients) _questionScroll.jumpTo(0);
     if (_quiz.finished && !_outroShown) {
@@ -189,6 +213,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
           ])));
     }
     final question = _quiz.current;
+    final questionIndex = _quiz.index;
     final audio = NorieAudioManager.instance;
     return Scaffold(
         appBar: AppBar(
@@ -198,10 +223,13 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                 overflow: TextOverflow.ellipsis),
             actions: [
               IconButton(
-                  tooltip: _hintVisible ? 'Hide hint' : 'Show hint',
+                  tooltip: _hintVisible
+                      ? 'Hide hint'
+                      : _paidHintMode && !_quiz.checked
+                          ? 'Specific hint unavailable; costs 0 credits'
+                          : 'Show hint',
                   icon: Icon(_hintVisible ? Icons.search_off : Icons.search),
-                  onPressed: () =>
-                      setState(() => _hintVisible = !_hintVisible)),
+                  onPressed: _toggleHint),
               IconButton(
                   tooltip: 'Recenter structure',
                   icon: const Icon(Icons.center_focus_strong),
@@ -231,7 +259,10 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                   systems: question.target.systems,
                   target: question.target.id,
                   onLoaded: (ready) {
-                    if (mounted && _modelReady != ready) {
+                    if (mounted &&
+                        _stillCurrent() &&
+                        _quiz.index == questionIndex &&
+                        _modelReady != ready) {
                       setState(() => _modelReady = ready);
                     }
                   },
@@ -247,10 +278,21 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                     if (_hintVisible)
                       Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(question.hint,
+                          child: Text(
+                              _safeHint(question) ?? 'Hint unavailable.',
                               key: const ValueKey('atlas-quiz-hint'),
                               style: const TextStyle(
                                   color: NorieColors.textSecondary))),
+                    if (_paidHintMode && !_hintVisible && !_quiz.checked)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'A reviewed part-specific hint is unavailable. No Credits will be charged.',
+                          style: TextStyle(
+                              color: NorieColors.textSecondary, fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     for (final option in question.options)
                       Padding(
                           padding: const EdgeInsets.only(bottom: 6),

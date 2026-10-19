@@ -1,0 +1,13 @@
+{
+  "baseline_sha": "17a5196f3cb2cd14903cd6673930bad5390acf00",
+  "version_at_baseline": "0.16.0+21",
+  "bundle_kind": "strict_codex_implementation_specification",
+  "status": {
+    "anatomy_hint_pr65": "open_not_merged_requires_tests",
+    "lesson_enrichment": "proposed_partial_foundation",
+    "curriculum_publication_approval": "proposed_untrusted_local_drafts_only",
+    "anatomy_guided_study_backup": "not_implemented"
+  },
+  "verified_tests_in_this_bundle": [],
+  "production_deployment_claimed": false
+}

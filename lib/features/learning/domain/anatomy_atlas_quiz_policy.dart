@@ -34,6 +34,12 @@ class AtlasQuizQuestion {
         .firstOrNull;
   }
 
+  /// Paid clues are intentionally unavailable. Coarse lesson names and client
+  /// JSON are not authority for exact, version-specific anatomical claims.
+  /// Activation requires an independently approved keyed fact bank AND a durable
+  /// idempotent credit transaction; neither is configured in this release.
+  String? get specificHint => null;
+
   String get hint {
     if (kind == AtlasQuestionKind.system) {
       return 'Recall the system categories used when browsing the atlas. '
