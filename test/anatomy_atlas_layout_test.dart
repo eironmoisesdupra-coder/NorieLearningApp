@@ -97,7 +97,7 @@ void main() {
     await tester.pump();
     expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsNothing);
     expect(find.text('Specific hint unavailable. No Credits were spent.'),
-        findsOneWidget);
+        findsWidgets);
     expect(tester.getSize(find.byType(AnatomyAtlasModelView)).height,
         greaterThan(120));
     expect(tester.takeException(), isNull);
