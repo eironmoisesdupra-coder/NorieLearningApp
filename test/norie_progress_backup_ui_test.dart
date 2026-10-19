@@ -29,6 +29,40 @@ class _SavePicker extends FilePickerPlatform {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   testWidgets(
+      'anatomy export rejects unreadable saved evidence before file picker',
+      (tester) async {
+    final picker = _SavePicker();
+    final previousPicker = FilePickerPlatform.instance;
+    FilePickerPlatform.instance = picker;
+    addTearDown(() => FilePickerPlatform.instance = previousPicker);
+    SharedPreferences.setMockInitialValues(
+        {'norie.anatomy.study.v1.guest': '{damaged'});
+    await tester.pumpWidget(const MaterialApp(home: NorieAppProgressScreen()));
+    final export = find.text('Export Anatomy backup');
+    await tester.scrollUntilVisible(export, 300);
+    await tester.tap(export);
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 10)));
+      if (find.textContaining('Could not finish.').evaluate().isNotEmpty ||
+          find.textContaining('Invalid').evaluate().isNotEmpty) {
+        break;
+      }
+    }
+    expect(picker.saves, 0);
+    expect(find.byType(LinearProgressIndicator), findsNothing,
+        reason: 'The rejected export must finish instead of hanging.');
+    expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Semantics && widget.properties.liveRegion == true),
+        findsOneWidget);
+    expect(
+        (await SharedPreferences.getInstance())
+            .getString('norie.anatomy.study.v1.guest'),
+        '{damaged');
+  });
+  testWidgets(
       'export refuses a partial snapshot when saved feature data needs recovery',
       (tester) async {
     final picker = _SavePicker();

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/account/norie_account_service.dart';
 import '../domain/anatomy_atlas_catalog.dart';
 import '../domain/anatomy_guided_learning.dart';
+import 'anatomy_backup_persistence.dart';
 
 /// Offline study evidence, isolated by account (including the local guest).
 /// Every identity change increments a generation, including A -> B -> A.
@@ -17,13 +19,33 @@ class AnatomyStudyStore extends ChangeNotifier {
     Listenable? ownerChanges,
     Future<String?> Function(String key)? read,
     Future<void> Function(String key, String value)? write,
+    AnatomyBackupPersistence? persistence,
   })  : _validIds = catalog.structures.map((s) => s.id).toSet(),
         _ownerId = ownerId ?? (() => NorieAccountService.instance.user?.id),
         _ownerChanges = ownerChanges ??
             (ownerId == null ? NorieAccountService.instance : null),
         _read = read ?? _readPreferences,
-        _write = write ?? _writePreferences {
+        _write = write ?? _writePreferences,
+        _persistence = persistence ??
+            (read == null && write == null
+                ? AnatomyBackupPersistence.instance
+                : null) {
     _ownerChanges?.addListener(_synchronizeOwner);
+    _persistence?.register(
+      this,
+      owner: () => _started && !_disposed ? _backupOwner : null,
+      flush: () async {
+        await initialize();
+        await _pending;
+        if (!_ready || _saveError != null) {
+          throw StateError('Saved Anatomy study needs recovery before backup.');
+        }
+      },
+      restored: _adoptBackup,
+      transactionChanged: () {
+        if (!_disposed) notifyListeners();
+      },
+    );
   }
 
   static const _maxEntries = 128;
@@ -33,6 +55,7 @@ class AnatomyStudyStore extends ChangeNotifier {
   final Listenable? _ownerChanges;
   final Future<String?> Function(String) _read;
   final Future<void> Function(String, String) _write;
+  final AnatomyBackupPersistence? _persistence;
   final _entries = <String, AnatomyStudyProgress>{};
   String? _selected, _owner;
   bool _started = false, _ready = false, _disposed = false;
@@ -41,9 +64,22 @@ class AnatomyStudyStore extends ChangeNotifier {
   Future<void>? _loading;
   String? _saveError;
 
-  bool get ready => _ready;
-  String? get saveError => _saveError;
-  AnatomyStudyProgress? get current => _entries[_selected];
+  bool get ready =>
+      _ready && !(_persistence?.isRestoring(_backupOwner) ?? false);
+  String? get saveError => (_persistence?.isRestoring(_backupOwner) ?? false)
+      ? 'Anatomy backup is being restored. Please wait.'
+      : _saveError;
+  AnatomyStudyProgress? get current {
+    final entry = _entries[_selected];
+    if (entry != null &&
+        !entry.answersRevealed &&
+        (_persistence?.wasAnswerRevealed(_backupOwner, entry.structureId) ??
+            false)) {
+      return entry.copyWith(answersRevealed: true);
+    }
+    return entry;
+  }
+
   Map<String, AnatomyStudyProgress> get entries => Map.unmodifiable(_entries);
 
   /// Guards delayed UI/model callbacks across identity changes, even A -> B -> A.
@@ -62,6 +98,32 @@ class AnatomyStudyStore extends ChangeNotifier {
 
   String get _storageKey =>
       'norie.anatomy.study.v1.${_owner == null ? 'guest' : 'account.${Uri.encodeComponent(_owner!)}'}';
+  String get _backupOwner => _owner == null ? 'guest' : 'account.$_owner';
+
+  void _adoptBackup(Map<String, String?> parts) {
+    if (_disposed || !_started || _ownerId() != _owner) return;
+    // Invalidates delayed callbacks and snapshots from the replaced activity.
+    _generation++;
+    final raw = parts['study'];
+    final value = raw == null ? null : jsonDecode(raw) as Map<String, dynamic>;
+    _entries.clear();
+    _selected = null;
+    if (value != null) {
+      for (final row in value['entries'] as List) {
+        final entry = AnatomyStudyProgress.restore(row, _validIds);
+        if (entry != null) {
+          _entries[entry.structureId] = entry;
+          if (entry.answersRevealed) {
+            _persistence?.noteAnswerRevealed(_backupOwner, entry.structureId);
+          }
+        }
+      }
+      _selected = value['selected'] as String?;
+    }
+    _ready = true;
+    _saveError = null;
+    notifyListeners();
+  }
 
   Future<void> initialize() {
     _synchronizeOwner();
@@ -92,7 +154,9 @@ class AnatomyStudyStore extends ChangeNotifier {
     await _pending;
     if (!_isCurrent(generation)) return;
     try {
-      final raw = await _read(key);
+      final raw = _persistence == null
+          ? await _read(key)
+          : await _persistence.readPart(_backupOwner, 'study');
       if (!_isCurrent(generation)) return;
       if (raw != null && raw.length <= _maxPayload) {
         final value = jsonDecode(raw);
@@ -103,7 +167,13 @@ class AnatomyStudyStore extends ChangeNotifier {
             (value['entries'] as List).length <= _maxEntries) {
           for (final row in value['entries'] as List) {
             final entry = AnatomyStudyProgress.restore(row, _validIds);
-            if (entry != null) _entries[entry.structureId] = entry;
+            if (entry != null) {
+              _entries[entry.structureId] = entry;
+              if (entry.answersRevealed) {
+                _persistence?.noteAnswerRevealed(
+                    _backupOwner, entry.structureId);
+              }
+            }
           }
           final selected = value['selected'];
           if (selected is String && _entries.containsKey(selected)) {
@@ -124,23 +194,28 @@ class AnatomyStudyStore extends ChangeNotifier {
 
   bool get _canMutate {
     _synchronizeOwner();
-    return !_disposed && _ready;
+    return !_disposed && ready;
   }
 
-  void select(String id) {
-    if (!_canMutate || !_validIds.contains(id)) return;
+  bool select(String id) {
+    if (!_canMutate || !_validIds.contains(id)) return false;
+    final before = _entries[id];
     if (!_entries.containsKey(id) && _entries.length >= _maxEntries) {
       _entries.remove(_entries.keys.first);
     }
     _selected = id;
     _entries.putIfAbsent(id, () => AnatomyStudyProgress(structureId: id));
-    _changed();
+    _changed(changedId: id, before: before);
+    return true;
   }
 
-  void _update(AnatomyStudyProgress Function(AnatomyStudyProgress) transform) {
-    if (!_canMutate || current == null) return;
-    _entries[_selected!] = transform(current!);
-    _changed();
+  bool _update(AnatomyStudyProgress Function(AnatomyStudyProgress) transform) {
+    if (!_canMutate || current == null) return false;
+    final before = current!;
+    final id = _selected!;
+    _entries[id] = transform(before);
+    _changed(changedId: id, before: before);
+    return true;
   }
 
   void goToStep(AnatomyStudyStep step) =>
@@ -164,12 +239,15 @@ class AnatomyStudyStore extends ChangeNotifier {
       _update((progress) => progress.copyWith(identified: true));
   void recordStudy() => _update((progress) => progress.copyWith(studied: true));
 
-  void recordAnswerReveal() =>
-      _update((progress) => progress.copyWith(answersRevealed: true));
+  bool recordAnswerReveal() => _update((progress) {
+        _persistence?.noteAnswerRevealed(_backupOwner, progress.structureId);
+        return progress.copyWith(answersRevealed: true);
+      });
 
-  void recordCheck({required bool correct, required bool assisted}) =>
+  bool recordCheck({required bool correct, required bool assisted}) =>
       _update((progress) {
         final wasAssisted = assisted || progress.answersRevealed;
+        _persistence?.noteAnswerRevealed(_backupOwner, progress.structureId);
         return progress.copyWith(
           answersRevealed: true,
           assistedAttempts: (progress.assistedAttempts + (wasAssisted ? 1 : 0))
@@ -183,14 +261,104 @@ class AnatomyStudyStore extends ChangeNotifier {
         );
       });
 
-  void _changed() {
-    _save();
+  void _changed({String? changedId, AnatomyStudyProgress? before}) {
+    _save(changedId: changedId, before: before);
     notifyListeners();
   }
 
-  void _save() {
+  bool _sameProgress(AnatomyStudyProgress? a, AnatomyStudyProgress? b) =>
+      a == null || b == null
+          ? a == b
+          : a.structureId == b.structureId &&
+              a.step == b.step &&
+              setEquals(a.completedSteps, b.completedSteps) &&
+              setEquals(a.skippedSteps, b.skippedSteps) &&
+              a.identified == b.identified &&
+              a.studied == b.studied &&
+              a.answersRevealed == b.answersRevealed &&
+              a.assistedAttempts == b.assistedAttempts &&
+              a.independentAttempts == b.independentAttempts &&
+              a.independentCorrect == b.independentCorrect;
+
+  AnatomyStudyProgress _mergeEvidence(
+      AnatomyStudyProgress latest, AnatomyStudyProgress incoming) {
+    final done = {...latest.completedSteps, ...incoming.completedSteps};
+    return incoming.copyWith(
+      completedSteps: done,
+      skippedSteps: {...latest.skippedSteps, ...incoming.skippedSteps}
+        ..removeAll(done),
+      identified: latest.identified || incoming.identified,
+      studied: latest.studied || incoming.studied,
+      answersRevealed: latest.answersRevealed || incoming.answersRevealed,
+      assistedAttempts:
+          math.max(latest.assistedAttempts, incoming.assistedAttempts),
+      independentAttempts:
+          math.max(latest.independentAttempts, incoming.independentAttempts),
+      independentCorrect:
+          math.max(latest.independentCorrect, incoming.independentCorrect),
+    );
+  }
+
+  String _upsertStudy(
+      String? previousRaw,
+      Map<String, AnatomyStudyProgress> changes,
+      Map<String, AnatomyStudyProgress?> expected,
+      String? selected) {
+    final rows = <String, AnatomyStudyProgress>{};
+    if (previousRaw != null) {
+      final value = jsonDecode(previousRaw);
+      if (value is! Map ||
+          value['version'] != 1 ||
+          value['contentVersion'] != AnatomyGuidedModule.contentVersion ||
+          value['entries'] is! List ||
+          (value['entries'] as List).length > _maxEntries) {
+        throw const FormatException(
+            'Saved Anatomy study needs recovery before saving.');
+      }
+      for (final raw in value['entries'] as List) {
+        final entry = AnatomyStudyProgress.restore(raw, _validIds);
+        if (entry == null || rows.containsKey(entry.structureId)) {
+          throw const FormatException(
+              'Saved Anatomy study contains invalid entries.');
+        }
+        rows[entry.structureId] = entry;
+        if (entry.answersRevealed) {
+          _persistence?.noteAnswerRevealed(_backupOwner, entry.structureId);
+        }
+      }
+    }
+    for (final entry in changes.entries) {
+      final latest = rows.remove(entry.key);
+      rows[entry.key] =
+          latest == null || _sameProgress(latest, expected[entry.key])
+              ? entry.value
+              : _mergeEvidence(latest, entry.value);
+    }
+    // Retain the existing bounded recent-entry behavior, using the shared state
+    // rather than evicting entries based on a stale instance's whole snapshot.
+    while (rows.length > _maxEntries) {
+      rows.remove(rows.keys.first);
+    }
+    return jsonEncode({
+      'version': 1,
+      'contentVersion': AnatomyGuidedModule.contentVersion,
+      'selected': rows.containsKey(selected) ? selected : null,
+      'entries': rows.values.map((entry) => entry.toJson()).toList()
+    });
+  }
+
+  void _save({String? changedId, AnatomyStudyProgress? before}) {
     final generation = _generation;
     final key = _storageKey;
+    final backupOwner = _backupOwner;
+    final backupRevision = _persistence?.revision(backupOwner);
+    final selected = _selected;
+    final changes = changedId == null
+        ? Map<String, AnatomyStudyProgress>.from(_entries)
+        : <String, AnatomyStudyProgress>{changedId: _entries[changedId]!};
+    final expected = <String, AnatomyStudyProgress?>{
+      if (changedId != null) changedId: before
+    };
     final payload = jsonEncode({
       'version': 1,
       'contentVersion': AnatomyGuidedModule.contentVersion,
@@ -200,7 +368,15 @@ class AnatomyStudyStore extends ChangeNotifier {
     _pending = _pending.then((_) async {
       if (!_isCurrent(generation)) return;
       try {
-        await _write(key, payload);
+        if (_persistence == null) {
+          await _write(key, payload);
+        } else {
+          await _persistence.writePart(backupOwner, 'study', payload,
+              stillCurrent: () => _isCurrent(generation),
+              expectedRevision: backupRevision,
+              mergeWithCurrent: (current) =>
+                  _upsertStudy(current, changes, expected, selected));
+        }
         if (_isCurrent(generation)) _saveError = null;
       } on Object catch (_) {
         if (_isCurrent(generation)) {
@@ -224,6 +400,19 @@ class AnatomyStudyStore extends ChangeNotifier {
     final intendedOwnerIsCurrent = captureOwnerGuard();
     await initialization;
     if (!intendedOwnerIsCurrent() || !_canMutate) return;
+    if (_persistence != null) {
+      final empty = jsonEncode({
+        'version': 1,
+        'contentVersion': AnatomyGuidedModule.contentVersion,
+        'selected': null,
+        'entries': <dynamic>[]
+      });
+      await _persistence.restore(
+          _backupOwner, {'study': empty, 'bookmarks': null},
+          stillCurrent: intendedOwnerIsCurrent,
+          mergeWithCurrent: (previous) => {...previous, 'study': empty});
+      return;
+    }
     _entries.clear();
     _selected = null;
     _changed();
@@ -234,6 +423,7 @@ class AnatomyStudyStore extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _ownerChanges?.removeListener(_synchronizeOwner);
+    _persistence?.unregister(this);
     super.dispose();
   }
 }

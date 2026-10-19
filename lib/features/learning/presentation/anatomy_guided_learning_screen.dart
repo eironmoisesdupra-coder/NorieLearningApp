@@ -121,7 +121,7 @@ class _AnatomyGuidedLearningScreenState
       .label;
 
   void _choose(AtlasStructure structure) {
-    _store.select(structure.id);
+    if (!_store.select(structure.id)) return;
     _setGuideVisible(true);
   }
 
@@ -143,11 +143,11 @@ class _AnatomyGuidedLearningScreenState
   }
 
   void _help(AtlasStructure structure) {
+    if (!_store.recordAnswerReveal()) return;
     final text = '${structure.name}. Catalog systems: '
         '${structure.systems.join(', ')}. Compare the highlighted part with '
         'its name. Later checks on this entry count as assisted practice.';
     setState(() => _helpUsed = true);
-    _store.recordAnswerReveal();
     _hintController = NorieMascotScope.maybeOf(context)?.controller;
     _ownedHint = text;
     _hintController?.speak(text);
@@ -156,6 +156,7 @@ class _AnatomyGuidedLearningScreenState
   void _answer(bool correct) {
     if (_answered || !_modelLoaded) return;
     final assisted = _helpUsed || (_store.current?.answersRevealed ?? true);
+    if (!_store.recordCheck(correct: correct, assisted: assisted)) return;
     setState(() {
       _answered = true;
       _feedback = correct
@@ -166,7 +167,6 @@ class _AnatomyGuidedLearningScreenState
               ? 'Keep comparing. Saved as assisted or repeat practice.'
               : 'Keep comparing. Saved as an independent attempt.');
     });
-    _store.recordCheck(correct: correct, assisted: assisted);
   }
 
   Widget _choices() {

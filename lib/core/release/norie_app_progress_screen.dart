@@ -10,6 +10,9 @@ import '../cloud/norie_cloud_sync.dart';
 import '../diagnostics/norie_diagnostics_screen.dart';
 import '../progression/norie_lesson_journey.dart';
 import '../progression/norie_progress_backup.dart';
+import '../progression/anatomy_progress_backup.dart';
+import '../../features/learning/data/anatomy_backup_persistence.dart';
+import '../../features/learning/domain/anatomy_atlas_catalog.dart';
 import '../progression/norie_progression.dart';
 import '../sync/norie_economy_store.dart';
 import '../sync/norie_economy_screen.dart';
@@ -186,6 +189,118 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
         }
       });
 
+  Future<void> _anatomyBackup({bool restore = false}) => _perform(() async {
+        final owner = _owner;
+        final learnerCurrent =
+            NorieAccountService.instance.captureLearnerGuard();
+        bool current() => mounted && learnerCurrent() && owner == _owner;
+        void checkCurrent() {
+          if (!current()) {
+            throw const FormatException('Account changed. Please retry.');
+          }
+        }
+
+        final catalog = await AnatomyAtlasCatalog.load();
+        checkCurrent();
+        final storage = AnatomyBackupPersistence.instance;
+        final ownerKey = AnatomyProgressBackup.ownerKey(owner);
+        if (!restore) {
+          final parts = await storage.capture(ownerKey);
+          checkCurrent();
+          final state = AnatomyProgressBackup.fromLocalParts(parts,
+              catalog: catalog, currentOwner: owner);
+          final text = AnatomyProgressBackup.encode(state,
+              catalog: catalog, currentOwner: owner);
+          final result = await FilePicker.saveFile(
+            dialogTitle: 'Save Anatomy study and views',
+            fileName:
+                'NorieLearning-anatomy-${DateTime.now().toIso8601String().substring(0, 10)}.json',
+            type: FileType.custom,
+            allowedExtensions: ['json'],
+            bytes: Uint8List.fromList(utf8.encode(text)),
+          );
+          checkCurrent();
+          _notice = result == null
+              ? 'Save dialog closed. Check Downloads if your browser started a download.'
+              : 'Anatomy backup saved: ${(state['study'] as List).length} study entries and ${(state['bookmarks'] as List).length} saved views.';
+          return;
+        }
+        final file = await FilePicker.pickFile(
+            type: FileType.custom, allowedExtensions: ['json']);
+        checkCurrent();
+        if (file == null) return;
+        final size = file.lengthSync() ?? await file.length();
+        checkCurrent();
+        if (size == null ||
+            size == 0 ||
+            size > AnatomyProgressBackup.maxBytes) {
+          throw const FormatException(
+              'Choose a supported Anatomy backup under 384 KB.');
+        }
+        final bytes = await file.readAsBytes();
+        checkCurrent();
+        if (bytes.length > AnatomyProgressBackup.maxBytes) {
+          throw const FormatException('Anatomy backup exceeds the size limit.');
+        }
+        final incoming = AnatomyProgressBackup.decode(utf8.decode(bytes),
+            catalog: catalog, currentOwner: owner);
+        if (!mounted) return;
+        final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+                  title: const Text('Merge Anatomy study and views?'),
+                  content: Text(
+                      'Merge ${(incoming['study'] as List).length} study entries and ${(incoming['bookmarks'] as List).length} saved views for this learner. Existing evidence is retained. This does not change lessons, XP, credits or mastery.'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel')),
+                    FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Merge Anatomy')),
+                  ],
+                ));
+        if (confirmed != true) return;
+        checkCurrent();
+        var studyCount = 0, viewCount = 0, retained = 0;
+        final restored = await storage.restore(
+            ownerKey,
+            AnatomyProgressBackup.toLocalParts(incoming,
+                catalog: catalog, currentOwner: owner),
+            stillCurrent: current, mergeWithCurrent: (parts) {
+          checkCurrent();
+          final local = AnatomyProgressBackup.fromLocalParts(parts,
+              catalog: catalog, currentOwner: owner);
+          final merged = AnatomyProgressBackup.merge(local, incoming,
+              catalog: catalog, currentOwner: owner);
+          final localRows = {
+            for (final row in local['study'] as List) row['id']: jsonEncode(row)
+          };
+          final localViews = {
+            for (final row in local['bookmarks'] as List) jsonEncode(row)
+          };
+          studyCount = (merged['study'] as List)
+              .where((row) => localRows[row['id']] != jsonEncode(row))
+              .length;
+          viewCount = (merged['bookmarks'] as List)
+              .where((row) => !localViews.contains(jsonEncode(row)))
+              .length;
+          retained = (merged['study'] as List).length -
+              studyCount +
+              (merged['bookmarks'] as List).length -
+              viewCount;
+          return AnatomyProgressBackup.toLocalParts(merged,
+              catalog: catalog, currentOwner: owner);
+        });
+        checkCurrent();
+        if (!restored) {
+          throw const FormatException(
+              'Account changed. Anatomy restore was cancelled.');
+        }
+        _notice =
+            'Anatomy merged: $studyCount study entries and $viewCount views added or updated; $retained entries retained. Incompatible files are rejected in full. Rewards unchanged.';
+      });
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('App & progress')),
@@ -287,6 +402,20 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
                           ? null
                           : () => _restore(undo: true),
                       child: const Text('Undo last restore')),
+                  const Divider(height: 32),
+                  Text('Anatomy study backup',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const Text(
+                      'Separate local backup of guided Anatomy study and named saved views. Progress backups above do not include Anatomy. Keep the JSON file private.'),
+                  FilledButton.icon(
+                      onPressed: _busy ? null : () => _anatomyBackup(),
+                      icon: const Icon(Icons.save_alt),
+                      label: const Text('Export Anatomy backup')),
+                  OutlinedButton.icon(
+                      onPressed:
+                          _busy ? null : () => _anatomyBackup(restore: true),
+                      icon: const Icon(Icons.restore),
+                      label: const Text('Import Anatomy backup')),
                   if (_busy) const LinearProgressIndicator(),
                   if (_notice != null)
                     Padding(
