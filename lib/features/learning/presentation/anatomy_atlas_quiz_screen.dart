@@ -288,7 +288,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                         padding: EdgeInsets.only(bottom: 8),
                         child: Text(
                           'A reviewed part-specific hint is unavailable. No Credits will be charged.',
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: NorieColors.textSecondary, fontSize: 12),
                           textAlign: TextAlign.center,
                         ),
