@@ -214,24 +214,21 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  test('specific paid clue uses authored part facts and never names an option',
-      () {
-    final part = AtlasStructure.fromJson({
-      'id': 'test-mandible',
-      'name': 'Mandible',
-      'reference': 'male',
-      'systems': ['skeletal'],
-      'asset': 'bones',
-      'source': 'test',
-    });
-    final q = AtlasQuizQuestion(
-        part, const ['Mandible', 'Clavicle', 'Radius', 'Ulna']);
-    final clue = q.specificHint;
-    expect(clue, isNotNull);
-    expect(clue, contains('Look for:'));
-    expect(clue, contains('Did you know?'));
-    for (final option in q.options) {
-      expect(clue!.toLowerCase(), isNot(contains(option.toLowerCase())));
+  test('coarse name matches cannot authorize paid anatomical claims', () {
+    for (final name in ['Mandible', 'Right mandible', 'Left mandible']) {
+      for (final reference in ['male', 'female']) {
+        final part = AtlasStructure.fromJson({
+          'id': 'unapproved-$reference-$name',
+          'name': name,
+          'reference': reference,
+          'systems': ['skeletal'],
+          'asset': 'bones',
+          'source': 'test',
+        });
+        expect(AtlasQuizQuestion(part, [name, 'Clavicle']).specificHint, isNull,
+            reason:
+                'A source name is not version-specific editorial approval.');
+      }
     }
   });
 
@@ -244,9 +241,11 @@ void main() {
       'asset': 'bones',
       'source': 'test',
     });
-    expect(AtlasQuizQuestion(
-      part, const ['Structure without authored facts', 'Other part'],
-    ).specificHint, isNull);
+    expect(
+        AtlasQuizQuestion(
+          part,
+          const ['Structure without authored facts', 'Other part'],
+        ).specificHint,
+        isNull);
   });
-
 }

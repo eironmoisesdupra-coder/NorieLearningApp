@@ -1,0 +1,34 @@
+{
+  "baseline_sha": "17a5196f3cb2cd14903cd6673930bad5390acf00",
+  "date": "2026-10-19",
+  "production_deployment_claimed": false,
+  "priorities": {
+    "P0": {
+      "pr": 65,
+      "implementation": "fail_closed_no_paid_activation",
+      "paid_hints": "blocked: qualified exact-structure fact approvals and durable debit/reveal transaction absent",
+      "focused_safety_tests": "passed",
+      "independent_review": "no confirmed code defects; rendered geometry verification pending",
+      "merged": false,
+      "live": false
+    },
+    "P1": {
+      "implementation": "three authored pilot lessons; verification in progress",
+      "merged": false,
+      "live": false
+    },
+    "P2": {
+      "implementation": "default-disabled publication preparation; isolated security fixtures passed",
+      "activation": "pending qualified reviewers, protected signer and Flutter delivery verification; no production migration applied",
+      "merged": false,
+      "live": false
+    },
+    "P3": {
+      "implementation": "Anatomy-only pair backup in review",
+      "combined_progress_backup": "not implemented: shared progression transaction boundary required",
+      "merged": false,
+      "live": false
+    }
+  },
+  "physical_device_certification": false
+}

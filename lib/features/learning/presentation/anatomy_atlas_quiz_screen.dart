@@ -39,20 +39,11 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
   String? _choice;
   bool _modelReady = false;
   bool _hintVisible = false;
-  static const _hintCost = 5;
-  final _revealedHints = <int>{};
-  bool get _paidHintMode => widget.requestedCount == 20;
+  // A genuinely shorter fallback retains its existing free hint behavior.
+  bool get _paidHintMode => _quiz.questions.length == 20;
 
-  String? _safeHint(AtlasQuizQuestion question) {
-    final hint = (_paidHintMode ? question.specificHint : question.hint)?.trim() ?? '';
-    if (hint.isEmpty) return null;
-    final lower = hint.toLowerCase();
-    // Do not charge for text that directly reveals the answer.
-    if (lower.contains(question.answer.toLowerCase())) return null;
-    if (question.kind == AtlasQuestionKind.identify &&
-        lower.contains(question.target.name.toLowerCase())) return null;
-    return hint;
-  }
+  String? _safeHint(AtlasQuizQuestion question) =>
+      _paidHintMode && !_quiz.checked ? question.specificHint : question.hint;
 
   void _toggleHint() {
     if (!_stillCurrent() || _quiz.finished) return;
@@ -62,20 +53,14 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
     }
     if (_safeHint(_quiz.current) == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('No non-spoiler hint available for this question.')));
+          content: Text('Specific hint unavailable. No Credits were spent.')));
       return;
     }
-    if (_paidHintMode && !_quiz.checked &&
-        !_revealedHints.contains(_quiz.index)) {
-      if (!NorieProgression.instance.spendCredits(_hintCost)) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('5 Norie Credits are required for this hint.')));
-        return;
-      }
-      _revealedHints.add(_quiz.index);
-    }
+    // No payment path: this build has no trusted paid-hint fact bank or durable
+    // charge/reveal transaction. Do not use synchronous spendCredits here.
     setState(() => _hintVisible = true);
   }
+
   bool _outroShown = false;
   final _attemptId = const Uuid().v4();
   final _answers = <QuizAnswerRecord>[];
@@ -90,7 +75,8 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
         difficulty: widget.difficulty,
         kinds: widget.kinds,
         stillCurrent: _stillCurrent);
-    _hintVisible = !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
+    _hintVisible =
+        !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
     NorieAccountService.instance.addListener(_learnerChanged);
     _audioContext =
         NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
@@ -148,7 +134,8 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
     setState(() {
       _choice = null;
       _modelReady = false;
-      _hintVisible = !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
+      _hintVisible =
+          !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
     });
     if (_questionScroll.hasClients) _questionScroll.jumpTo(0);
     if (_quiz.finished && !_outroShown) {
@@ -226,6 +213,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
           ])));
     }
     final question = _quiz.current;
+    final questionIndex = _quiz.index;
     final audio = NorieAudioManager.instance;
     return Scaffold(
         appBar: AppBar(
@@ -235,7 +223,11 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                 overflow: TextOverflow.ellipsis),
             actions: [
               IconButton(
-                  tooltip: _hintVisible ? 'Hide hint' : (_paidHintMode && !_revealedHints.contains(_quiz.index) && !_quiz.checked ? 'Reveal part hint and fun fact for 5 Credits' : 'Show hint'),
+                  tooltip: _hintVisible
+                      ? 'Hide hint'
+                      : _paidHintMode && !_quiz.checked
+                          ? 'Specific hint unavailable; costs 0 credits'
+                          : 'Show hint',
                   icon: Icon(_hintVisible ? Icons.search_off : Icons.search),
                   onPressed: _toggleHint),
               IconButton(
@@ -267,7 +259,10 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                   systems: question.target.systems,
                   target: question.target.id,
                   onLoaded: (ready) {
-                    if (mounted && _modelReady != ready) {
+                    if (mounted &&
+                        _stillCurrent() &&
+                        _quiz.index == questionIndex &&
+                        _modelReady != ready) {
                       setState(() => _modelReady = ready);
                     }
                   },
@@ -283,19 +278,16 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                     if (_hintVisible)
                       Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(_safeHint(question) ?? 'Hint unavailable.',
+                          child: Text(
+                              _safeHint(question) ?? 'Hint unavailable.',
                               key: const ValueKey('atlas-quiz-hint'),
                               style: const TextStyle(
                                   color: NorieColors.textSecondary))),
                     if (_paidHintMode && !_hintVisible && !_quiz.checked)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
                         child: Text(
-                          _safeHint(question) == null
-                              ? 'A part-specific hint is unavailable. No Credits will be charged.'
-                              : _revealedHints.contains(_quiz.index)
-                                  ? 'Hint unlocked. Tap search to view it again.'
-                                  : 'Part hint and fun fact: 5 Credits, once per question.',
+                          'A reviewed part-specific hint is unavailable. No Credits will be charged.',
                           style: const TextStyle(
                               color: NorieColors.textSecondary, fontSize: 12),
                           textAlign: TextAlign.center,

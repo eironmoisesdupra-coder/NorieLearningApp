@@ -34,32 +34,11 @@ class AtlasQuizQuestion {
         .firstOrNull;
   }
 
-  /// An authored, source-matched clue and educational fact for the selected
-  /// catalog structure. Do not charge when precise material is unavailable.
-  /// This is existing atlas authoring, not medically reviewed new prose.
-  String? get specificHint {
-    final normalized = target.name.toLowerCase()
-        .replaceFirst(RegExp(r'^(left|right)\s+'), '').trim();
-    final matching = [
-      for (final system in AnatomyCatalog.systems)
-        for (final part in system.structures)
-          if (part.name.toLowerCase() == normalized) part,
-    ];
-    if (matching.length != 1) return null;
-    final part = matching.single;
-    final description = part.description.trim();
-    final fact = part.function.trim();
-    if (description.length < 12 || fact.length < 12) return null;
-    final cue = 'Look for: $description\nDid you know? $fact';
-    final lower = cue.toLowerCase();
-    // Names, answer labels and option text must not appear in a paid clue.
-    if (lower.contains(answer.toLowerCase()) ||
-        lower.contains(target.name.toLowerCase()) ||
-        options.any((option) => lower.contains(option.toLowerCase()))) {
-      return null;
-    }
-    return cue;
-  }
+  /// Paid clues are intentionally unavailable. Coarse lesson names and client
+  /// JSON are not authority for exact, version-specific anatomical claims.
+  /// Activation requires an independently approved keyed fact bank AND a durable
+  /// idempotent credit transaction; neither is configured in this release.
+  String? get specificHint => null;
 
   String get hint {
     if (kind == AtlasQuestionKind.system) {
