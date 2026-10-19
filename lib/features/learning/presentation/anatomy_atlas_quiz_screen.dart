@@ -44,7 +44,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
   bool get _paidHintMode => widget.requestedCount == 20;
 
   String? _safeHint(AtlasQuizQuestion question) {
-    final hint = question.hint.trim();
+    final hint = (_paidHintMode ? question.specificHint : question.hint)?.trim() ?? '';
     if (hint.isEmpty) return null;
     final lower = hint.toLowerCase();
     // Do not charge for text that directly reveals the answer.
@@ -235,7 +235,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                 overflow: TextOverflow.ellipsis),
             actions: [
               IconButton(
-                  tooltip: _hintVisible ? 'Hide hint' : (_paidHintMode && !_revealedHints.contains(_quiz.index) && !_quiz.checked ? 'Reveal hint (5 Credits)' : 'Show hint'),
+                  tooltip: _hintVisible ? 'Hide hint' : (_paidHintMode && !_revealedHints.contains(_quiz.index) && !_quiz.checked ? 'Reveal part hint and fun fact for 5 Credits' : 'Show hint'),
                   icon: Icon(_hintVisible ? Icons.search_off : Icons.search),
                   onPressed: _toggleHint),
               IconButton(
@@ -287,6 +287,20 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                               key: const ValueKey('atlas-quiz-hint'),
                               style: const TextStyle(
                                   color: NorieColors.textSecondary))),
+                    if (_paidHintMode && !_hintVisible && !_quiz.checked)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          _safeHint(question) == null
+                              ? 'A part-specific hint is unavailable. No Credits will be charged.'
+                              : _revealedHints.contains(_quiz.index)
+                                  ? 'Hint unlocked. Tap search to view it again.'
+                                  : 'Part hint and fun fact: 5 Credits, once per question.',
+                          style: const TextStyle(
+                              color: NorieColors.textSecondary, fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     for (final option in question.options)
                       Padding(
                           padding: const EdgeInsets.only(bottom: 6),
