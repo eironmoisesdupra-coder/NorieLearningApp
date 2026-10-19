@@ -39,7 +39,7 @@ class AtlasQuizQuestion {
   /// This is existing atlas authoring, not medically reviewed new prose.
   String? get specificHint {
     final normalized = target.name.toLowerCase()
-        .replaceFirst(RegExp(r'^(left|right)\\s+'), '').trim();
+        .replaceFirst(RegExp(r'^(left|right)\s+'), '').trim();
     final matching = [
       for (final system in AnatomyCatalog.systems)
         for (final part in system.structures)
@@ -50,7 +50,7 @@ class AtlasQuizQuestion {
     final description = part.description.trim();
     final fact = part.function.trim();
     if (description.length < 12 || fact.length < 12) return null;
-    final cue = 'Look for: $description\\nDid you know? $fact';
+    final cue = 'Look for: $description\nDid you know? $fact';
     final lower = cue.toLowerCase();
     // Names, answer labels and option text must not appear in a paid clue.
     if (lower.contains(answer.toLowerCase()) ||
