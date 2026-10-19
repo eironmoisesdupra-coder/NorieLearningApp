@@ -1,34 +1,46 @@
 {
   "baseline_sha": "17a5196f3cb2cd14903cd6673930bad5390acf00",
   "date": "2026-10-19",
+  "candidate_version": "0.16.1+22",
+  "channel": "preview",
   "production_deployment_claimed": false,
+  "deployment_provenance": "Consult release-metadata.json and exact-source develop CI; this file describes implemented scope, not deployment status.",
   "priorities": {
     "P0": {
       "pr": 65,
+      "reviewed_head": "6c8eac5962d6a8fc737f0e933e89530d206d0d5e",
       "implementation": "fail_closed_no_paid_activation",
       "paid_hints": "blocked: qualified exact-structure fact approvals and durable debit/reveal transaction absent",
       "focused_safety_tests": "passed",
-      "independent_review": "no confirmed code defects; rendered geometry verification pending",
-      "merged": false,
-      "live": false
+      "independent_review": "findings resolved; exact rendered geometry, 35 quiz questions, once-only XP and context-loss Retry verified",
+      "archive_fully_delivered": false
     },
     "P1": {
-      "implementation": "three authored pilot lessons; verification in progress",
-      "merged": false,
-      "live": false
+      "pr": 66,
+      "reviewed_head": "827856d59c1982e64332e8b2acba75f71160f911",
+      "implementation": "three existing authored pilot lessons; calculation/source checks and 12/12 phone/text-scale/reveal browser cases passed",
+      "qualified_human_editorial_signoff": false,
+      "whole_curriculum_completed": false
     },
     "P2": {
       "implementation": "default-disabled publication preparation; isolated security fixtures passed",
-      "activation": "pending qualified reviewers, protected signer and Flutter delivery verification; no production migration applied",
-      "merged": false,
-      "live": false
+      "pr": 67,
+      "reviewed_head": "51b79cfc8e32ffb6aff45cb3819243161f3bac85",
+      "activation": "pending production roles, consent, qualified reviewers, protected signer, structural validator and Flutter delivery/cache integration",
+      "production_migration_applied": false,
+      "archive_fully_delivered": false
     },
     "P3": {
-      "implementation": "Anatomy-only pair backup in review",
+      "pr": 68,
+      "reviewed_head": "9dcc77b59e9e261763160bd60018ccb7304b2588",
+      "implementation": "separate owner-bound Anatomy study/bookmark portable backup; paired recoverable persistence",
+      "validation": "failure injection, stale-peer and owner-queue regressions; six actual browser FilePicker checks",
       "combined_progress_backup": "not implemented: shared progression transaction boundary required",
-      "merged": false,
-      "live": false
+      "archive_fully_delivered": false
     }
   },
-  "physical_device_certification": false
+  "local_flutter_suite": {"passed": 898, "existing_native_environment_skip": 1},
+  "physical_device_certification": false,
+  "production_signing_configured": false,
+  "support_and_privacy_gates": "pending"
 }

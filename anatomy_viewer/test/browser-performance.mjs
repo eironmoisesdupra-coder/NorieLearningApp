@@ -35,7 +35,12 @@ try {
     const atlas = window.atlas = new window.AtlasScene(document.querySelector('canvas'), catalog, (type, payload) => window.events.push({ type, payload }));
     window.frames = 0;
     const render = atlas.renderer.render.bind(atlas.renderer);
-    atlas.renderer.render = (...args) => { window.frames++; return render(...args); };
+    atlas.renderer.render = (...args) => {
+      window.frames++;
+      const result = render(...args);
+      window.lastRenderedAspect = atlas.camera.aspect;
+      return result;
+    };
     await atlas.configure({ reference: 'male', systems: ['skeletal', 'muscular'] });
     window.femur = catalog.structures.find(s => s.reference === 'male' && /^right femur$/i.test(s.name)).id;
     atlas.command('isolate', { id: window.femur });
@@ -79,7 +84,9 @@ try {
   assert.deepEqual(quality, { accepted: true, ratio: 1, bad: false });
   before = await count();
   await page.evaluate(() => { document.querySelector('canvas').style.width = '640px'; });
-  await page.waitForFunction(previous => frames > previous, before);
+  // A pending quality frame can arrive before ResizeObserver delivers the new
+  // canvas size. Wait for both the resize postcondition and a refreshed frame.
+  await page.waitForFunction(previous => frames > previous && window.lastRenderedAspect === .8, before);
   assert.equal(await page.evaluate(() => atlas.camera.aspect), .8);
 
   await page.evaluate(() => { window.loss = atlas.renderer.getContext().getExtension('WEBGL_lose_context'); window.loss.loseContext(); });

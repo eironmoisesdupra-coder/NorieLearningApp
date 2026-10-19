@@ -142,6 +142,34 @@ abstract final class NorieGrade1ScienceCurriculum {
                   points: [],
                   visualType: "science-1-sort"),
               NorieLessonSection(
+                  title: "Try it yourself: plant or toy?",
+                  symbol: "",
+                  points: [],
+                  body:
+                      "Look at the sunflower and teddy bear in the picture guide.\n\nWhich is living? Tell someone two clues. You may point, talk, or draw.\n\nNow imagine a toy flower. It is green and a battery makes it turn. Is it living? Think before opening the answer.",
+                  reveal: false),
+              NorieLessonSection(
+                  title: "Reveal: use two clues",
+                  symbol: "",
+                  points: [],
+                  body:
+                      "The sunflower is living. It needs water and grows into a larger plant. Those are two clues.\n\nThe teddy bear and toy flower are nonliving. They do not carry out life processes. A battery can make a toy move. Green color and movement do not prove life.",
+                  reveal: true),
+              NorieLessonSection(
+                  title: "Check your explanation",
+                  symbol: "",
+                  points: [],
+                  body:
+                      "Did you name the living thing?\n\nDid you give two signs of life?\n\nIf you only said, 'It moves,' try again. Look at the plant growth picture for another clue.",
+                  reveal: false),
+              NorieLessonSection(
+                  title: "Remember tomorrow",
+                  symbol: "",
+                  points: [],
+                  body:
+                      "Tomorrow, before opening the pictures, name one living thing and one nonliving thing. Tell two clues that helped you decide. Then open the picture guide to check.",
+                  reveal: false),
+              NorieLessonSection(
                   title: "COMMON MISTAKES ⚠️",
                   symbol: "",
                   points: [],

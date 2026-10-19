@@ -458,6 +458,10 @@ final _mechanics = scienceTopic(
   introduction:
       'A cart can move right while its acceleration points left. It can also travel far and finish where it started. These are not contradictions: direction, change and system boundaries answer different questions. Mechanics becomes more reliable when each calculation begins with a sketch and a statement of what is being measured.',
   sections: [
+    scienceSection('Before you calculate',
+        '''Prerequisites: add signed numbers, rearrange an equation by applying the same valid operation to both sides, and distinguish metres (m), seconds (s), kilograms (kg) and newtons (N). If +10 + (−4) gives +6, you are ready to combine the horizontal forces used below.
+
+All numerical cart scenarios in this lesson are hypothetical teaching models, not experimental measurements. Treat the supplied values as exact for these exercises. In an experiment, record measurement uncertainty, retain intermediate precision and round the final result to justified significant figures. Do not infer measurement precision from the convenient integers here.'''),
     scienceSection('Direction belongs in the quantity',
         '''Distance is the total length of a path, while displacement is final position minus initial position. Distance is a scalar; displacement is a vector with magnitude and direction. Speed describes how fast path length accumulates, while velocity describes position change per time with direction. Average speed is total distance/elapsed time; average velocity is displacement/elapsed time.
 
@@ -479,7 +483,13 @@ A velocity-time graph makes the assumptions visible. Its slope gives acceleratio
     scienceSection('Worked example: link force and motion',
         '''A 3 kg cart experiences 10 N right and 4 N left. Ignore other horizontal forces and suppose the vertical forces balance. Step 1: choose right positive. Step 2: sum horizontal forces: Fnet = +10 − 4 = +6 N. Step 3: use Newton’s second law for constant mass, Fnet = ma, giving a = 6/3 = +2 m/s².
 
-If its initial velocity is +2 m/s and those forces stay constant for 3 s, final velocity is 2 + 2 × 3 = +8 m/s. Displacement is 2 × 3 + ½ × 2 × 3² = +15 m. The force sum determines acceleration, not velocity directly. Initial velocity is still needed to predict the later motion.'''),
+If its initial velocity is +2 m/s and those forces stay constant for 3 s, final velocity is 2 + 2 × 3 = +8 m/s. Displacement is 2 × 3 + ½ × 2 × 3² = +15 m. The force sum determines acceleration, not velocity directly. Initial velocity is still needed to predict the later motion.
+
+Step 4 — audit the calculation. Knowns: m = 3 kg, Fnet = +6 N, u = +2 m/s, t = 3 s. Unknowns: acceleration a, final velocity v and displacement s. A constant net force on this constant mass gives constant acceleration in the assumed inertial frame, so the stated kinematics equations apply.
+
+Divide both sides of Fnet = ma by the nonzero mass m to obtain a = Fnet/m. Since 1 N = 1 kg·m/s², N/kg = m/s². In v = u + at, (m/s²) × s = m/s; both terms have velocity units. In s = ut + ½at², both terms have units m. Correct dimensions alone do not prove a calculation, but wrong dimensions reveal an error.
+
+The final velocity +8 m/s is greater than +2 m/s, consistent with rightward acceleration and rightward initial motion. With constant acceleration, average velocity (+2 + 8)/2 = +5 m/s lies between the endpoints. It gives displacement (+5 m/s) × 3 s = +15 m, which lies between 6 m and 24 m, the distances at the initial and final speeds held constant. Sketch a velocity-time line from +2 to +8 m/s over 3 s: its rectangle and triangle give the same displacement as the stages in the motion diagram.'''),
     scienceVisual('sci-g11-3-vectors',
         'Every horizontal force shown acts on the same cart; their signed sum determines its acceleration.'),
     scienceSection('Keep a free-body diagram about one object',
@@ -499,9 +509,25 @@ If only gravity transfers between kinetic and gravitational potential energy wit
     scienceSection('Guided example: stopping without reversing',
         '''A cart moves at +6 m/s and has constant acceleration −2 m/s² for 3 s. Find final velocity and displacement. Decide whether the displacement is negative merely because acceleration is negative. Draw a velocity-time line from the initial to final velocity and use its area as an independent check.
 
+Hint 1: list u = +6 m/s, a = −2 m/s² and t = 3 s before substituting. Hint 2: use v = u + at first. Hint 3: keep the minus sign in ½at²; time squared is positive. Check whether velocity becomes negative during the stated interval before deciding the displacement direction.
+
 Use paper and pencil or a small hand-moved object on a clear table to model the signs; do not launch objects or attempt high-speed tests. Mark equal time intervals on a sketch and compare the changing spacing. The calculation describes an ideal motion segment. Extending the same acceleration beyond 3 s would reverse velocity, so the time interval is part of the answer.'''),
     scienceSection('Reveal: check both equations and graph',
         'Final velocity is 6 − 2 × 3 = 0 m/s. Displacement is 6 × 3 + ½ × (−2) × 9 = +9 m. The velocity-time triangle has area ½ × 3 × 6 = +9 m. The cart moves right throughout this interval while slowing to rest.',
+        reveal: true),
+    scienceSection('Independent transfer: loading the cart',
+        '''Try without hints first. In a separate hypothetical trial, a loaded cart has total mass 6 kg throughout the trial. It starts at +2 m/s and experiences the same constant net horizontal force +6 N for 3 s. Use right as positive and the same inertial-frame assumptions as the worked example. Find acceleration, final velocity and displacement. Compare each with the 3 kg worked example.
+
+A learner claims, "Twice the mass means half the final velocity." Diagnose the claim using the nonzero initial velocity. State one real-world condition that could make this simplified prediction fail. Do not assume that adding a load during motion leaves velocity unchanged: these are separate constant-mass trials.'''),
+    scienceSection(
+        'Reveal: loading and model limits',
+        '''a = Fnet/m = (+6 N)/(6 kg) = +1 m/s². Then v = u + at = +2 + 1 × 3 = +5 m/s. Displacement s = ut + ½at² = 2 × 3 + ½ × 1 × 9 = +10.5 m. The average-velocity check gives ((2 + 5)/2) × 3 = +10.5 m.
+
+Compared with the 3 kg cart, acceleration halves from +2 to +1 m/s², but final velocity changes from +8 to +5 m/s, not +4. It is the velocity increase at, from +6 to +3 m/s, that halves. The same +2 m/s initial velocity is added in both trials. Displacement falls from +15 to +10.5 m and stays positive, as expected while the cart moves right.
+
+For written work, +10.5 m and 10.5 metres right describe the same displacement; 1050 cm right is equivalent after unit conversion. The number 10.5 without units is incomplete. These are paper-work equivalences, not a claim that the app grades free-text numerical variants.
+
+A changing pull, extra friction or a changing mass could invalidate the assumed constant +6 N net force or constant mass. Identify the failed assumption before reusing the result. A complete solution states the model, lists knowns and unknowns, shows the equation and lawful rearrangement, carries units, checks direction and magnitude, and interprets the result.''',
         reveal: true),
     scienceSection('Common mistakes and quick check',
         'Do not equate negative acceleration with negative velocity, add perpendicular vector magnitudes as ordinary scalars, or use constant-acceleration equations without checking their condition. Mechanical energy and total energy are not interchangeable. Quick check: friction removes 12 J from a sliding object’s mechanical energy. Must total energy have disappeared?'),
@@ -510,6 +536,8 @@ Use paper and pencil or a small hand-moved object on a clear table to model the 
         reveal: true),
     scienceSection('Recap',
         'Choose axes and system boundaries, separate vector changes from scalar magnitudes, and state the time interval. Sum forces on one object to find acceleration. Use motion equations only under their conditions, and check compatible answers using work and energy.'),
+    scienceSection('Return and retrieve',
+        'Tomorrow, before reopening the worked example, sketch the two horizontal forces on the 3 kg cart. Rebuild acceleration, final velocity and displacement from the knowns. Explain why doubling mass at the same net force halves acceleration but need not halve final velocity. Then return to the worked example and the independent-transfer reveal to check your units and assumptions.'),
   ],
   keyConcept:
       'A consistent axis, force diagram and system boundary allow motion and energy calculations to describe the same event without contradicting one another.',
@@ -700,7 +728,7 @@ Use paper and pencil or a small hand-moved object on a clear table to model the 
       '+16 m/s',
       '+2 m/s',
       '−8 m/s',
-      'Net force is +4 N, acceleration +2 m/s², and v = 0 + 2 × 4 = +8 m/s.',
+      'Net force is +7 − 3 = +4 N. Divide by 2 kg: a = +2 N/kg = +2 m/s². Constant net force and mass allow v = u + at = 0 + 2 × 4 = +8 m/s. Velocity is between 0 and +8 m/s during the interval; its average is +4 m/s. The displacement check gives 4 × 4 = +16 m, agreeing with ½ × 2 × 4². The positive result agrees with the net force acting right from rest.',
       'Mastery dynamics'
     ],
     [
