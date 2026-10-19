@@ -39,6 +39,43 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
   String? _choice;
   bool _modelReady = false;
   bool _hintVisible = false;
+  static const _hintCost = 5;
+  final _revealedHints = <int>{};
+  bool get _paidHintMode => widget.requestedCount == 20;
+
+  String? _safeHint(AtlasQuizQuestion question) {
+    final hint = question.hint.trim();
+    if (hint.isEmpty) return null;
+    final lower = hint.toLowerCase();
+    // Do not charge for text that directly reveals the answer.
+    if (lower.contains(question.answer.toLowerCase())) return null;
+    if (question.kind == AtlasQuestionKind.identify &&
+        lower.contains(question.target.name.toLowerCase())) return null;
+    return hint;
+  }
+
+  void _toggleHint() {
+    if (!_stillCurrent() || _quiz.finished) return;
+    if (_hintVisible) {
+      setState(() => _hintVisible = false);
+      return;
+    }
+    if (_safeHint(_quiz.current) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No non-spoiler hint available for this question.')));
+      return;
+    }
+    if (_paidHintMode && !_quiz.checked &&
+        !_revealedHints.contains(_quiz.index)) {
+      if (!NorieProgression.instance.spendCredits(_hintCost)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('5 Norie Credits are required for this hint.')));
+        return;
+      }
+      _revealedHints.add(_quiz.index);
+    }
+    setState(() => _hintVisible = true);
+  }
   bool _outroShown = false;
   final _attemptId = const Uuid().v4();
   final _answers = <QuizAnswerRecord>[];
@@ -53,7 +90,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
         difficulty: widget.difficulty,
         kinds: widget.kinds,
         stillCurrent: _stillCurrent);
-    _hintVisible = widget.difficulty == AtlasQuizDifficulty.guided;
+    _hintVisible = !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
     NorieAccountService.instance.addListener(_learnerChanged);
     _audioContext =
         NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
@@ -111,7 +148,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
     setState(() {
       _choice = null;
       _modelReady = false;
-      _hintVisible = widget.difficulty == AtlasQuizDifficulty.guided;
+      _hintVisible = !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
     });
     if (_questionScroll.hasClients) _questionScroll.jumpTo(0);
     if (_quiz.finished && !_outroShown) {
@@ -198,10 +235,9 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                 overflow: TextOverflow.ellipsis),
             actions: [
               IconButton(
-                  tooltip: _hintVisible ? 'Hide hint' : 'Show hint',
+                  tooltip: _hintVisible ? 'Hide hint' : (_paidHintMode && !_revealedHints.contains(_quiz.index) && !_quiz.checked ? 'Reveal hint (5 Credits)' : 'Show hint'),
                   icon: Icon(_hintVisible ? Icons.search_off : Icons.search),
-                  onPressed: () =>
-                      setState(() => _hintVisible = !_hintVisible)),
+                  onPressed: _toggleHint),
               IconButton(
                   tooltip: 'Recenter structure',
                   icon: const Icon(Icons.center_focus_strong),
@@ -247,7 +283,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                     if (_hintVisible)
                       Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(question.hint,
+                          child: Text(_safeHint(question) ?? 'Hint unavailable.',
                               key: const ValueKey('atlas-quiz-hint'),
                               style: const TextStyle(
                                   color: NorieColors.textSecondary))),
