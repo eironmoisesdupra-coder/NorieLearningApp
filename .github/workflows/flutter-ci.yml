@@ -120,6 +120,8 @@ jobs:
           node scripts/verify_guarded_cloud_database.mjs "$RUNNER_TEMP/norie-league-validation/node_modules/@electric-sql/pglite/dist/index.js"
           node scripts/verify_feature_bundle_database.mjs "$RUNNER_TEMP/norie-league-validation/node_modules/@electric-sql/pglite/dist/index.js"
           node scripts/verify_economy_database.mjs "$RUNNER_TEMP/norie-league-validation/node_modules/@electric-sql/pglite/dist/index.js"
+          node scripts/verify_curriculum_publication_database.mjs "$RUNNER_TEMP/norie-league-validation/node_modules/@electric-sql/pglite/dist/index.js"
+          node scripts/test_curriculum_publication_offline.mjs
 
       - name: Install local AI test dependencies
         working-directory: local-ai
