@@ -142,7 +142,14 @@ void main() {
     const answer =
         'Answer:\nMetal 🔩\n\nWhy?\nMetal is hard and strong, making it useful for many utensils.';
     expect(find.text(answer), findsNothing);
-    await tester.tap(find.text('Reveal answer').first);
+    final question =
+        find.ancestor(of: prompt, matching: find.byType(Column)).first;
+    final reveal =
+        find.descendant(of: question, matching: find.byType(ListTile));
+    await tester.ensureVisible(reveal);
+    await tester.pumpAndSettle();
+    expect(reveal.hitTestable(), findsOneWidget);
+    await tester.tap(reveal.hitTestable());
     await tester.pumpAndSettle();
     expect(find.text(answer), findsOneWidget);
   });
@@ -285,7 +292,14 @@ void main() {
     const answer =
         'Answer:\nLiving\n\nWhy?\nIt grows, needs resources, responds, and has a life cycle.';
     expect(find.text(answer), findsNothing);
-    await tester.tap(find.text('Reveal answer').first);
+    final question =
+        find.ancestor(of: prompt, matching: find.byType(Column)).first;
+    final reveal =
+        find.descendant(of: question, matching: find.byType(ListTile));
+    await tester.ensureVisible(reveal);
+    await tester.pumpAndSettle();
+    expect(reveal.hitTestable(), findsOneWidget);
+    await tester.tap(reveal.hitTestable());
     await tester.pumpAndSettle();
     expect(find.text(answer), findsOneWidget);
   });
