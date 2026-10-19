@@ -49,22 +49,52 @@ const grade7MathUnits = <CoreMathUnit>[
     ],
     focus: "A proportion states that two ratios are equal.",
     explanation:
-        "In 2/3 = x/12, the denominator scales by four, so x = 8. Cross-products provide another check: 2 × 12 = 3x. Denominators must be nonzero. A proportional relationship has form y = kx with constant k, and its graph passes through the origin. The rule y = 2x + 1 is not proportional because its ratio y/x changes and it gives y = 1 at x = 0.",
+        """Start here: can you simplify 6/8 to 3/4 and divide 80 into five equal groups? These fraction and division skills help us find a constant rate.
+
+Imagine a shop selling identical notebooks. Five cost 80 credits and ten cost 160 credits. Does buying three more always add just three credits? A ratio compares quantities by multiplication, not by adding the same number to both.
+
+In 2/3 = x/12, the denominator scales by four, so x = 8. Cross-products provide another check: 2 × 12 = 3x. Denominators must be nonzero. A proportional relationship has form y = kx with constant k, and its graph passes through the origin. The rule y = 2x + 1 is not proportional because its ratio y/x changes and it gives y = 1 at x = 0.
+
+For a fixed price with no extra fee, C = kn: total cost C in credits equals the rate k in credits per notebook times the number n of notebooks. The formula applies because every additional notebook has the same price. A discount or fixed order fee would require checking the model again. The table below compares matching units; graph the pairs (0, 0), (5, 80), (8, 128) and (10, 160) with notebook count horizontal and cost vertical. They lie on one straight line through the origin.""",
     model: {
-      "2/3 = 8/12": "Both ratios have the same value.",
-      "y = 3x": "Every pair has rate three when x is nonzero.",
-      "y = 2x + 1": "An added offset prevents direct proportionality."
+      "5 notebooks → 80 credits": "80/5 = 16 credits per notebook.",
+      "8 notebooks → 128 credits": "128/8 = 16 credits per notebook.",
+      "10 notebooks → 160 credits": "160/10 = 16 credits per notebook.",
+      "0 notebooks → 0 credits":
+          "No fixed fee: C = 16n passes through the origin."
     },
     worked:
-        "Solve x/4 = 6/8. Step 1: simplify 6/8 to 3/4. Step 2: compare matching denominators. Step 3: x = 3. Step 4: check 3 × 8 = 4 × 6.",
+        """Solve x/4 = 6/8. Step 1: simplify 6/8 to 3/4. Step 2: compare matching denominators. Step 3: x = 3. Step 4: check 3 × 8 = 4 × 6.
+
+Apply the same idea to a hypothetical shop: five notebooks cost 80 credits at a fixed price with no fee. Find the cost C of eight notebooks.
+
+Step 1 — name the quantities. Known: 5 notebooks cost 80 credits; wanted: C credits for 8 notebooks. We assume identical notebooks at one unchanged unit price.
+
+Step 2 — choose the relationship. Equal unit prices give C/8 = 80/5, with both sides in credits per notebook. Multiply both sides by the nonzero count 8: C = (80/5) × 8. Equality is preserved because both sides receive the same operation.
+
+Step 3 — calculate with units. k = 80 credits / 5 notebooks = 16 credits per notebook. Then C = (16 credits/notebook) × 8 notebooks = 128 credits; notebook units cancel.
+
+Step 4 — check. 128/8 = 16 and 80/5 = 16, so the rates agree. Eight notebooks are more than five but fewer than ten: 128 is sensibly between 80 and 160 credits. Scaling both counts and costs by 8/5 gives the same result.""",
     guided:
-        "If five identical notebooks cost eighty credits at a fixed unit price, what do eight cost? State the proportionality constant.",
+        """If five identical notebooks cost eighty credits at a fixed unit price, what do eight cost? State the proportionality constant.
+
+Hint 1: first find the cost of one notebook. Hint 2: keep credits per notebook on both sides of your proportion. Hint 3: multiply the unit price by the requested count, then check against the table.
+
+Try independently before revealing: a different hypothetical shop uses the same 16-credit price but adds a fixed 20-credit fee to every order. Write its total cost rule and find the total for eight notebooks. Is total cost directly proportional to count? Explain using the total at zero notebooks in this mathematical model.""",
     solution:
-        "The unit price is sixteen credits per notebook. Eight cost 128; k = 16 in cost = 16 × count.",
+        """The unit price is sixteen credits per notebook. Eight cost 128; k = 16 in cost = 16 × count.
+
+Independent transfer: C = 20 + 16n, so eight notebooks cost 20 + 16 × 8 = 148 credits. The 20-credit fee is added once per order, not once per notebook. At zero notebooks the rule gives 20 credits instead of zero, so total cost is not directly proportional to notebook count. For five and eight notebooks the total-cost ratios are 100/5 = 20 and 148/8 = 18.5 credits per notebook; they are not equal. The notebook-only part still has a constant rate of 16.
+
+For written solutions, 128, 128.0 or an equivalent fraction represent the same numerical cost when labeled credits; 16 credits per notebook describes the rate, not the total. In the app, select the complete supplied answer. A complete explanation names the fixed-price assumption, shows the rate or a valid proportion, includes units and checks the result.""",
     mistakes:
-        "An equal difference alone does not prove a proportion. Cross-multiplication requires valid nonzero denominators, and a graph through the origin alone must also follow a constant straight-line rate.",
+        """An equal difference alone does not prove a proportion. Cross-multiplication requires valid nonzero denominators, and a graph through the origin alone must also follow a constant straight-line rate.
+
+Diagnose this claim: 'Five notebooks cost 80, so eight cost 83 because both numbers increase by three.' The error is adding equal amounts rather than keeping the unit price fixed. Check: 83/8 = 10.375 credits per notebook, not 16. Correct it by finding the rate first. Also do not write credits/notebook on one side and notebooks/credit on the other.""",
     recap:
-        "Equivalent ratios and constant rates define direct proportions; added fixed amounts do not.",
+        """Equivalent ratios and constant rates define direct proportions; added fixed amounts do not.
+
+Review tomorrow without the table: explain why C = 16n is proportional and C = 20 + 16n is not. Rebuild the one-notebook rate from 80 credits for five notebooks, then check your explanation against this lesson.""",
     questions: [
       "2/3 = x/12 gives x what?|8|6;4;18|Scale both terms by four.",
       "x/4 = 6/8 gives x what?|3|6;12;2|Six eighths equals three fourths.",
@@ -76,7 +106,7 @@ const grade7MathUnits = <CoreMathUnit>[
       "Which checks 2/3 = 8/12?|2 × 12 = 3 × 8|2 + 12 = 3 + 8;2 × 3 = 8 × 12;2 − 3 = 8 − 12|Equal cross-products verify valid ratios.",
       "Five notebooks cost eighty at a fixed rate. Eight cost what?|128|83;100;160|Each costs sixteen, so eight cost 128.",
       "If y = 5x and x = 7, y is what?|35|12;2;57|Multiply seven by the constant rate five.",
-      "4/5 = x/20 gives x what?|16|8;4;25|The denominator quadruples, so the numerator does too."
+      "A shop charges 16 credits per notebook plus a fixed 20-credit order fee. For eight notebooks, which total and relationship are correct?|148 credits; not directly proportional|128 credits, directly proportional;148 credits, directly proportional;288 credits, not directly proportional|C = 20 + 16 × 8 = 148 credits. At zero notebooks the rule still gives a 20-credit fee, so total cost is not directly proportional to count."
     ],
   ),
   CoreMathUnit(
