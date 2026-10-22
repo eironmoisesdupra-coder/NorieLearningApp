@@ -74,10 +74,16 @@ Hidden Windows capture used actual native content bounds and awake captures;
 synthetic viewport/stale-frame harness artifacts were corrected without product
 changes.
 
-The subsequent 0.17.0+23 change separates this candidate from the public
-0.16.1+22 packages; it changes version metadata and this execution record, not
-Discovery behavior. Current-head CI and candidate download links are recorded in
-PR #70. Historical results above do not claim that a later head has passed CI.
+The 0.17.0+23 packaging change separates this candidate from public 0.16.1+22.
+A subsequent compiled recovery probe uncovered an optimistic SharedPreferences
+cache issue that normal save/replay tests did not cover: after a denied write,
+retry/reopen could accept memory-only evidence as saved. Discovery now reloads
+platform preferences before each read. Four adapter regressions observed RED then
+GREEN cover false/throwing writes, durable retry, reopening a failed completion
+without a phantom journal, and observing backend changes. Existing injected
+store and screen regressions also passed. Current-head full CI, compiled
+recovery and candidate downloads are recorded in PR #70; historical results
+above do not claim that a later head has passed those checks.
 
 ## External gates and publication
 
@@ -88,11 +94,12 @@ The activity remains experimental and ungraded. No server configuration is
 needed for its offline features. Existing production signing, public support and
 privacy-policy gates remain pending as previously agreed.
 
-The supplied `CODEX_TASK.md` item 11 requires “Release via existing exact SHA
-Preview pipeline with owner approval.” Owner approval is pending. No merge,
-release tag, public web promotion or dual-platform release is implied by this
-file or green PR checks. After approval, use the established PR → green CI →
-develop merge → merged-head verification → exact-SHA Preview workflow. Never
-push or merge into main. Final handoff must identify both PC/APK packages and
-their actual revision; CI artifacts are temporary authenticated downloads, not
-durable public release assets.
+The supplied `CODEX_TASK.md` item 11 requires owner approval for the exact-SHA
+Preview pipeline. The owner has approved publication after green Flutter,
+Windows and Store readiness checks at the latest PR head, final review, develop
+merge, merged-source CI/web validation and verified dual-platform versions and
+checksums. No release is implied by this file or green PR checks alone. Use the
+established PR, green CI, develop merge, merged-head verification and exact-SHA
+Preview workflow. Never push or merge into main. Final handoff must identify
+both PC/APK packages and their actual revision; CI artifacts are temporary
+GitHub-authenticated downloads, not durable public release assets.

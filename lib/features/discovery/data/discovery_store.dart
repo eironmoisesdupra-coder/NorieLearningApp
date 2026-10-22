@@ -54,8 +54,14 @@ class DiscoveryStore extends ChangeNotifier {
 
   static String storageKeyFor(String? owner) =>
       'norie.discovery.v1.${owner == null ? 'guest' : 'account.${Uri.encodeComponent(owner)}'}';
-  static Future<String?> _readPreference(String key) async =>
-      (await SharedPreferences.getInstance()).getString(key);
+  static Future<String?> _readPreference(String key) async {
+    final preferences = await SharedPreferences.getInstance();
+    // Legacy preferences updates its cache before the platform write succeeds.
+    // A failed write must not masquerade as saved evidence on retry/reopen.
+    await preferences.reload();
+    return preferences.getString(key);
+  }
+
   static Future<void> _writePreference(String key, String value) async {
     if (!await (await SharedPreferences.getInstance()).setString(key, value)) {
       throw StateError('Discovery save failed');

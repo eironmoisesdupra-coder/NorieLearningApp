@@ -2,7 +2,7 @@
 
 > **For agentic workers:** Use superpowers:executing-plans to implement this plan task by task. Preserve the entire MVP scope until all evidence exists.
 
-**Execution record:** Tasks 1?5 below were executed and verified at `07627da38a7f8bc22c20ef29fe6ffa79b53969ce`; see [requirement evidence and limits](../../implementation/discovery-adventure.md). The 0.17.0+23 packaging follow-up requires its own exact-head CI, recorded in PR #70. Owner approval for publication and external learner/device reviews remain separate pending gates.
+**Execution record:** Tasks 1 through 5 below were executed and verified at `07627da38a7f8bc22c20ef29fe6ffa79b53969ce`; see [requirement evidence and limits](../../implementation/discovery-adventure.md). The 0.17.0+23 packaging follow-up requires its own exact-head CI, recorded in PR #70. The owner has approved Preview publication after exact-head and merged-source validation; external learner/device reviews remain pending.
 
 **Goal:** Deliver the archive's first playable Vanishing Water investigation inside NorieLearning.
 **Architecture:** A deterministic mission model drives a learner-scoped serialized store and an accessible Flutter room/list presentation. A single persistence envelope contains mission and journal state; it never writes course mastery, reward receipts, XP or credits. The screen uses event-driven movement and existing frame-based Norie assets, with no idle game loop.
@@ -61,6 +61,8 @@
 - [x] Record each requirement's evidence and remaining external gates. Keep goal active if any required implementation or verification is missing. No automatic merge/release; request owner approval only with a concrete verified candidate. Any release handoff includes both PC and Android links with real revisions, or labels prior builds accurately.
 
 ## Remaining publication and external gates
-- [ ] Obtain the owner?s explicit Preview publication decision required by the supplied brief.
+- [x] Obtain the owner?s explicit Preview publication decision required by the supplied brief: approved after latest-head and merged-source checks, final review, web verification and checksum validation.
 - [ ] After approval, integrate through develop, verify the merged revision and publish both versioned Preview packages using the existing exact-SHA pipeline.
 - [ ] Perform physical Android QA and qualified teacher/consented learner pilot; no certification or efficacy claim before evidence.
+
+Ruling: the late browser denied-write probe exposed SharedPreferences optimistic-cache reuse. Reload durable platform values before Discovery reads; four real-adapter RED/GREEN regressions supplement injected store tests. Record final current-head checks and publication evidence in PR #70; previous normal-path checks do not prove storage-failure handling.
