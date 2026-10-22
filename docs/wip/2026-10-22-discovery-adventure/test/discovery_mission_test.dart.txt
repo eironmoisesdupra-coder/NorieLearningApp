@@ -1,0 +1,30 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:norie_learning/features/discovery/domain/discovery_mission.dart';
+
+void main() {
+  test('cannot skip clues, experiment, or independent application', () {
+    var s = const DiscoveryMissionState();
+    expect(s.continueFromClues().stage, DiscoveryStage.inspect);
+    for (final clue in DiscoveryClue.values) { s = s.inspect(clue); }
+    s = s.continueFromClues();
+    expect(s.stage, DiscoveryStage.experiment);
+    expect(s.continueFromExperiment().stage, DiscoveryStage.experiment);
+    s = s.runTrial(warm: true).runTrial(warm: false).continueFromExperiment();
+    expect(s.stage, DiscoveryStage.conclude);
+    expect(s.submitConclusion(evaporation: false).stage, DiscoveryStage.conclude);
+    s = s.submitConclusion(evaporation: true);
+    expect(s.submitApplication(correct: false).complete, false);
+    s = s.submitApplication(correct: true);
+    expect(s.complete, true);
+    expect(DiscoveryMissionState.fromJson(s.toJson()).complete, true);
+  });
+
+  test('forged completion and unknown clues are rejected', () {
+    expect(() => DiscoveryMissionState.fromJson({
+      ...const DiscoveryMissionState().toJson(), 'stage': 'complete'
+    }), throwsFormatException);
+    expect(() => DiscoveryMissionState.fromJson({
+      ...const DiscoveryMissionState().toJson(), 'clues': ['fake']
+    }), throwsFormatException);
+  });
+}
