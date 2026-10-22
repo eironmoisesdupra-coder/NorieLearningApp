@@ -1,3 +1,17 @@
+# Discovery Adventure MVP candidate
+
+Target **0.17.0+23 Preview**, branch `feat/discovery-adventure-mvp`, [PR #70](https://github.com/eironmoisesdupra-coder/NorieLearningApp/pull/70). Current-develop baseline `899b7ab5458583fd8cc5558aca6cc0ba3c444007`. User confirmed the Discovery Adventure MVP ZIP. Original dirty checkout remains untouched.
+
+Implemented the full optional Vanishing Water case under Learn > Activities: original 2D room, five keyboard/touch/list props, three observations, controlled warm/cool trials, hypothesis plus evidence, fresh application, full-body Norie, owner-scoped save/retry/temporary mode and idempotent local Discovery Journal. No XP/credit/mastery writes or remote dependency. Experimental/ungraded pending teacher review and learner testing.
+
+Complete feature revision `07627da38a7f8bc22c20ef29fe6ffa79b53969ce` passed clean analysis, 944 Flutter tests (one existing native interop skip), web build, compiled browser checks at 320/390px and 100/160% text, actual installed-browser offline completion/reload, actual packaged Windows offline mission/reload/replay, independent code/visual review and all three PR CI workflows. Five review issues have RED/GREEN proof. The 0.17 packaging follow-up and a late SharedPreferences cache fix require fresh exact-head CI; four new real-adapter regressions reproduce failed-write retry/phantom-journal behavior and pass after reading durable platform values. Check PR #70 for current-head results rather than treating historical checks as current.
+
+See [Discovery status, requirement evidence and limitations](implementation/discovery-adventure.md). No public promotion/merge/tag/release has occurred. The owner approved Preview publication after latest-head Flutter/Windows/Store checks, final review, develop merge, merged-source CI/web validation and verified dual-platform versions/checksums. Physical Android certification, qualified teacher/consented learner validation and existing production signing/support/privacy gates remain external. Use the established develop-only, exact-SHA Preview release workflow after approval; never main. Final handoff includes both Windows and Android download links with the real revision.
+
+---
+
+## Historical handoff
+
 # NorieLearning 0.14 native rank animations
 
 Version **0.14.0+18 Preview**, branch `feat/native-rank-animations`, baseline develop `10a0e11b7158c515ba6aeb2e4b56ec44fc1e7463`. Owner supplied NorieLearning-WIP-Native-Rank-Animations-2026-10-17.zip and requested integration. Archive inspected manually; installer never run. Reused isolated integration workspace; original dirty checkout preserved.

@@ -17,6 +17,7 @@ import '../../classroom/presentation/norie_classroom_hub_screen.dart';
 import '../../seasonal/presentation/norie_seasonal_hub_screen.dart';
 import 'anatomy_lab_placeholder_screen.dart';
 import 'learn_continue_card.dart';
+import '../../discovery/presentation/discovery_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({
@@ -173,6 +174,18 @@ class _LearnScreenState extends State<LearnScreen> {
             const SizedBox(height: 12),
           ],
         'Activities' => [
+            _SubjectTile(
+              title: 'Discovery Adventure',
+              subtitle:
+                  'An optional science investigation · Experimental and ungraded',
+              icon: Icons.travel_explore,
+              color: NorieColors.cyan,
+              badge: 'PILOT',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const DiscoveryScreen(),
+              )),
+            ),
+            const SizedBox(height: 12),
             _SubjectTile(
               title: '3D Anatomy Lab',
               subtitle: 'Layered human anatomy · 3D viewer · Identification',
