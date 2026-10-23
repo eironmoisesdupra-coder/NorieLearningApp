@@ -390,7 +390,7 @@ class _HomeHero extends StatelessWidget {
                           const SizedBox(height: 9),
                           Text(
                             snapshot.isMaxLevel
-                                ? 'You reached\nMaster rank.'
+                                ? 'You reached\nProfessor rank.'
                                 : 'Ready for your\nnext level?',
                             style: const TextStyle(
                               fontSize: 28,

@@ -144,19 +144,19 @@ class ProgressScreen extends StatelessWidget {
                         ),
                         const _RankRow(
                           level: 5,
-                          title: 'Novice',
+                          title: 'Explorer',
                         ),
                         const _RankRow(
                           level: 15,
-                          title: 'Veteran',
-                        ),
-                        const _RankRow(
-                          level: 30,
                           title: 'Scholar',
                         ),
                         const _RankRow(
+                          level: 30,
+                          title: 'Expert',
+                        ),
+                        const _RankRow(
                           level: 50,
-                          title: 'Master',
+                          title: 'Professor',
                         ),
                         const SizedBox(height: 26),
                         _MasterySummaryCard(
@@ -410,7 +410,7 @@ class _CurrentRankCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               snapshot.isMaxLevel
-                  ? 'Master rank reached'
+                  ? 'Professor rank reached'
                   : '${snapshot.xpIntoLevel} / ${snapshot.xpRequiredForNextLevel} XP toward Level ${snapshot.level + 1}',
               style: const TextStyle(
                 color: NorieColors.textSecondary,

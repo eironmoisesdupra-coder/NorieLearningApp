@@ -1,3 +1,5 @@
+import 'norie_explorer_avatar.dart';
+import 'norie_explorer_editor.dart';
 import '../../../core/widgets/norie_animated_rank_badge.dart';
 import 'dart:math' as math;
 import '../../commerce/presentation/norie_shop_cosmetics.dart';
@@ -119,6 +121,12 @@ class _NorieAppearanceStudioState extends State<NorieAppearanceStudio> {
                     subtitle: 'Preview · ${current.title}',
                     trophyLabels: draft.showcase.map(trophyLabel).toList()),
                 const SizedBox(height: 20),
+                NorieExplorerEditor(
+                    value: draft.explorer,
+                    enabled: !saving,
+                    onChanged: (value) =>
+                        change(draft.copyWith(explorer: value))),
+                const SizedBox(height: 6),
                 _section('Bundled avatars',
                     'Original Norie symbols, ready offline. Photo upload is not available in this release.'),
                 Wrap(spacing: 8, runSpacing: 8, children: [
@@ -586,6 +594,7 @@ class NorieAppearancePreview extends StatelessWidget {
                           runSpacing: 12,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
+                            NorieExplorerAvatar(appearance: value.explorer),
                             Semantics(
                                 label:
                                     '${NorieAppearanceCatalog.avatars[value.avatarId]} avatar, ${shopFrameId ?? frame.title} frame',
@@ -625,10 +634,16 @@ class NorieAppearancePreview extends StatelessWidget {
                             Semantics(
                                 label:
                                     'Norie ${NorieAppearanceCatalog.poses[value.poseId]} pose',
-                                child: Image.asset(poseAsset,
-                                    width: 96,
-                                    height: 110,
-                                    fit: BoxFit.contain)),
+                                child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Image.asset(poseAsset,
+                                          width: 96,
+                                          height: 110,
+                                          fit: BoxFit.contain),
+                                      const Text('Norie companion',
+                                          style: TextStyle(fontSize: 12)),
+                                    ])),
                           ]),
                       const SizedBox(height: 12),
                       if (rankLevel != null) ...[

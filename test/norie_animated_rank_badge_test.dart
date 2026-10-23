@@ -1,12 +1,55 @@
+import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/core/assets/norie_assets.dart';
 import 'package:norie_learning/core/progression/norie_progression.dart';
 import 'package:norie_learning/core/widgets/norie_animated_rank_badge.dart';
+import 'package:norie_learning/core/widgets/norie_rank_illustration.dart';
 import 'package:norie_learning/features/accessibility/data/norie_accessibility_settings.dart';
 import 'package:norie_learning/features/accessibility/presentation/norie_accessibility_scope.dart';
 
 void main() {
+  testWidgets('each rank shows its educational silhouette at both boundaries',
+      (tester) async {
+    final rasters = <String>{};
+    for (final entry in {
+      1: NorieRankIllustration.pencil,
+      4: NorieRankIllustration.pencil,
+      5: NorieRankIllustration.compass,
+      14: NorieRankIllustration.compass,
+      15: NorieRankIllustration.book,
+      29: NorieRankIllustration.book,
+      30: NorieRankIllustration.science,
+      49: NorieRankIllustration.science,
+      50: NorieRankIllustration.graduation,
+      55: NorieRankIllustration.graduation,
+    }.entries) {
+      await tester.pumpWidget(MaterialApp(
+          home: NorieAnimatedRankBadge(level: entry.key, animate: false)));
+      final painter = tester
+          .widget<CustomPaint>(
+              find.byKey(const ValueKey('rank-illustration-layer')))
+          .painter! as NorieRankIllustrationPainter;
+      expect(painter.illustration, entry.value);
+      final recorder = ui.PictureRecorder();
+      painter.paint(Canvas(recorder), const Size(48, 48));
+      final picture = recorder.endRecording();
+      await tester.runAsync(() async {
+        final image = await picture.toImage(48, 48);
+        final bytes =
+            await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+        final rgba = bytes!.buffer.asUint8List();
+        expect(rgba.any((value) => value > 0), isTrue);
+        rasters.add(base64Encode(rgba));
+        image.dispose();
+      });
+      picture.dispose();
+    }
+    expect(rasters.length, 5,
+        reason: 'Each rank needs a distinct readable silhouette at 48px');
+  });
+
   test('all level titles and assets use the canonical progression policy', () {
     for (var level = 1; level <= 55; level++) {
       expect(NorieAnimatedRankBadge.titleForLevel(level),
@@ -15,24 +58,35 @@ void main() {
           NorieAssets.rankForTitle(NorieLevelSystem.titleForLevel(level)));
     }
     expect(NorieAssets.rankForTitle('Explorer'),
-        NorieAnimatedRankBadge.assetForLevel(1));
+        NorieAnimatedRankBadge.assetForLevel(5));
+    expect(NorieAssets.rankExplorer, 'assets/ranking/norie_rookie.png');
     expect(NorieAssets.rankForTitle('Curious Mind'),
         NorieAnimatedRankBadge.assetForLevel(5));
     expect(NorieAssets.rankForTitle('Specialist'),
         NorieAnimatedRankBadge.assetForLevel(30));
+    expect(
+        NorieAssets.rankForTitle('Novice'), 'assets/ranking/norie_novice.png');
+    expect(NorieAssets.rankForTitle('Veteran'),
+        'assets/ranking/norie_veteran.png');
+    expect(
+        NorieAssets.rankForTitle('Master'), 'assets/ranking/norie_master.png');
+    expect(NorieAssets.rankForTitle('Scholar'),
+        'assets/ranking/norie_veteran.png');
+    expect(NorieAnimatedRankBadge.assetForLevel(30),
+        'assets/ranking/norie_scholar.png');
     expect(NorieAssets.rankForTitle('unrecognized'),
         NorieAnimatedRankBadge.assetForLevel(1));
   });
 
   testWidgets(
-      'crystal and Scholar layers repaint independently and freeze with reduced motion',
+      'educational art and aura animate independently and freeze with reduced motion',
       (tester) async {
     Widget app(bool reduced) => MaterialApp(
         home: MediaQuery(
             data: MediaQueryData(disableAnimations: reduced),
             child: const NorieAnimatedRankBadge(level: 30)));
     await tester.pumpWidget(app(false));
-    final layers = ['rank-crystal-layer', 'rank-wing-layer', 'rank-book-layer'];
+    final layers = ['rank-illustration-layer', 'rank-aura-layer'];
     final before = <String, CustomPainter>{};
     for (final key in layers) {
       before[key] =
@@ -102,14 +156,13 @@ void main() {
     await tester.pump();
     expect(tester.binding.transientCallbackCount, 0);
     final semantics = tester.ensureSemantics();
-    expect(find.bySemanticsLabel('Master rank'), findsOneWidget);
+    expect(find.bySemanticsLabel('Professor rank'), findsOneWidget);
     semantics.dispose();
     await tester.pumpWidget(const SizedBox());
     store.dispose();
   });
 
-  testWidgets(
-      '48px and 96px crests decode for every rank with OS motion disabled',
+  testWidgets('48px and 96px educational badges render with OS motion disabled',
       (tester) async {
     for (final size in [48.0, 96.0]) {
       for (final level in [1, 5, 15, 30, 50]) {
@@ -118,13 +171,10 @@ void main() {
                 data: const MediaQueryData(disableAnimations: true),
                 child: Center(
                     child: NorieAnimatedRankBadge(level: level, size: size)))));
-        final image = tester.widget<Image>(find.byType(Image));
-        expect(
-            ((image.image as ResizeImage).imageProvider as AssetImage)
-                .assetName,
-            NorieAnimatedRankBadge.assetForLevel(level));
-        await tester.runAsync(() =>
-            precacheImage(image.image, tester.element(find.byType(Image))));
+        expect(find.byType(Image), findsNothing,
+            reason: 'Main rank art must remain code-native and offline');
+        expect(find.byKey(const ValueKey('rank-illustration-layer')),
+            findsOneWidget);
         await tester.pumpAndSettle();
         expect(tester.getSize(find.byType(NorieAnimatedRankBadge)),
             Size.square(size));

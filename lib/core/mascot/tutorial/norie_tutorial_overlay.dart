@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import '../../theme/norie_theme.dart';
 import '../norie_mascot_scope.dart';
 import 'norie_tutorial_coordinator.dart';
+import 'norie_tutorial_chapter_art.dart';
 import 'norie_tutorial_models.dart';
 
 class NorieTutorialOverlay extends StatefulWidget {
@@ -24,6 +25,8 @@ class _NorieTutorialOverlayState extends State<NorieTutorialOverlay>
     with SingleTickerProviderStateMixin {
   late final Ticker _trackingTicker = createTicker(_trackTarget);
   Rect? _trackedTarget;
+  bool _minimized = false;
+  String? _lastStep;
 
   @override
   void initState() {
@@ -51,6 +54,11 @@ class _NorieTutorialOverlayState extends State<NorieTutorialOverlay>
 
   void _handleCoordinator() {
     if (!mounted) return;
+    final stepId = widget.coordinator.currentStep?.id;
+    if (_lastStep != stepId) {
+      _lastStep = stepId;
+      _minimized = false;
+    }
 
     if (widget.coordinator.isActive) {
       if (!_trackingTicker.isActive) _trackingTicker.start();
@@ -89,9 +97,13 @@ class _NorieTutorialOverlayState extends State<NorieTutorialOverlay>
 
         return Stack(
           children: [
-            const Positioned.fill(
-                child: ModalBarrier(
-                    dismissible: false, color: Colors.transparent)),
+            // The sample route has no service/store access and is safe to try.
+            // Real application screens remain protected by the modal barrier.
+            if (step.destination != NorieTutorialDestination.library ||
+                widget.coordinator.showingContents)
+              const Positioned.fill(
+                  child: ModalBarrier(
+                      dismissible: false, color: Colors.transparent)),
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(
@@ -130,6 +142,39 @@ class _NorieTutorialOverlayState extends State<NorieTutorialOverlay>
               ),
             if (widget.coordinator.showingContents)
               _TutorialContents(coordinator: widget.coordinator)
+            else if (_minimized)
+              SafeArea(
+                minimum: const EdgeInsets.all(14),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Material(
+                    color: NorieColors.surface,
+                    elevation: 8,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      child: Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                              'Guide ${widget.coordinator.currentIndex + 1} / ${widget.coordinator.stepCount}',
+                              style: const TextStyle(
+                                  color: NorieColors.cyan,
+                                  fontWeight: FontWeight.w800)),
+                          FilledButton.tonalIcon(
+                            onPressed: () => setState(() => _minimized = false),
+                            icon: const Icon(Icons.chat_bubble_outline_rounded),
+                            label: const Text('Show guide'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
             else
               _TutorialCard(
                 step: step,
@@ -142,6 +187,7 @@ class _NorieTutorialOverlayState extends State<NorieTutorialOverlay>
                     ? null
                     : widget.coordinator.previous,
                 onContents: widget.coordinator.showContents,
+                onMinimize: () => setState(() => _minimized = true),
                 target: target,
                 onFocus: () =>
                     unawaited(widget.coordinator.focusCurrentTarget()),
@@ -196,6 +242,7 @@ class _TutorialCard extends StatelessWidget {
     required this.onNext,
     required this.onBack,
     required this.onContents,
+    required this.onMinimize,
     required this.target,
     required this.onFocus,
   });
@@ -208,6 +255,7 @@ class _TutorialCard extends StatelessWidget {
   final VoidCallback onNext;
   final VoidCallback? onBack;
   final VoidCallback onContents;
+  final VoidCallback onMinimize;
   final Rect? target;
   final VoidCallback onFocus;
 
@@ -227,11 +275,17 @@ class _TutorialCard extends StatelessWidget {
         : focusAbove
             ? target!.top - 28
             : size.height - target!.bottom - 28;
-    final maximumHeight = target == null
-        ? size.height * .82
-        : freeHeight >= 240
-            ? freeHeight.clamp(0.0, size.height * .65)
-            : size.height * .55;
+    // At large text sizes or short landscape heights, prioritize readable
+    // controls over a compact spotlight card. The guide can still be minimized.
+    final needsReadingRoom =
+        size.height < 440 || MediaQuery.textScalerOf(context).scale(14) > 21;
+    final maximumHeight = needsReadingRoom
+        ? size.height * .9
+        : target == null
+            ? size.height * .82
+            : freeHeight >= 240
+                ? freeHeight.clamp(0.0, size.height * .65)
+                : size.height * .55;
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -262,15 +316,16 @@ class _TutorialCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(
-                          Icons.explore_rounded,
-                          color: NorieColors.cyan,
-                          size: 18,
+                        NorieTutorialChapterArt(
+                          key: const ValueKey('tutorial-chapter-art'),
+                          destination: step.destination,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             step.section.isEmpty ? 'Norie Guide' : step.section,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w900,
@@ -285,14 +340,29 @@ class _TutorialCard extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
+                        IconButton(
+                          tooltip: 'Minimize guide',
+                          onPressed: onMinimize,
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 10),
-                    LinearProgressIndicator(
-                      value: current / total,
-                      minHeight: 3,
-                      color: NorieColors.cyan,
-                      backgroundColor: NorieColors.cyan.withValues(alpha: .12),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(end: current / total),
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 280),
+                      builder: (context, value, _) => LinearProgressIndicator(
+                        value: value,
+                        minHeight: 5,
+                        borderRadius: BorderRadius.circular(8),
+                        color: NorieColors.cyan,
+                        backgroundColor:
+                            NorieColors.cyan.withValues(alpha: .12),
+                        semanticsLabel:
+                            'Guide progress, step $current of $total',
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Flexible(
@@ -303,6 +373,26 @@ class _TutorialCard extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Container(
+                                  key: const ValueKey('tutorial-next-move'),
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        NorieColors.cyan.withValues(alpha: .08),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: NorieColors.cyan
+                                            .withValues(alpha: .2)),
+                                  ),
+                                  child: Text(
+                                      NorieTutorialChapterArt.nextMove(step),
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          height: 1.4,
+                                          color: Color(0xFFBAF4FC),
+                                          fontWeight: FontWeight.w700)),
+                                ),
                                 if (step.location.isNotEmpty) ...[
                                   Row(
                                       crossAxisAlignment:
@@ -364,7 +454,15 @@ class _TutorialCard extends StatelessWidget {
                             backgroundColor: NorieColors.cyan,
                             foregroundColor: NorieColors.background,
                           ),
-                          child: Text(isLast ? 'Done' : 'Next'),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text(isLast ? 'Done' : 'Next'),
+                            const SizedBox(width: 6),
+                            Icon(
+                                isLast
+                                    ? Icons.check_rounded
+                                    : Icons.arrow_forward_rounded,
+                                size: 18),
+                          ]),
                         ),
                       ],
                     ),
@@ -469,6 +567,14 @@ class _TutorialContentsState extends State<_TutorialContents> {
                                           key: PageStorageKey(
                                               'guide-${chapter.id}'),
                                           title: Text(chapter.title),
+                                          leading: Icon(
+                                              NorieTutorialChapterArt.iconFor(
+                                                  steps
+                                                      .firstWhere((step) =>
+                                                          step.section ==
+                                                          chapter.title)
+                                                      .destination),
+                                              color: NorieColors.cyan),
                                           subtitle: Text(
                                               '${chapter.steps.length} steps'),
                                           children: [

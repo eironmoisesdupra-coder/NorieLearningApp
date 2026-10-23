@@ -544,7 +544,10 @@ abstract final class NorieTutorialCatalog {
               section: chapter.title,
               destination: _destination(chapter),
               location: _location(chapter),
-              targetId: step.targetId ?? 'tour.${_destination(chapter).name}',
+              targetId:
+                  _destination(chapter) == NorieTutorialDestination.library
+                      ? 'tutorial.sample.${step.id}'
+                      : step.targetId ?? 'tour.${_destination(chapter).name}',
               preferredPosition: step.preferredPosition,
               voiceAsset: step.voiceAsset,
               message: step.message,
