@@ -444,7 +444,7 @@ class _ProfileHeader extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             progression.isMaxLevel
-                ? 'Master rank reached'
+                ? 'Professor rank reached'
                 : '${progression.xpIntoLevel} / ${progression.xpRequiredForNextLevel} XP to Level ${progression.level + 1}',
             style: const TextStyle(
               fontSize: 10,

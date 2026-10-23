@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'norie_explorer_appearance.dart';
 
 /// Cosmetic choices only. No learning history is included in this display value.
 @immutable
 class NorieProfileAppearance {
   const NorieProfileAppearance(
-      {this.avatarId = 'norie',
+      {this.explorer = const NorieExplorerAppearance(),
+      this.avatarId = 'norie',
       this.frameId = 'explorer',
       this.paletteId = 'explorer',
       this.poseId = 'welcome',
@@ -13,12 +15,14 @@ class NorieProfileAppearance {
       this.frameEffectId = 'none',
       this.accentIndex = 0,
       this.showcase = const []});
+  final NorieExplorerAppearance explorer;
   final String avatarId, frameId, paletteId, poseId;
   final String backgroundId, nameplateId, frameEffectId;
   final int accentIndex;
   final List<String> showcase;
   NorieProfileAppearance copyWith(
-          {String? avatarId,
+          {NorieExplorerAppearance? explorer,
+          String? avatarId,
           String? frameId,
           String? paletteId,
           String? poseId,
@@ -28,6 +32,7 @@ class NorieProfileAppearance {
           int? accentIndex,
           List<String>? showcase}) =>
       NorieProfileAppearance(
+          explorer: explorer ?? this.explorer,
           avatarId: avatarId ?? this.avatarId,
           frameId: frameId ?? this.frameId,
           paletteId: paletteId ?? this.paletteId,
@@ -38,6 +43,7 @@ class NorieProfileAppearance {
           accentIndex: accentIndex ?? this.accentIndex,
           showcase: List.unmodifiable(showcase ?? this.showcase));
   Map<String, dynamic> toJson() => {
+        'explorer': explorer.toJson(),
         'avatar': avatarId,
         'frame': frameId,
         'palette': paletteId,
@@ -53,6 +59,7 @@ class NorieProfileAppearance {
       throw const FormatException('Appearance must be an object.');
     }
     const fields = {
+      'explorer',
       'avatar',
       'frame',
       'palette',
@@ -88,6 +95,7 @@ class NorieProfileAppearance {
       throw const FormatException('Invalid appearance accent or showcase.');
     }
     return NorieProfileAppearance(
+        explorer: NorieExplorerAppearance.fromJson(raw['explorer']),
         avatarId:
             choice('avatar', 'norie', NorieAppearanceCatalog.avatars.keys),
         frameId: choice('frame', 'explorer', NorieAppearanceCatalog.bundleIds),
@@ -141,7 +149,7 @@ abstract final class NorieAppearanceCatalog {
         'Soft cyan edge'),
     NorieRankBundle(
         'curious',
-        'Novice',
+        'Explorer',
         5,
         'comet',
         'study',
@@ -150,24 +158,24 @@ abstract final class NorieAppearanceCatalog {
         2,
         'Comet trail',
         'Curiosity spark',
-        'Novice ribbon',
+        'Explorer ribbon',
         'Violet shimmer'),
     NorieRankBundle(
         'scholar',
-        'Veteran',
+        'Scholar',
         15,
         'leaf',
         'celebrate',
         [Color(0xFF96E7B5), Color(0xFF8AE3DD), Color(0xFFD3E991)],
         3,
         3,
-        'Veteran lantern trail',
+        'Scholar lantern trail',
         'Laurel celebration',
-        'Veteran plaque',
+        'Scholar plaque',
         'Emerald glow'),
     NorieRankBundle(
         'specialist',
-        'Scholar',
+        'Expert',
         30,
         'orbit',
         'study',
@@ -176,11 +184,11 @@ abstract final class NorieAppearanceCatalog {
         4,
         'Orbit trail',
         'Orbit ring celebration',
-        'Scholar crest',
+        'Expert crest',
         'Orbit halo'),
     NorieRankBundle(
         'master',
-        'Master',
+        'Professor',
         50,
         'prism',
         'celebrate',
@@ -189,7 +197,7 @@ abstract final class NorieAppearanceCatalog {
         5,
         'Prismatic trail',
         'Prism finale',
-        'Master crest',
+        'Professor crest',
         'Prismatic profile aura'),
   ];
   static Iterable<String> get bundleIds => bundles.map((b) => b.id);
@@ -213,10 +221,10 @@ abstract final class NorieAppearanceCatalog {
   };
   static const nameplates = {
     'explorer': 'Rookie tab',
-    'curious': 'Novice ribbon',
-    'scholar': 'Veteran plaque',
-    'specialist': 'Scholar crest',
-    'master': 'Master crest'
+    'curious': 'Explorer ribbon',
+    'scholar': 'Scholar plaque',
+    'specialist': 'Expert crest',
+    'master': 'Professor crest'
   };
   static const frameEffects = {
     'none': 'None',

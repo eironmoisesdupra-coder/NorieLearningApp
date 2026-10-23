@@ -192,10 +192,10 @@ abstract final class NorieLevelSystem {
   static const int xpIncreasePerLevel = 25;
 
   static String titleForLevel(int level) {
-    if (level >= 50) return 'Master';
-    if (level >= 30) return 'Scholar';
-    if (level >= 15) return 'Veteran';
-    if (level >= 5) return 'Novice';
+    if (level >= 50) return 'Professor';
+    if (level >= 30) return 'Expert';
+    if (level >= 15) return 'Scholar';
+    if (level >= 5) return 'Explorer';
     return 'Rookie';
   }
 
@@ -249,10 +249,10 @@ abstract final class NorieLevelSystem {
   }
 
   static (String, int)? _nextRankAfter(int level) {
-    if (level < 5) return ('Novice', 5);
-    if (level < 15) return ('Veteran', 15);
-    if (level < 30) return ('Scholar', 30);
-    if (level < 50) return ('Master', 50);
+    if (level < 5) return ('Explorer', 5);
+    if (level < 15) return ('Scholar', 15);
+    if (level < 30) return ('Expert', 30);
+    if (level < 50) return ('Professor', 50);
     return null;
   }
 }

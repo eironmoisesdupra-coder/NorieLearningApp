@@ -64,6 +64,7 @@ class NorieProfileAppearanceStore extends ChangeNotifier {
     final allowed = raw.containsKey('appearance')
         ? const {'version', 'rankLevel', 'appearance', 'presets'}
         : const {
+            'explorer',
             'avatar',
             'frame',
             'palette',

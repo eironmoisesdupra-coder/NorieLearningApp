@@ -117,7 +117,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await open(tester);
-    for (final label in ['Glow', 'Star field', 'Novice ribbon']) {
+    for (final label in ['Glow', 'Star field', 'Explorer ribbon']) {
       final chip = find.widgetWithText(ChoiceChip, label);
       await tester.scrollUntilVisible(chip, 180);
       await tester.ensureVisible(chip);

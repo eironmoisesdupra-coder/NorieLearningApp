@@ -8,10 +8,10 @@ void main() {
       () {
     final expected = {
       1: ('explorer', 'Rookie'),
-      5: ('curious', 'Novice'),
-      15: ('scholar', 'Veteran'),
-      30: ('specialist', 'Scholar'),
-      50: ('master', 'Master')
+      5: ('curious', 'Explorer'),
+      15: ('scholar', 'Scholar'),
+      30: ('specialist', 'Expert'),
+      50: ('master', 'Professor')
     };
     for (final entry in expected.entries) {
       final bundle = NorieAppearanceCatalog.bundleForLevel(entry.key);
