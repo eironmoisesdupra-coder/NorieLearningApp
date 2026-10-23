@@ -50,7 +50,8 @@ recorded in the PR with exact source SHA.
 The packaged Windows offline test now exercises free general help, missing-content
 fallback, disabled detailed control and unchanged Credits at a 390x844 viewport,
 then completes its existing 20Q/200-XP/reload checks. Its actual execution and
-screenshot are CI gates, not inferred from script syntax. Existing renderer tests
+screenshot are CI gates, not inferred from script syntax. Windows CI retains
+screenshots on successful as well as failed runs for actual visual review. Existing renderer tests
 and GLB checksum/node audit remain required.
 
 No transaction tests can certify a paid hint system that is not implemented.

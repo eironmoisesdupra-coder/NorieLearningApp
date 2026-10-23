@@ -90,7 +90,7 @@ jobs:
           path: build/NorieLearning-Windows.zip
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
           name: Windows-offline-test-screenshots
           path: build/windows-*.png
