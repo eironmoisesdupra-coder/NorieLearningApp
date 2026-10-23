@@ -101,7 +101,10 @@ async function main() {
     await page.getByRole('button', { name: 'Need a hint?', exact: true }).first().click();
     await page.getByText(/Examine the object.*overall proportions/).waitFor();
     await answerClick(page.getByRole('button', { name: 'Structure clue · Free', exact: true }));
-    await page.getByText(/This structure.*clue is not ready/).waitFor();
+    // The live-region announcement repeats the same words outside the app.
+    // Assert the visible rendered semantics span, preserving the announcement.
+    await page.getByText(/This structure.*clue is not ready/)
+      .and(page.locator('flt-semantics span')).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Detailed hint · Locked', exact: true }).isEnabled(), false);
     assert.equal(await page.evaluate(() => localStorage.getItem('flutter.norie.credits')), beforeHintCredits);
     await captureHiddenPage('windows-offline-anatomy-free-hints-phone.png');
