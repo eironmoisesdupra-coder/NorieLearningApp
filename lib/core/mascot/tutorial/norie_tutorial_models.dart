@@ -191,13 +191,13 @@ abstract final class NorieTutorialCatalog {
           targetId: 'anatomy.quiz',
           title: 'Build your 20-part challenge',
           message:
-              'Open Quiz, choose a reference and one or more systems, or select Every part for the broadest pool. Select at least 20 distinct structures to start. During the quiz, the model keeps its original anatomical colors and shading. The magnifying glass reveals a short clue; the recenter and music buttons control your view and soundtrack.'),
+              'Open Quiz, choose a reference and one or more systems, or select Every part for the broadest pool. Choose a 5, 10, or 20-part round, difficulty, and question kind. The setup shows whether the selected pool can fill that length and offers a shorter session where available. During the quiz, the model keeps its original anatomical colors and shading. Shorter sessions offer free catalog-group clues. In a 20-part round, a reviewed specific hint is unavailable and costs zero credits; answer feedback remains free. The recenter and music buttons control your view and soundtrack.'),
       NorieTutorialStep(
           id: 'anatomy-loading',
           targetId: 'anatomy.explore',
           title: 'When the model does not load',
           message:
-              'Give the 3D assets time to load, especially on the first visit. Use Retry if shown and check connectivity before assuming a model is missing. Supported browser/device graphics and available memory matter. Cached lessons being available offline does not prove every 3D asset is already downloaded.'),
+              'Give the 3D assets time to load, especially on the first visit. Use Retry if shown and check connectivity before assuming a model is missing. Supported browser/device graphics and available memory matter. Cached lessons being available offline does not prove every 3D asset is already downloaded. If guided study cannot read its saved data, Retry loading saved study preserves the original while trying again. Other lessons and atlas exploration remain available.'),
     ],
   );
 

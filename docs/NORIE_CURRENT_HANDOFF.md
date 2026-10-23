@@ -1,3 +1,11 @@
+# Educational readiness follow-up — draft candidate
+
+The verified integration baseline is published **0.18.0+24 Preview**, source `ed9472dbb437127abd8fd09931a86879d4df5ec5` (PR71). This separate `feat/educational-readiness` candidate protects guided-study recovery and stale controls, removes coarse-name medical hint inference, and adds independent review to three existing English lessons. It does not activate paid hints or curriculum publication, change dependency versions, merge, or deploy.
+
+See [scope, validation and blockers](implementation/educational-readiness.md) and [execution ledger](superpowers/plans/2026-10-23-educational-readiness.md). Targeted tests: 76 passed; analyzer clean. Full Flutter suite: 975 passed / 9 failed / 1 existing skip. All nine failures are unchanged LAN tests blocked by this host's network-interface enumeration; desktop LAN tests hit the same restriction. Android SDK, actual browser/native QA, qualified content review and production infrastructure remain external gates. Use the PR for exact candidate SHA and remote CI. Previous 0.18 packages remain the published downloads; this candidate has no updated Windows/APK package.
+
+---
+
 # Explorer, subject choices, rank redesign and tutorial refresh
 
 Target **0.18.0+24 Preview**, branch `feat/explorer-tutorial-refresh`, develop baseline `31d24151d2fb05031042df797d9afb49e82445bc`. The owner confirmed all five 2026-10-23 WIP packets plus the complete tutorial improvement and library-step repair. Original dirty checkout remains untouched. See [implementation and compatibility checklist](implementation/explorer-tutorial-refresh.md), [design](superpowers/specs/2026-10-23-explorer-tutorial-design.md), and [execution plan](superpowers/plans/2026-10-23-explorer-tutorial-refresh.md). The PR is authoritative for exact SHA, final validation and publication state.
