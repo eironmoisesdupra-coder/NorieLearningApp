@@ -51,10 +51,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsNothing);
-    await tester.tap(find.byTooltip('Show hint'));
+    await tester.tap(find.byTooltip('Need a hint?'));
     await tester.pump();
     expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsOneWidget);
-    expect(find.textContaining('Bones, support'), findsOneWidget);
+    expect(find.textContaining('overall proportions'), findsOneWidget);
     for (var i = 0; i < 4; i++) {
       final viewer = tester
           .widget<AnatomyAtlasModelView>(find.byType(AnatomyAtlasModelView));

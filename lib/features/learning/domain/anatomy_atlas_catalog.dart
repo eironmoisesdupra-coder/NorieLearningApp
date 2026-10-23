@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'anatomy_hint_geometry.dart';
 
 class AtlasStructure {
   AtlasStructure.fromJson(Map<String, dynamic> value)
@@ -23,7 +24,8 @@ class AtlasReference {
 }
 
 class AnatomyAtlasCatalog {
-  AnatomyAtlasCatalog._(this.references, this.structures);
+  AnatomyAtlasCatalog._(this.references, this.structures, this.hintGeometry);
+  final AnatomyHintGeometryIndex? hintGeometry;
   final List<AtlasReference> references;
   final List<AtlasStructure> structures;
   static Future<AnatomyAtlasCatalog>? _cached;
@@ -61,7 +63,11 @@ class AnatomyAtlasCatalog {
       }
     }
     return AnatomyAtlasCatalog._(
-        List.unmodifiable(references), List.unmodifiable(structures));
+        List.unmodifiable(references),
+        List.unmodifiable(structures),
+        value.containsKey('assets')
+            ? AnatomyHintGeometryIndex.fromCatalogJson(value)
+            : null);
   }
 
   List<AtlasStructure> search(

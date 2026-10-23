@@ -9,6 +9,8 @@ import '../../../core/theme/norie_theme.dart';
 import '../domain/anatomy_atlas_catalog.dart';
 import '../domain/anatomy_atlas_quiz_policy.dart';
 import '../domain/anatomy_models.dart';
+import '../domain/anatomy_hint_library.dart';
+import 'anatomy_atlas_hint_panel.dart';
 import 'anatomy_atlas_controller.dart';
 import 'anatomy_atlas_model_view.dart';
 
@@ -17,11 +19,15 @@ class AnatomyAtlasQuizScreen extends StatefulWidget {
       {required this.catalog,
       required this.reference,
       required this.systems,
+      this.hints,
       this.requestedCount = AtlasQuizSession.questionCount,
       this.difficulty = AtlasQuizDifficulty.standard,
       this.kinds = const {AtlasQuestionKind.identify},
       super.key});
   final AnatomyAtlasCatalog catalog;
+  // Only trusted application configuration may provide this library.
+  // No authored drafts or approval registry are loaded in this release.
+  final AnatomyHintLibrary? hints;
   final String reference;
   final Set<String> systems;
   final int requestedCount;
@@ -39,26 +45,32 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
   String? _choice;
   bool _modelReady = false;
   bool _hintVisible = false;
-  // A genuinely shorter fallback retains its existing free hint behavior.
-  bool get _paidHintMode => _quiz.questions.length == 20;
-
-  String? _safeHint(AtlasQuizQuestion question) =>
-      _paidHintMode && !_quiz.checked ? question.specificHint : question.hint;
+  AnatomyHintResult? _assistance(AtlasQuizQuestion question) {
+    if (!_modelReady || question.kind != AtlasQuestionKind.identify) {
+      return null;
+    }
+    final library = widget.hints;
+    final part = widget.catalog.hintGeometry?.parts[question.target.id];
+    if (library == null ||
+        part == null ||
+        part.identity.reference != question.target.reference ||
+        part.identity.assetId != question.target.asset ||
+        part.canonicalName != question.answer ||
+        !part.systems.containsAll(question.target.systems) ||
+        !question.target.systems.containsAll(part.systems)) {
+      return null;
+    }
+    return library.lookupQuestion(
+      displayed: part.identity,
+      selectedPartId: question.target.id,
+      questionStructureId: question.target.id,
+      correctAnswer: question.answer,
+    );
+  }
 
   void _toggleHint() {
     if (!_stillCurrent() || _quiz.finished) return;
-    if (_hintVisible) {
-      setState(() => _hintVisible = false);
-      return;
-    }
-    if (_safeHint(_quiz.current) == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Specific hint unavailable. No Credits were spent.')));
-      return;
-    }
-    // No payment path: this build has no trusted paid-hint fact bank or durable
-    // charge/reveal transaction. Do not use synchronous spendCredits here.
-    setState(() => _hintVisible = true);
+    setState(() => _hintVisible = !_hintVisible);
   }
 
   bool _outroShown = false;
@@ -75,8 +87,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
         difficulty: widget.difficulty,
         kinds: widget.kinds,
         stillCurrent: _stillCurrent);
-    _hintVisible =
-        !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
+    _hintVisible = widget.difficulty == AtlasQuizDifficulty.guided;
     NorieAccountService.instance.addListener(_learnerChanged);
     _audioContext =
         NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
@@ -134,8 +145,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
     setState(() {
       _choice = null;
       _modelReady = false;
-      _hintVisible =
-          !_paidHintMode && widget.difficulty == AtlasQuizDifficulty.guided;
+      _hintVisible = widget.difficulty == AtlasQuizDifficulty.guided;
     });
     if (_questionScroll.hasClients) _questionScroll.jumpTo(0);
     if (_quiz.finished && !_outroShown) {
@@ -169,6 +179,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
             MaterialPageRoute<void>(
                 builder: (_) => AnatomyAtlasQuizScreen(
                     catalog: widget.catalog,
+                    hints: widget.hints,
                     reference: widget.reference,
                     systems: widget.systems,
                     requestedCount: widget.requestedCount,
@@ -223,11 +234,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                 overflow: TextOverflow.ellipsis),
             actions: [
               IconButton(
-                  tooltip: _hintVisible
-                      ? 'Hide hint'
-                      : _paidHintMode && !_quiz.checked
-                          ? 'Specific hint unavailable; costs 0 credits'
-                          : 'Show hint',
+                  tooltip: _hintVisible ? 'Hide hint' : 'Need a hint?',
                   icon: Icon(_hintVisible ? Icons.search_off : Icons.search),
                   onPressed: _toggleHint),
               IconButton(
@@ -276,22 +283,21 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                     Text(question.prompt),
                     const SizedBox(height: 12),
                     if (_hintVisible)
-                      Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                              _safeHint(question) ?? 'Hint unavailable.',
-                              key: const ValueKey('atlas-quiz-hint'),
-                              style: const TextStyle(
-                                  color: NorieColors.textSecondary))),
-                    if (_paidHintMode && !_hintVisible && !_quiz.checked)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          'A reviewed part-specific hint is unavailable. No Credits will be charged.',
-                          style: TextStyle(
-                              color: NorieColors.textSecondary, fontSize: 12),
-                          textAlign: TextAlign.center,
-                        ),
+                      KeyedSubtree(
+                          key: const ValueKey('atlas-quiz-hint'),
+                          child: AnatomyAtlasHintPanel(
+                            key: ValueKey(
+                                'hint:${_quiz.index}:${question.target.id}'),
+                            assistance: _assistance(question),
+                            showSourceAfterAnswer: _quiz.checked,
+                            generalGuidance: question.hint,
+                            stillCurrent: _stillCurrent,
+                          )),
+                    if (!_hintVisible)
+                      TextButton.icon(
+                        onPressed: _toggleHint,
+                        icon: const Icon(Icons.lightbulb_outline),
+                        label: const Text('Need a hint?'),
                       ),
                     for (final option in question.options)
                       Padding(

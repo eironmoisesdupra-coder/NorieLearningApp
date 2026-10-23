@@ -159,7 +159,7 @@ void main() {
     expect(find.byType(AnatomyAtlasQuizScreen), findsOneWidget);
     expect(tester.getSize(find.byType(AnatomyAtlasModelView)).height,
         greaterThan(120));
-    await tester.tap(find.byTooltip('Show hint'));
+    await tester.tap(find.byTooltip('Need a hint?'));
     await tester.pump();
     expect(tester.getSize(find.byType(AnatomyAtlasModelView)).height,
         greaterThan(120));

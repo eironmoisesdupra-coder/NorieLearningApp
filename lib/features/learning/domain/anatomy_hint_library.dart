@@ -191,6 +191,29 @@ class AnatomyHintLibrary {
           r.status != AnatomyHintStatus.rejected)
       .toList();
 
+  /// For catalog questions without independently reviewed side metadata, use the
+  /// active revision's qualified side attestation after exact identity checks.
+  /// Historical retired/rejected records cannot shadow the active revision.
+  AnatomyHintResult lookupQuestion({
+    required AnatomyHintIdentity displayed,
+    required String selectedPartId,
+    required String questionStructureId,
+    required String correctAnswer,
+  }) {
+    final matches = _activeMatches(questionStructureId);
+    if (matches.isEmpty) return AnatomyHintResult._(null, ['missingRecord']);
+    if (matches.length != 1) {
+      return AnatomyHintResult._(null, ['duplicateMapping']);
+    }
+    return lookup(AnatomyHintRequest(
+      displayed: displayed,
+      selectedPartId: selectedPartId,
+      questionStructureId: questionStructureId,
+      correctAnswer: correctAnswer,
+      laterality: matches.single.laterality,
+    ));
+  }
+
   AnatomyHintResult lookup(AnatomyHintRequest request) {
     final matches = _activeMatches(request.questionStructureId);
     if (matches.isEmpty) return AnatomyHintResult._(null, ['missingRecord']);

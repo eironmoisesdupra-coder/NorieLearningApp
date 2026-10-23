@@ -92,12 +92,10 @@ void main() {
     final target = catalog.structures
         .firstWhere((structure) => structure.id == viewer.target);
     expect(viewer.reference, target.reference);
-    await tester
-        .tap(find.byTooltip('Specific hint unavailable; costs 0 credits'));
+    await tester.tap(find.byTooltip('Need a hint?'));
     await tester.pump();
-    expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsNothing);
-    expect(find.text('Specific hint unavailable. No Credits were spent.'),
-        findsWidgets);
+    expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsOneWidget);
+    expect(find.textContaining('overall proportions'), findsOneWidget);
     expect(tester.getSize(find.byType(AnatomyAtlasModelView)).height,
         greaterThan(120));
     expect(tester.takeException(), isNull);

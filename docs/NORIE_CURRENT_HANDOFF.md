@@ -1,3 +1,33 @@
+# Anatomy Hint 2.0 — dependent draft PRs
+
+Baseline develop `ed9472dbb437127abd8fd09931a86879d4df5ec5`, app version
+**0.18.0+24 Preview**, unchanged. PR A [#74](https://github.com/eironmoisesdupra-coder/NorieLearningApp/pull/74)
+adds immutable exact-part/revision hints and trusted review validation. PR B
+[#75](https://github.com/eironmoisesdupra-coder/NorieLearningApp/pull/75) adds
+empty authoring templates, coverage reports and 30 skeletal drafts. The dependent
+`feat/anatomy-free-hint-ui` candidate adds free general help in 5/10/20Q,
+validated structural help/fallback and a disabled detailed-hint control. No trusted
+content registry is activated: **0 approved, 30 development-only drafts**.
+
+See [foundation](implementation/anatomy-hint-library.md),
+[authoring](implementation/anatomy-hint-authoring.md), and
+[free assistance](implementation/anatomy-free-hint-ui.md). Local analysis is clean;
+36 affected UI/quiz tests, 44 foundation tests, six authoring tests, 29 renderer
+Node tests and 24 asset-pipeline Python tests pass. Exact-head PR CI and the
+packaged Windows free-hint smoke test are authoritative for current platform
+verification. Local full tests encounter the existing nine host-blocked LAN
+interface tests; results are recorded in the PR. No device certification or new
+published package is claimed.
+
+PR65's no-charge boundary remains intact. Detailed hints have no debit/unlock
+path. Qualified editorial review and authoritative atomic purchase infrastructure
+remain prerequisites. The generic-hint policy supersedes PR73's hint-only change;
+consolidate that overlap before integrating both independent drafts. Its English
+and progress work has not been copied or merged. No PR is merged, deployed,
+released or promoted to main by this task.
+
+---
+
 # Explorer, subject choices, rank redesign and tutorial refresh
 
 Target **0.18.0+24 Preview**, branch `feat/explorer-tutorial-refresh`, develop baseline `31d24151d2fb05031042df797d9afb49e82445bc`. The owner confirmed all five 2026-10-23 WIP packets plus the complete tutorial improvement and library-step repair. Original dirty checkout remains untouched. See [implementation and compatibility checklist](implementation/explorer-tutorial-refresh.md), [design](superpowers/specs/2026-10-23-explorer-tutorial-design.md), and [execution plan](superpowers/plans/2026-10-23-explorer-tutorial-refresh.md). The PR is authoritative for exact SHA, final validation and publication state.

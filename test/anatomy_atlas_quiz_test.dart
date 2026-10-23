@@ -34,6 +34,20 @@ void main() {
           isTrue);
     }
   });
+  test('a sided label cannot inherit unreviewed coarse-name anatomy prose', () {
+    final target = AtlasStructure.fromJson({
+      'id': 'femur-left',
+      'name': 'Left femur',
+      'reference': 'male',
+      'systems': ['skeletal'],
+      'asset': 'bones',
+      'source': 'test',
+    });
+    final question = AtlasQuizQuestion(target, ['Left femur', 'Right femur']);
+    expect(question.hint, contains('overall proportions'));
+    expect(question.hint, isNot(contains('thigh')));
+    expect(question.specificHint, isNull);
+  });
   test('each answer and final XP reward can be recorded only once', () {
     final quiz = AtlasQuizSession.generate(catalog, 'male', {'skeletal'},
         random: Random(1));
@@ -54,7 +68,7 @@ void main() {
     expect(quiz.questions, hasLength(8));
     expect(quiz.questions.map((question) => question.target.reference).toSet(),
         {'male', 'female'});
-    expect(quiz.current.hint, contains('Bones, support'));
+    expect(quiz.current.hint, contains('overall proportions'));
     expect(quiz.current.hint, isNot(contains(quiz.current.target.name)));
   });
   test('a selected system supplies 20 distinct questions', () {

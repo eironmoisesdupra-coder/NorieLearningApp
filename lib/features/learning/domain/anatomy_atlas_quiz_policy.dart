@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'anatomy_atlas_catalog.dart';
 import 'anatomy_models.dart';
+import 'anatomy_hint_library.dart';
 
 enum AtlasQuizDifficulty { guided, standard, challenge }
 
@@ -45,19 +46,7 @@ class AtlasQuizQuestion {
       return 'Recall the system categories used when browsing the atlas. '
           'Choose the catalog group for the named structure.';
     }
-    final name =
-        target.name.toLowerCase().replaceFirst(RegExp(r'^(left|right)\s+'), '');
-    for (final system in AnatomyCatalog.systems) {
-      for (final structure in system.structures) {
-        if (structure.name.toLowerCase() == name) {
-          return '${structure.description} ${structure.function}';
-        }
-      }
-    }
-    return AnatomyCatalog.systems
-        .where((system) => target.systems.contains(system.id.name))
-        .map((system) => '${system.label}: ${system.subtitle}.')
-        .join(' ');
+    return AnatomyHintLibrary.generalGuidance;
   }
 }
 
