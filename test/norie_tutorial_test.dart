@@ -103,6 +103,83 @@ void main() {
     draft.dispose();
   });
 
+  testWidgets(
+      'every guide step has illustrated context and an actionable cue at large text',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = NorieMascotController();
+    final coordinator = NorieTutorialCoordinator(
+        controller: controller, store: NorieTutorialStore());
+    await coordinator.replay(NorieTutorialCatalog.complete);
+    await tester.pumpWidget(MaterialApp(
+      builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(2), disableAnimations: true),
+          child: child!),
+      home: Scaffold(body: NorieTutorialOverlay(coordinator: coordinator)),
+    ));
+    for (var index = 0; index < coordinator.stepCount; index++) {
+      coordinator.goTo(index);
+      await tester.pump();
+      expect(
+          find.byKey(const ValueKey('tutorial-chapter-art')), findsOneWidget);
+      expect(find.byKey(const ValueKey('tutorial-next-move')), findsOneWidget);
+      expect(find.text(index == coordinator.stepCount - 1 ? 'Done' : 'Next'),
+          findsOneWidget);
+      expect(tester.takeException(), isNull,
+          reason: 'Step ${index + 1} must fit at 320px with large text');
+    }
+    await tester.pumpWidget(const SizedBox.shrink());
+    coordinator.dispose();
+    controller.dispose();
+  });
+
+  testWidgets(
+      'minimizing the guide makes its offline sample usable without leaving the step',
+      (tester) async {
+    final navigatorKey = GlobalKey<NavigatorState>();
+    final navigation = NorieTutorialNavigation(navigatorKey);
+    late NorieTutorialCoordinator coordinator;
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: navigatorKey,
+      builder: (context, child) =>
+          NorieMascotHost(onTutorialStep: navigation.showStep, child: child!),
+      home: Builder(builder: (context) {
+        coordinator = NorieMascotScope.maybeOf(context)!.tutorialCoordinator;
+        return const Scaffold(body: Text('Preserved learner notes'));
+      }),
+    ));
+    await coordinator.replay(NorieTutorialCatalog.complete);
+    coordinator.goTo(NorieTutorialCatalog.complete.steps
+        .indexWhere((step) => step.id == 'review-reveal'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.byTooltip('Minimize guide'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('norie-tutorial-card')), findsNothing);
+    await tester.ensureVisible(find.text('Reveal sample answer'));
+    await tester.tap(find.text('Reveal sample answer'));
+    await tester.pump();
+    expect(find.text('Water changes from liquid to water vapour.'),
+        findsOneWidget);
+    expect(coordinator.currentStep?.id, 'review-reveal');
+    expect(
+        await NorieTutorialStore().isComplete(NorieTutorialCatalog.complete.id),
+        isFalse);
+    await tester.tap(find.text('Show guide'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('norie-tutorial-card')), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Preserved learner notes'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   test('incomplete tutorial auto-starts once and completion persists',
       () async {
     final controller = NorieMascotController();
@@ -389,8 +466,11 @@ void main() {
         controller: controller, store: NorieTutorialStore());
     final targetKey = GlobalKey();
     await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: Stack(children: [
-        Positioned(top: 18, left: 20,
+      home: Scaffold(
+          body: Stack(children: [
+        Positioned(
+            top: 18,
+            left: 20,
             child: SizedBox(key: targetKey, width: 48, height: 48)),
         NorieTutorialOverlay(coordinator: coordinator),
       ])),
@@ -432,6 +512,43 @@ void main() {
     expect(find.text('Next'), findsOneWidget);
     await tester.tap(find.text('Contents'));
     await tester.pump();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    coordinator.dispose();
+    controller.dispose();
+  });
+
+  testWidgets('targeted guide controls fit landscape with large text',
+      (tester) async {
+    tester.view.physicalSize = const Size(640, 360);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = NorieMascotController();
+    final coordinator = NorieTutorialCoordinator(
+        controller: controller, store: NorieTutorialStore());
+    final target = GlobalKey();
+    await tester.pumpWidget(MaterialApp(
+      builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(2), disableAnimations: true),
+          child: child!),
+      home: Scaffold(
+          body: Stack(children: [
+        Positioned(
+            top: 18,
+            left: 20,
+            child: SizedBox(key: target, width: 48, height: 48)),
+        NorieTutorialOverlay(coordinator: coordinator),
+      ])),
+    ));
+    coordinator.registerTarget('home.menu', target);
+    await coordinator.replay(NorieTutorialCatalog.home);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Next'));
+    await tester.pump();
+    expect(coordinator.currentIndex, 1);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     coordinator.dispose();

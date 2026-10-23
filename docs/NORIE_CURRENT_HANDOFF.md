@@ -1,4 +1,12 @@
-# Discovery Adventure MVP candidate
+# Explorer, subject choices, rank redesign and tutorial refresh
+
+Target **0.18.0+24 Preview**, branch `feat/explorer-tutorial-refresh`, develop baseline `31d24151d2fb05031042df797d9afb49e82445bc`. The owner confirmed all five 2026-10-23 WIP packets plus the complete tutorial improvement and library-step repair. Original dirty checkout remains untouched. See [implementation and compatibility checklist](implementation/explorer-tutorial-refresh.md), [design](superpowers/specs/2026-10-23-explorer-tutorial-design.md), and [execution plan](superpowers/plans/2026-10-23-explorer-tutorial-refresh.md). The PR is authoritative for exact SHA, final validation and publication state.
+
+Previous **0.17.0+23 Preview is published**, source `31d24151d2fb05031042df797d9afb49e82445bc`: [release](https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/tag/v0.17.0), [Windows ZIP](https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/download/v0.17.0/NorieLearning-Windows.zip), [Android APK](https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/download/v0.17.0/NorieLearning-Android.apk). The older Discovery candidate text below is historical and predates its publication.
+
+---
+
+# Historical: Discovery Adventure MVP candidate
 
 Target **0.17.0+23 Preview**, branch `feat/discovery-adventure-mvp`, [PR #70](https://github.com/eironmoisesdupra-coder/NorieLearningApp/pull/70). Current-develop baseline `899b7ab5458583fd8cc5558aca6cc0ba3c444007`. User confirmed the Discovery Adventure MVP ZIP. Original dirty checkout remains untouched.
 
