@@ -85,6 +85,16 @@ void main() {
         stillCurrent: guard,
       ))));
 
+  testWidgets('general guidance has its own screenreader paragraph',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(host());
+    final guidance =
+        tester.getSemantics(find.text(AnatomyHintLibrary.generalGuidance));
+    expect(guidance.label, AnatomyHintLibrary.generalGuidance);
+    handle.dispose();
+  });
+
   testWidgets('general help is free and the detailed hint has no action',
       (tester) async {
     await tester.pumpWidget(host());

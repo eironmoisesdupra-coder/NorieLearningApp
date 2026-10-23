@@ -12,7 +12,7 @@ content registry is activated: **0 approved, 30 development-only drafts**.
 See [foundation](implementation/anatomy-hint-library.md),
 [authoring](implementation/anatomy-hint-authoring.md), and
 [free assistance](implementation/anatomy-free-hint-ui.md). Local analysis is clean;
-36 affected UI/quiz tests, 44 foundation tests, six authoring tests, 29 renderer
+37 affected UI/quiz tests, 44 foundation tests, six authoring tests, 29 renderer
 Node tests and 24 asset-pipeline Python tests pass. Exact-head PR CI and the
 packaged Windows free-hint smoke test are authoritative for current platform
 verification. Local full tests encounter the existing nine host-blocked LAN

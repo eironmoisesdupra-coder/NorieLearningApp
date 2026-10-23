@@ -39,7 +39,7 @@ class _AnatomyAtlasHintPanelState extends State<AnatomyAtlasHintPanel> {
                         child: Text('General guidance · Free',
                             style: TextStyle(fontWeight: FontWeight.bold)))),
                 const SizedBox(height: 8),
-                Text(widget.generalGuidance),
+                Semantics(container: true, child: Text(widget.generalGuidance)),
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 4, children: [
                   TextButton.icon(

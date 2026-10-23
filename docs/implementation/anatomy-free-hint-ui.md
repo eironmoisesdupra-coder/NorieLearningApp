@@ -38,7 +38,7 @@ are not complete screenreader or hardware certification.
 
 ## Evidence and boundaries
 
-36 targeted quiz/panel/layout/outro tests pass. Coverage includes repeated help
+37 targeted quiz/panel/layout/outro tests pass. Coverage includes repeated help
 views at 0/4/5/10 Credits across difficulties, trusted/untrusted structural clues,
 wrong asset revision, renderer loading/loss, historical revisions, question reset,
 stale learner action, locked detailed hints and source-title/URL/alias disclosure.
@@ -61,3 +61,10 @@ question/orientation/distractor audit, quiz-session reload/resume and physical
 Android/Windows testing remain later work; this PR does not claim those phases.
 Core offline assets, scoring, accounts, XP, credits and progress schemas are
 unchanged. No catalog mappings or source assets were relabeled.
+
+Compiled Windows exposed a semantics grouping gap: visible general guidance was
+merged into an ancestor label with payment copy, so it was not independently
+addressable. A widget semantics regression reproduced the grouping, and an
+explicit paragraph container fixes it without changing text, scoring or Credits.
+The captured phone interface was visually inspected; no anatomical identity is
+inferred from that image. Fresh exact-head compiled checks remain required.
