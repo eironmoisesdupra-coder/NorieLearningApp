@@ -7,6 +7,7 @@ import '../domain/norie_study_models.dart';
 import 'study_qa_screen.dart';
 import 'study_quiz_screen.dart';
 import 'study_review_screen.dart';
+import 'study_source_accuracy_screen.dart';
 
 class StudySetScreen extends StatefulWidget {
   const StudySetScreen({
@@ -26,6 +27,20 @@ class _StudySetScreenState extends State<StudySetScreen> {
   late Future<int> _due = _dueCount();
   String _search = '';
   bool _saving = false;
+  bool _reviewedForPractice = false;
+
+  Future<void> _startReviewedPractice() async {
+    if (!_reviewedForPractice) {
+      final accepted = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => StudySourceAccuracyScreen(studySet: _set)));
+      if (!mounted || accepted != true) return;
+      setState(() => _reviewedForPractice = true);
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => StudyQuizScreen(studySet: _set)));
+  }
 
   Future<int> _dueCount() async {
     final cards = await NorieStudyService.instance.reviewCards(_set);
@@ -65,6 +80,7 @@ class _StudySetScreenState extends State<StudySetScreen> {
       if (!mounted) return;
       setState(() {
         _set = updated;
+        _reviewedForPractice = false;
         _due = _dueCount();
       });
     } catch (_) {
@@ -245,20 +261,12 @@ class _StudySetScreenState extends State<StudySetScreen> {
                 ),
                 const SizedBox(height: 10),
                 FilledButton.icon(
-                  onPressed: set.questions.every((question) =>
-                          question.kind == NorieStudyQuestionKind.flashcard)
+                  onPressed: set.questions.every((q) =>
+                          q.kind == NorieStudyQuestionKind.flashcard)
                       ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => StudyQuizScreen(
-                                studySet: set,
-                              ),
-                            ),
-                          );
-                        },
+                      : _startReviewedPractice,
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Start Practice'),
+                  label: const Text('Review source and start practice'),
                   style: FilledButton.styleFrom(
                     backgroundColor: NorieColors.cyan,
                     foregroundColor: NorieColors.background,
