@@ -1,13 +1,25 @@
 name: Deploy Web Preview
 
 on:
-  push:
-    branches:
-      - develop
   workflow_dispatch:
+    inputs:
+      revision:
+        description: Full merged source SHA explicitly approved by the owner
+        required: true
+        type: string
+      tag:
+        description: Version tag matching the approved source (for example v0.19.0)
+        required: true
+        type: string
+      approve_publication:
+        description: Owner approved publishing this exact source revision
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: norie-web-preview
@@ -15,11 +27,35 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop' && inputs.approve_publication
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout trusted publication gate
         uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require explicit approval of an integrated source revision
+        env:
+          APPROVED_REVISION: ${{ inputs.revision }}
+          APPROVED_TAG: ${{ inputs.tag }}
+          APPROVED_PUBLICATION: ${{ inputs.approve_publication }}
+        run: python scripts/release/preview_approval.py --revision "$APPROVED_REVISION" --tag "$APPROVED_TAG" --approved "$APPROVED_PUBLICATION"
+
+      - name: Require successful trusted CI for the approved revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPROVED_REVISION: ${{ inputs.revision }}
+          APPROVED_TAG: ${{ inputs.tag }}
+        run: python scripts/release/prepare_release.py gate --tag "$APPROVED_TAG" --revision "$APPROVED_REVISION"
+
+      - name: Checkout only the approved source
+        env:
+          APPROVED_REVISION: ${{ inputs.revision }}
+        run: git checkout --detach "$APPROVED_REVISION"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -69,7 +105,7 @@ jobs:
 
       - name: Prepare offline-safe preview
         env:
-          NORIE_BUILD_SHA: ${{ github.sha }}
+          NORIE_BUILD_SHA: ${{ inputs.revision }}
         run: |
           python - <<'PY'
           import json
