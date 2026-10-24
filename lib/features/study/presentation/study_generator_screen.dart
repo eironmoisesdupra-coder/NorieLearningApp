@@ -11,6 +11,7 @@ import '../../../core/theme/norie_theme.dart';
 import '../data/norie_study_service.dart';
 import '../domain/norie_study_models.dart';
 import 'study_set_screen.dart';
+import 'native_quiz_generator_screen.dart';
 
 class StudyGeneratorScreen extends StatefulWidget {
   const StudyGeneratorScreen({
@@ -272,6 +273,17 @@ class _StudyGeneratorScreenState extends State<StudyGeneratorScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
               children: [
+                OutlinedButton.icon(
+                  onPressed: _working
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const NativeQuizGeneratorScreen())),
+                  icon: const Icon(Icons.offline_bolt_outlined),
+                  label: const Text('Native Engine · Free offline practice'),
+                ),
+                const SizedBox(height: 16),
                 const _GeneratorHero(),
                 const SizedBox(height: 10),
                 const Text(

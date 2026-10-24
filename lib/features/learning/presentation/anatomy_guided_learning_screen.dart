@@ -75,11 +75,13 @@ class _AnatomyGuidedLearningScreenState
         current == null ? null : '${current.structureId}:$checking';
     if (_activity != activity || !_store.ready) _clearOwnedHint();
     setState(() {
-      if (_modelConfiguration != configuration || !_store.ready) {
+      if (_modelConfiguration != configuration ||
+          _activity != activity ||
+          !_store.ready) {
         _modelLoaded = false;
         _modelConfiguration = configuration;
       }
-      if (!_store.ready) _modelSession = Object();
+      if (_activity != activity || !_store.ready) _modelSession = Object();
       if (_activity != activity || !_store.ready) {
         _activity = activity;
         _helpUsed = current?.answersRevealed ?? false;
@@ -187,11 +189,11 @@ class _AnatomyGuidedLearningScreenState
       _answered = true;
       _feedback = correct
           ? (assisted
-              ? 'Correct. Saved as assisted or repeat practice.'
-              : 'Correct. Saved as an independent check.')
+              ? 'Correct. Recorded as assisted or repeat practice.'
+              : 'Correct. Recorded as an independent check.')
           : (assisted
-              ? 'Keep comparing. Saved as assisted or repeat practice.'
-              : 'Keep comparing. Saved as an independent attempt.');
+              ? 'Keep comparing. Recorded as assisted or repeat practice.'
+              : 'Keep comparing. Recorded as an independent attempt.');
     });
   }
 

@@ -11,6 +11,88 @@ import 'package:norie_learning/features/learning/presentation/anatomy_guided_lea
 import 'anatomy_guided_learning_test.dart' show guidedCatalog;
 
 void main() {
+  testWidgets('old same-learner controls cannot mutate a revisited step',
+      (tester) async {
+    final catalog = guidedCatalog();
+    final store = AnatomyStudyStore(
+        catalog: catalog,
+        ownerId: () => 'a',
+        read: (_) async => null,
+        write: (_, __) async {});
+    await store.initialize();
+    store.select('bp-FJ3365');
+    await tester.pumpWidget(MaterialApp(
+        home: AnatomyGuidedLearningScreen(catalog: catalog, store: store)));
+    await tester.pump();
+    final oldContinue = tester
+        .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Mark step done and continue'))
+        .onPressed!;
+    store.goToStep(AnatomyStudyStep.locate);
+    await tester.pump();
+    store.goToStep(AnatomyStudyStep.discover);
+    await tester.pump();
+    final before = store.current!.toJson();
+    oldContinue();
+    expect(store.current!.toJson(), before);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await store.flush();
+    store.dispose();
+  });
+  testWidgets(
+      'failed answer save reports in-memory evidence then retries and reopens',
+      (tester) async {
+    final catalog = guidedCatalog();
+    final disk = <String, String>{};
+    var full = false;
+    AnatomyStudyStore open() => AnatomyStudyStore(
+        catalog: catalog,
+        ownerId: () => 'a',
+        read: (key) async => disk[key],
+        write: (key, value) async {
+          if (full) throw StateError('Storage full');
+          disk[key] = value;
+        });
+    final store = open();
+    await store.initialize();
+    store.select('bp-FJ3365');
+    store.goToStep(AnatomyStudyStep.practice);
+    await store.flush();
+    await tester.pumpWidget(MaterialApp(
+        home: AnatomyGuidedLearningScreen(catalog: catalog, store: store)));
+    await tester.pump();
+    tester
+        .widget<AnatomyAtlasModelView>(find.byType(AnatomyAtlasModelView))
+        .onLoaded!(true);
+    await tester.pump();
+    full = true;
+    tester
+        .widget<OutlinedButton>(find.byKey(const ValueKey('answer-bp-FJ3365')))
+        .onPressed!();
+    await tester.pump();
+    expect(find.textContaining('Saved as'), findsNothing);
+    expect(find.textContaining('Recorded as'), findsOneWidget);
+    await store.flush();
+    await tester.pump();
+    expect(find.textContaining('Local save failed'), findsOneWidget);
+    final beforeRetry = open();
+    await beforeRetry.initialize();
+    expect(beforeRetry.current!.independentAttempts, 0);
+    beforeRetry.dispose();
+    full = false;
+    tester
+        .widget<TextButton>(find.widgetWithText(TextButton, 'Retry saving'))
+        .onPressed!();
+    await store.flush();
+    await tester.pump();
+    final reopened = open();
+    await reopened.initialize();
+    expect(reopened.current!.independentAttempts, 1);
+    expect(reopened.current!.independentCorrect, 1);
+    reopened.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
+    store.dispose();
+  });
   testWidgets('old recovery button cannot replace a newly selected guide',
       (tester) async {
     var unavailable = true;

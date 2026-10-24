@@ -10,8 +10,11 @@ import '../../../core/progression/norie_progression.dart';
 import '../../../core/sync/norie_economy_store.dart';
 import '../../../core/cloud/supabase_config.dart';
 import '../domain/norie_study_models.dart';
+import '../domain/study_source_review.dart';
 import 'norie_study_offline_store.dart';
 import 'norie_local_job_client.dart';
+import '../domain/quiz_generation/quiz_generation.dart';
+import 'quiz_generation/native_quiz_repository.dart';
 
 class NorieStudyService {
   NorieStudyService._() : _clientOverride = null;
@@ -53,6 +56,9 @@ class NorieStudyService {
   NorieStudyOfflineStore get _offlineStore =>
       NorieStudyOfflineStore(_client?.auth.currentUser?.id ?? 'local');
 
+  bool canAccessStudySet(NorieStudySet studySet) =>
+      studySet.ownerId == null || studySet.ownerId == _offlineStore.userId;
+
   NorieStudyOfflineStore _storeFor(NorieStudySet studySet) {
     final store = _offlineStore;
     if (studySet.ownerId != null && studySet.ownerId != store.userId) {
@@ -60,6 +66,57 @@ class NorieStudyService {
     }
     return store;
   }
+
+  Future<Set<String>> completedNativeIdentities() async {
+    final store = _offlineStore;
+    final sameLearner = NorieAccountService.instance.captureLearnerGuard();
+    final result = await store.completedNativeIdentities();
+    if (!sameLearner() || store.userId != _offlineStore.userId) {
+      throw StateError('Account changed. Reopen the generator.');
+    }
+    return result;
+  }
+
+  Future<NorieStudySet> generateNative(QuizGenerationRequest request,
+      {String title = '', QuizGenerationCancellation? cancellation}) {
+    final store = _offlineStore;
+    final sameLearner = NorieAccountService.instance.captureLearnerGuard();
+    return NativeQuizRepository(
+            store: store,
+            stillCurrent: () =>
+                sameLearner() && store.userId == _offlineStore.userId)
+        .create(request, title: title, cancellation: cancellation);
+  }
+
+  Future<Map<String, dynamic>?> loadQuizSession(NorieStudySet set) =>
+      _storeFor(set).loadQuizSession(set);
+
+  Future<StudySourceReview> loadSourceReview(NorieStudySet set) async {
+    final current = NorieAccountService.instance.captureLearnerGuard();
+    final store = _storeFor(set);
+    final review = await store.loadSourceReview(set);
+    if (!current() || store.userId != _offlineStore.userId) {
+      throw StateError('Learner changed. Reopen source review.');
+    }
+    return review;
+  }
+
+  Future<StudySourceReview> saveSourceReview(NorieStudySet set,
+      String questionId, SourceReviewDecision decision) async {
+    final current = NorieAccountService.instance.captureLearnerGuard();
+    final store = _storeFor(set);
+    final review = await store.saveSourceReview(set, questionId, decision);
+    if (!current() || store.userId != _offlineStore.userId) {
+      throw StateError('Learner changed. Reopen source review.');
+    }
+    return review;
+  }
+
+  Future<void> saveQuizSession(
+          NorieStudySet set, Map<String, dynamic> snapshot) =>
+      _storeFor(set).saveQuizSession(set, snapshot);
+  Future<void> clearQuizSession(NorieStudySet set) =>
+      _storeFor(set).clearQuizSession(set.id);
 
   Future<Map<String, fsrs.Card>> reviewCards(NorieStudySet studySet) =>
       _storeFor(studySet).reviewCards(studySet.id);
@@ -157,7 +214,11 @@ class NorieStudyService {
       }
       final remoteIds = rows.map((row) => row['id'].toString()).toSet();
       for (final cached in await store.listSets()) {
-        if (!remoteIds.contains(cached.id)) await store.removeSet(cached.id);
+        if (cached.isNative) {
+          sets.add(cached);
+        } else if (!remoteIds.contains(cached.id)) {
+          await store.removeSet(cached.id);
+        }
       }
       return sets;
     } catch (_) {
@@ -190,8 +251,13 @@ class NorieStudyService {
 
   Future<NorieStudySet?> getStudySet(String id) async {
     final store = _offlineStore;
+    final sameLearner = NorieAccountService.instance.captureLearnerGuard();
     final cached = await store.getSet(id);
+    if (!sameLearner() || store.userId != _offlineStore.userId) {
+      throw StateError('Account changed. Reopen your study library.');
+    }
     if (cached != null) {
+      if (cached.isNative) return cached;
       unawaited(_fetchStudySet(id, store));
       return cached;
     }
@@ -552,6 +618,10 @@ class NorieStudyService {
   }
 
   Future<void> deleteStudySet(NorieStudySet studySet) async {
+    if (studySet.isNative) {
+      await _storeFor(studySet).removeSet(studySet.id);
+      return;
+    }
     if (localEnabled) {
       final response = await http
           .delete(Uri.parse('$localUrl/api/sets/${studySet.id}'))

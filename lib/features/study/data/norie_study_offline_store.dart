@@ -6,6 +6,8 @@ import 'package:uuid/uuid.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../domain/norie_study_models.dart';
+import '../domain/study_source_review.dart';
+import '../../curriculum/domain/curriculum_fingerprint.dart';
 
 /// Each account has its own private cache and durable upload queue.
 class NorieStudyOfflineStore {
@@ -13,15 +15,25 @@ class NorieStudyOfflineStore {
 
   final String userId;
   static final Map<String, Future<void>> _writes = {};
+  static final Set<String> _needsReload = {};
   static final Map<String, Future<void>> _rewardDrains = {};
   String get _key => 'norie.study.$userId.offline.v1';
 
-  Future<Map<String, dynamic>> _read() async {
+  Future<Map<String, dynamic>> _read({bool strict = false}) async {
     final preferences = await SharedPreferences.getInstance();
+    if (_needsReload.contains(userId)) {
+      await preferences.reload();
+      _needsReload.remove(userId);
+    }
     try {
       final value = jsonDecode(preferences.getString(_key) ?? '{}');
       if (value is Map) return Map<String, dynamic>.from(value);
+      if (strict) throw const FormatException('Invalid study cache.');
     } catch (_) {
+      if (strict) {
+        throw StateError(
+            'The saved study cache is unreadable. Back it up before recovery.');
+      }
       // An invalid cache must not stop ordinary learning.
     }
     return {};
@@ -29,9 +41,11 @@ class NorieStudyOfflineStore {
 
   Future<T> _write<T>(T Function(Map<String, dynamic> state) change) {
     final result = Completer<T>();
-    _writes[userId] = (_writes[userId] ?? Future<void>.value()).then((_) async {
+    final previous = _writes[userId] ?? Future<void>.value();
+    late final Future<void> queued;
+    queued = previous.then((_) async {
       try {
-        final state = await _read();
+        final state = await _read(strict: true);
         final value = change(state);
         final preferences = await SharedPreferences.getInstance();
         if (!await preferences.setString(_key, jsonEncode(state))) {
@@ -39,9 +53,21 @@ class NorieStudyOfflineStore {
         }
         result.complete(value);
       } catch (error, stack) {
+        // Legacy preferences update their memory cache before disk confirms.
+        // A failed write must not reopen as a successful save in this process.
+        _needsReload.add(userId);
+        try {
+          await (await SharedPreferences.getInstance()).reload();
+          _needsReload.remove(userId);
+        } catch (_) {
+          // Keep the original storage failure; never report a successful save.
+        }
         result.completeError(error, stack);
       }
+    }).whenComplete(() {
+      if (identical(_writes[userId], queued)) _writes.remove(userId);
     });
+    _writes[userId] = queued;
     return result.future;
   }
 
@@ -114,9 +140,47 @@ class NorieStudyOfflineStore {
         state['sets'] = sets;
       });
 
+  StudySourceReview _sourceReview(
+      Map<String, dynamic> state, NorieStudySet set) {
+    if (set.ownerId != null && set.ownerId != userId) {
+      throw StateError('Source comparison belongs to a different learner.');
+    }
+    try {
+      final all = state['sourceReviews'];
+      if (all != null && all is! Map) throw const FormatException();
+      final raw = (all as Map? ?? {})[set.id];
+      if (raw == null) return StudySourceReview(ownerId: userId, setId: set.id);
+      if (raw is! Map) throw const FormatException();
+      return StudySourceReview.fromMap(Map<String, dynamic>.from(raw),
+          ownerId: userId, setId: set.id);
+    } catch (_) {
+      throw StateError(
+          'Saved source comparison is unreadable. Its data has been kept.');
+    }
+  }
+
+  Future<StudySourceReview> loadSourceReview(NorieStudySet set) async =>
+      _sourceReview(await _read(strict: true), set);
+
+  Future<StudySourceReview> saveSourceReview(NorieStudySet set,
+          String questionId, SourceReviewDecision decision) =>
+      _write((state) {
+        final next =
+            _sourceReview(state, set).decide(set, questionId, decision);
+        state['sourceReviews'] = {
+          ...Map<String, dynamic>.from(state['sourceReviews'] as Map? ?? {}),
+          set.id: next.toMap(),
+        };
+        return next;
+      });
+
   Future<void> editCard(NorieStudySet set, NorieStudyQuestion question,
           {bool deleted = false}) =>
       _write((state) {
+        if (set.isNative) {
+          throw StateError(
+              'Native question keys are fixed to their checked template.');
+        }
         final sets = Map<String, dynamic>.from(state['sets'] as Map? ?? {});
         final value =
             Map<String, dynamic>.from(sets[set.id] as Map? ?? set.toMap());
@@ -138,6 +202,7 @@ class NorieStudyOfflineStore {
           'study_set_id': set.id,
           'question': question.toMap(),
           'deleted': deleted,
+          if (set.isNative) 'device_local': true,
           'revision': const Uuid().v4()
         };
         state['cardChanges'] = changes;
@@ -154,7 +219,8 @@ class NorieStudyOfflineStore {
       ((await _read())['cardChanges'] as Map? ?? {})
           .values
           .whereType<Map>()
-          .where((value) => value['synced'] != true)
+          .where((value) =>
+              value['synced'] != true && value['device_local'] != true)
           .map((value) => Map<String, dynamic>.from(value))
           .toList();
 
@@ -212,8 +278,16 @@ class NorieStudyOfflineStore {
       });
 
   Future<void> removeSet(String id) => _write((state) {
+        final comparisons =
+            Map<String, dynamic>.from(state['sourceReviews'] as Map? ?? {});
+        comparisons.remove(id);
+        state['sourceReviews'] = comparisons;
         final sets = Map<String, dynamic>.from(state['sets'] as Map? ?? {});
         sets.remove(id);
+        final sessions =
+            Map<String, dynamic>.from(state['quizSessions'] as Map? ?? {});
+        sessions.remove(id);
+        state['quizSessions'] = sessions;
         state['sets'] = sets;
         final attempts = List<dynamic>.from(state['attempts'] as List? ?? []);
         attempts.removeWhere(
@@ -228,6 +302,62 @@ class NorieStudyOfflineStore {
             Map<String, dynamic>.from(state['reviews'] as Map? ?? {});
         reviews.remove(id);
         state['reviews'] = reviews;
+      });
+
+  Future<Set<String>> completedNativeIdentities() async {
+    final state = await _read(strict: true);
+    final rewarded = Set<String>.from(state['rewarded'] as List? ?? const []);
+    final identities = <String>{};
+    for (final raw in (state['sets'] as Map? ?? {}).values) {
+      final set = _decodeSet(raw);
+      if (set == null || !set.isNative || !rewarded.contains(set.id)) continue;
+      final questions = set.generationMetadata['questions'];
+      if (questions is! List) continue;
+      for (final q in questions.whereType<Map>()) {
+        if (q['identity'] is String) identities.add(q['identity'] as String);
+      }
+    }
+    return Set.unmodifiable(identities);
+  }
+
+  String _sessionRevision(NorieStudySet set) =>
+      curriculumFingerprint(set.questions.map((q) => q.toMap()).toList());
+
+  Future<Map<String, dynamic>?> loadQuizSession(NorieStudySet set) async {
+    final raw =
+        ((await _read(strict: true))['quizSessions'] as Map? ?? {})[set.id];
+    if (raw == null) return null;
+    if (raw is! Map ||
+        raw['revision'] != _sessionRevision(set) ||
+        raw['snapshot'] is! Map) {
+      throw const FormatException(
+          'Saved quiz changed or is unreadable. Restart this quiz explicitly.');
+    }
+    return Map<String, dynamic>.from(raw['snapshot'] as Map);
+  }
+
+  Future<void> saveQuizSession(
+      NorieStudySet set, Map<String, dynamic> snapshot) {
+    if (set.ownerId != null && set.ownerId != userId) {
+      throw StateError('Reopen this quiz in its owner account.');
+    }
+    final detached = jsonDecode(jsonEncode(snapshot));
+    return _write((state) {
+      final sessions =
+          Map<String, dynamic>.from(state['quizSessions'] as Map? ?? {});
+      sessions[set.id] = {
+        'revision': _sessionRevision(set),
+        'snapshot': detached
+      };
+      state['quizSessions'] = sessions;
+    });
+  }
+
+  Future<void> clearQuizSession(String id) => _write((state) {
+        final sessions =
+            Map<String, dynamic>.from(state['quizSessions'] as Map? ?? {});
+        sessions.remove(id);
+        state['quizSessions'] = sessions;
       });
 
   Future<void> markRewarded(String id) => _write((state) {
@@ -314,6 +444,7 @@ class NorieStudyOfflineStore {
         attempts.add({
           'id': const Uuid().v4(),
           'user_id': userId,
+          if (studySet.isNative) 'device_local': true,
           'study_set_id': studySet.id,
           'correct_count': correct,
           'total_count': total,
@@ -340,6 +471,7 @@ class NorieStudyOfflineStore {
     final state = await _read();
     return (state['attempts'] as List? ?? [])
         .whereType<Map>()
+        .where((value) => value['device_local'] != true)
         .map((value) => Map<String, dynamic>.from(value))
         .toList();
   }

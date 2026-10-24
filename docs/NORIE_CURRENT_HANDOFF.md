@@ -1,8 +1,28 @@
+# 0.19 integration candidate — not released
+
+Published release remains0.18.0+24 Preview at ed9472dbb437127abd8fd09931a86879d4df5ec5. Repair PR78 merged at develop2323df1; its old push-triggered web preview completed. PR77 adds an explicit manual exact-source publication gate before further feature integration. No0.19 release/tag or paid Anatomy activation. Review current PR72/73/74/75/76/77/79 heads and CI rather than the historical candidate statements below.
+
+This refreshed educational candidate combines durable owner/revision-bound learner source comparisons, Native offline quiz save recovery, guided Anatomy stale-control and honest save-feedback repairs, and the existing three English lesson improvements. Independent code review found no remaining critical/important issue in these repairs; targeted evidence is in the PRs. Qualified Anatomy hints0, blank authoring pilot30; detailed paid hints remain disabled. Source comparison and computational arithmetic checking are separate from qualified academic approval.
+
+---
+
+## Historical component handoffs
+
 # Educational readiness follow-up — draft candidate
 
 The verified integration baseline is published **0.18.0+24 Preview**, source `ed9472dbb437127abd8fd09931a86879d4df5ec5` (PR71). This separate `feat/educational-readiness` candidate protects guided-study recovery and stale controls, removes coarse-name medical hint inference, and adds independent review to three existing English lessons. It does not activate paid hints or curriculum publication, change dependency versions, merge, or deploy.
 
 See [scope, validation and blockers](implementation/educational-readiness.md) and [execution ledger](superpowers/plans/2026-10-23-educational-readiness.md). Targeted tests: 76 passed; analyzer clean. Full Flutter suite: 975 passed / 9 failed / 1 existing skip. All nine failures are unchanged LAN tests blocked by this host's network-interface enumeration; desktop LAN tests hit the same restriction. Android SDK, actual browser/native QA, qualified content review and production infrastructure remain external gates. Use the PR for exact candidate SHA and remote CI. Previous 0.18 packages remain the published downloads; this candidate has no updated Windows/APK package.
+
+---
+
+# Hybrid Quiz Generation 2.0 — 2026-10-24 update
+
+Current verified baseline remains develop ed9472dbb437127abd8fd09931a86879d4df5ec5 / published0.18.0+24 Preview. New draft core PR77 (4cf6445b72bf8dcdcaad3ef89975f12dce1312c5) and dependent native integration branch feat/hybrid-quiz-generation add free offline bounded Mathematics practice, exact answer proofs, explicit coverage/repeat consent, owner-scoped persistence/resume and no-charge/no-inference safeguards. No main change, merge or deployment.
+
+See [baseline audit](HYBRID_QUIZ_BASELINE.md) and [implementation/report](implementation/hybrid-quiz-generation.md) for actual coverage, modified files, validation evidence and all remaining phases. New approved production bank0; no Chemistry benchmark or academic verification claimed. Existing AI providers remain unchanged and no new provider/credential/billing operation is activated. Separate build repair PR78 recovers byte-identical licensed legacy models after the original mirror began returning404; core and integration include that dependency. Initial CI failures are recorded, not hidden. Exact-head CI, human review, compiled screenshot inspection and physical QA are release gates; latest heads/artifacts live in each PR.
+
+Keep separate PR72's source review and Anatomy73–76 intact when resolving overlaps in StudySetScreen, the tutorial and desktop tests. Do not treat these unmerged branches as deployed. Earlier historical handoff follows and may contain superseded version/download statements.
 
 ---
 
