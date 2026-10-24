@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 import 'package:uuid/uuid.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
@@ -17,14 +18,18 @@ class NorieStudyOfflineStore {
   static final Map<String, Future<void>> _rewardDrains = {};
   String get _key => 'norie.study.$userId.offline.v1';
 
-  Future<Map<String, dynamic>> _read({bool strict = false}) async {
-    final preferences = await SharedPreferences.getInstance();
-    // Preference reloads for another learner can replace this shared cache
-    // while a write is pending. Refresh the platform backend before using a deck.
-    // Keep read failures outside the tolerant JSON recovery below.
-    await preferences.reload();
+  // The app uses the legacy plugin's default flutter. prefix. Read a private
+  // backend snapshot instead of reloading its process-wide preference cache:
+  // reload can hide pending lesson/reward writes belonging to other features.
+  Future<Object?> _readRaw() async =>
+      (await SharedPreferencesStorePlatform.instance.getAll())['flutter.$_key'];
+
+  Map<String, dynamic> _decodeState(Object? raw, {bool strict = false}) {
     try {
-      final value = jsonDecode(preferences.getString(_key) ?? '{}');
+      if (raw != null && raw is! String) {
+        throw const FormatException('Invalid study cache.');
+      }
+      final value = jsonDecode(raw as String? ?? '{}');
       if (value is Map) return Map<String, dynamic>.from(value);
       if (strict) throw const FormatException('Invalid study cache.');
     } catch (_) {
@@ -37,26 +42,43 @@ class NorieStudyOfflineStore {
     return {};
   }
 
+  Future<Map<String, dynamic>> _read({bool strict = false}) async =>
+      _decodeState(await _readRaw(), strict: strict);
+
   Future<T> _write<T>(T Function(Map<String, dynamic> state) change) {
     final result = Completer<T>();
     final previous = _writes[userId] ?? Future<void>.value();
     late final Future<void> queued;
     queued = previous.then((_) async {
+      String? original;
+      bool attempted = false;
       try {
-        final state = await _read(strict: true);
+        final raw = await _readRaw();
+        final state = _decodeState(raw, strict: true);
+        original = raw as String?;
         final value = change(state);
         final preferences = await SharedPreferences.getInstance();
+        attempted = true;
         if (!await preferences.setString(_key, jsonEncode(state))) {
           throw StateError('Norie could not save this quiz on the device.');
         }
         result.complete(value);
       } catch (error, stack) {
-        // Legacy preferences update their memory cache before disk confirms.
-        // A failed write must not reopen as a successful save in this process.
-        try {
-          await (await SharedPreferences.getInstance()).reload();
-        } catch (_) {
-          // Keep the original storage failure; never report a successful save.
+        if (attempted) {
+          // Legacy setters optimistically cache before the backend acknowledges.
+          // Restore only this key, including its exact previous bytes/absence.
+          // Never reload/clear unrelated pending progress. Preserve the error
+          // even when rollback cannot be persisted by an unavailable backend.
+          try {
+            final preferences = await SharedPreferences.getInstance();
+            if (original == null) {
+              await preferences.remove(_key);
+            } else {
+              await preferences.setString(_key, original);
+            }
+          } catch (_) {
+            // The original failed write remains authoritative.
+          }
         }
         result.completeError(error, stack);
       }
