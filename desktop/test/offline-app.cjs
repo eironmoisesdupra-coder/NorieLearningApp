@@ -219,8 +219,11 @@ async function main() {
     const start = page.getByRole('button', { name: 'Start Practice', exact: true });
     await nativeScroll(start);
     await answerClick(start);
-    const nativeProgress = page.getByRole('progressbar', { name: 'Quiz progress', exact: true });
-    await nativeProgress.getByText('Question 1 of 20', { exact: true }).waitFor();
+    // A live-region update also creates flt-announcement-polite with the same
+    // text. Match the actual counter without assuming a progressbar parent.
+    const nativeQuestion = number => page.getByText(`Question ${number} of 20`, { exact: true })
+      .and(page.locator(':not(flt-announcement-polite):not(flt-announcement-assertive)'));
+    await nativeQuestion(1).waitFor();
     async function checkWrongChoice() {
       const question = await page.evaluate(id => {
         const raw = JSON.parse(localStorage.getItem('flutter.norie.study.local.offline.v1'));
@@ -241,12 +244,12 @@ async function main() {
     await nativeScroll(next); await answerClick(next);
     await page.reload(); await enableAccessibility();
     await nativeLibrary();
-    await nativeProgress.getByText('Question 2 of 20', { exact: true }).waitFor();
+    await nativeQuestion(2).waitFor();
     await captureHiddenPage('windows-native-resume-phone.png');
     console.log('PASS: native20 resumes at question2 after reload at390x844');
     async function completeWrong(from) {
       for (let i = from; i < 20; i++) {
-        await nativeProgress.getByText(`Question ${i + 1} of 20`, { exact: true }).waitFor();
+        await nativeQuestion(i + 1).waitFor();
         await checkWrongChoice();
         const advance = page.getByRole('button', { name: i === 19 ? 'View Results' : 'Next', exact: true });
         await nativeScroll(advance); await answerClick(advance);
