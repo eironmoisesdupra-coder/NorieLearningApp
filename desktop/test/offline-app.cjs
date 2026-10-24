@@ -161,7 +161,10 @@ async function main() {
       await page.waitForTimeout(120);
     }
     await locator.waitFor();
-    await locator.scrollIntoViewIfNeeded();
+    // Flutter can replace semantics nodes during the phone viewport resize.
+    // Locator click's trial path scrolls without clicking and re-resolves a
+    // detached node; scrollIntoViewIfNeeded retains a stale ElementHandle.
+    await locator.click({ trial: true, force: true });
   }
   async function nativeLibrary() {
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
@@ -211,6 +214,7 @@ async function main() {
     }
     assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.credits'))), baseline.credits);
     assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), baseline.xp);
+    console.log('PASS: native20 generated offline with distinct identities, independently checked answers and no generation charge/reward');
     const start = page.getByRole('button', { name: 'Start Practice', exact: true });
     await nativeScroll(start);
     await answerClick(start);
@@ -238,6 +242,7 @@ async function main() {
     await nativeLibrary();
     await nativeProgress.getByText('Question 2 of 20', { exact: true }).waitFor();
     await captureHiddenPage('windows-native-resume-phone.png');
+    console.log('PASS: native20 resumes at question2 after reload at390x844');
     async function completeWrong(from) {
       for (let i = from; i < 20; i++) {
         await nativeProgress.getByText(`Question ${i + 1} of 20`, { exact: true }).waitFor();
@@ -249,6 +254,7 @@ async function main() {
     }
     await completeWrong(1);
     await page.waitForFunction(xp => Number(localStorage.getItem('flutter.norie.totalXp')) === xp + 20, baseline.xp);
+    console.log('PASS: native20 completion awarded the existing20XP');
     await page.getByRole('button', { name: 'Try Again', exact: true }).click({ force: true });
     await completeWrong(0);
     assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), baseline.xp + 20);
