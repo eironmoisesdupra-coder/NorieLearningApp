@@ -18,3 +18,11 @@ All requested members and hashes are checked before any output replacement. ASAR
 Run `python -m unittest test.anatomy_legacy_recovery_test test.anatomy_pipeline_test test.anatomy_audit_test` and `python scripts/anatomy/legacy_models.py`. Six recovery tests plus24 existing pipeline/audit tests passed, including tampering, missing members, bounds/links, preserved existing bytes and a RED→GREEN Windows open-file cleanup regression. Actual snapshot recovery and a second verified-cache run passed. `bash -n scripts/fetch_anatomy_assets.sh` and Python compile passed. Independent read-only review is recorded in the PR; complete platform CI remains required.
 
 The fixed release snapshot must remain available; if it changes or disappears, builds deliberately fail until an equally reviewed byte-identical source is supplied. No production deployment, release asset upload, paid operation, new mesh, anatomical mapping or version bump is part of this repair.
+
+The first repaired Flutter CI run exposed an older test that searched the shell
+file for inline source constants. Those constants now live in the Python stage.
+The regression now executes that real stage, checks its successful byte-verified
+provenance against the Dart calibration pin, and asserts the actual252-node
+skeleton output hash/size. It preserves the source-pin requirement while checking
+runtime behavior instead of a particular source-file layout. All12 Anatomy Lab
+Dart tests passed locally after this update; new exact-head CI is required.
