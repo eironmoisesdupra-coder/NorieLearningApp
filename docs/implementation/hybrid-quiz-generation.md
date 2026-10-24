@@ -1,6 +1,6 @@
 # Hybrid Quiz Generation 2.0 — first functional milestone
 
-Base: develop `ed9472dbb437127abd8fd09931a86879d4df5ec5`. Version remains **0.18.0+24 Preview**. Core PR77: `d89bd55d2d159c6d994c7e1beaa9dbbc44ff1bf9` (contract commit675601bf; includes dependency78), branch `feat/hybrid-quiz-core`. Integration branch `feat/hybrid-quiz-generation` depends on77 and targets develop for platform CI. Exact integration head, CI and downloads are recorded in its PR. Nothing merged or deployed.
+Base: develop `ed9472dbb437127abd8fd09931a86879d4df5ec5`. Version remains **0.18.0+24 Preview**. Core PR77: `4cf6445b72bf8dcdcaad3ef89975f12dce1312c5` (contract commit675601bf; includes dependency78), branch `feat/hybrid-quiz-core`. Integration branch `feat/hybrid-quiz-generation` depends on77 and targets develop for platform CI. Exact integration head, CI and downloads are recorded in its PR. Nothing merged or deployed.
 
 ## Implemented coverage and boundaries
 
@@ -69,7 +69,7 @@ Integration: `norie_study_models.dart`, `norie_study_quiz_session.dart`; `native
 
 ## Build recovery dependency
 
-All three first core CI runs stopped before code checks at the original legacy skeleton URL404. Separate [PR78](https://github.com/eironmoisesdupra-coder/NorieLearningApp/pull/78), source60d6b207222ef5665c961c986a013f8363b40611, restores only byte-identical already-licensed legacy models from the checksum-pinned official v0.18.0 archive. Core77 and this branch include its same patch for exact-head CI. Six new recovery plus24 existing Python tests and actual archive/model recovery passed, independently reviewed. Model geometry, mapping, calibration, attribution/license terms are preserved. No binary was committed. The initial red runs are historical evidence; replacement CI must pass before merge.
+All three first core CI runs stopped before code checks at the original legacy skeleton URL404. Separate [PR78](https://github.com/eironmoisesdupra-coder/NorieLearningApp/pull/78), source673e882461d0649988b3ce96bd1a754baf9ba96d, restores only byte-identical already-licensed legacy models from the checksum-pinned official v0.18.0 archive. Core77 and this branch include its same patch for exact-head CI. Six new recovery plus24 existing Python tests and actual archive/model recovery passed, independently reviewed. Model geometry, mapping, calibration, attribution/license terms are preserved. No binary was committed. The initial red runs are historical evidence. The first repaired full suite exposed a source-layout assertion; its replacement executes the actual asset command and compares byte-verified output/provenance with the unchanged Dart calibration. All12 Anatomy Lab tests passed locally. Replacement exact-head CI must pass before merge.
 
 ## Integration and release gates
 
