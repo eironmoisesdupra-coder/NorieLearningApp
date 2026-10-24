@@ -56,6 +56,10 @@ async function main() {
         await page.waitForTimeout(120);
       }
       await locator.waitFor();
+      for (let attempt = 0; attempt < 100 && !await locator.isEnabled(); attempt++) {
+        await page.waitForTimeout(50);
+      }
+      assert.equal(await locator.isEnabled(), true);
       // Semantics nodes are rebuilt while Flutter scrolls. Re-resolve the
       // locator after bringing its painted target into the viewport.
       await locator.hover({ force: true });
@@ -103,12 +107,21 @@ async function main() {
     // Flutter adds the tooltip text to the menu's accessible name on hover.
     await click(page.getByRole('button', { name: /Card actions/ }));
     await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Explanation', exact: true }).fill('Changed synthetic explanation.');
+    const explanation = page.getByRole('textbox', { name: 'Explanation', exact: true });
+    await explanation.click();
+    await explanation.press('ControlOrMeta+A');
+    await explanation.pressSequentially('Changed synthetic explanation.', { delay: 20 });
+    await explanation.press('Tab');
     await click(button('Save'));
     await page.getByRole('textbox', { name: 'Explanation', exact: true }).waitFor({ state: 'hidden' });
+    await page.waitForFunction(key => {
+      const raw = JSON.parse(localStorage.getItem(key));
+      const state = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return state.sets['source-flashcards'].questions[0].explanation === 'Changed synthetic explanation.';
+    }, key);
     await click(button('Compare answers with source'));
-    assert.equal(await compared().getAttribute('aria-checked'), 'false');
     await page.getByText('Changed synthetic explanation.', { exact: true }).waitFor();
+    assert.equal(await compared().getAttribute('aria-checked'), 'false');
     await open('Source Review Fixture');
     await click(compared());
     await click(button('Done'));
@@ -120,6 +133,7 @@ async function main() {
   } catch (error) {
     if (page) {
       await page.screenshot({ path: 'build/windows-source-review-failure.png' }).catch(() => {});
+      console.error('Synthetic source fixture:', await page.evaluate(() => localStorage.getItem('flutter.norie.study.local.offline.v1')).catch(() => 'unavailable'));
       console.error('Source fixture semantics:', await page.locator('body').innerText().catch(() => 'unavailable'));
     }
     throw error;
