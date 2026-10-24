@@ -61,10 +61,11 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.47.8
           cache: true
 
       - name: Generate web platform scaffolding
-        run: flutter create --platforms=web --project-name norie_learning .
+        run: flutter create --no-pub --platforms=web --project-name norie_learning .
 
       - uses: actions/setup-node@v4
         with:
@@ -98,10 +99,10 @@ jobs:
         run: bash scripts/fetch_anatomy_assets.sh
 
       - name: Install dependencies
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       - name: Build web preview
-        run: flutter build web --release --base-href "/NorieLearningApp/" --no-web-resources-cdn
+        run: flutter build web --no-pub --release --base-href "/NorieLearningApp/" --no-web-resources-cdn
 
       - name: Prepare offline-safe preview
         env:

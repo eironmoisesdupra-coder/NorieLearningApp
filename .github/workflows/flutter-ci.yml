@@ -22,6 +22,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.47.8
           cache: true
 
       - name: Show Flutter version
@@ -40,7 +41,7 @@ jobs:
           restore-keys: anatomy-sources-
 
       - name: Generate Android and web platform scaffolding
-        run: flutter create --platforms=android,web --project-name norie_learning .
+        run: flutter create --no-pub --platforms=android,web --project-name norie_learning .
 
       - name: Apply Norie platform branding
         run: |
@@ -85,13 +86,13 @@ jobs:
           PY
 
       - name: Install dependencies
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-pub
 
       - name: Run tests
-        run: flutter test
+        run: flutter test --no-pub
 
       - name: Check curriculum structure and produce editorial report
         run: dart tool/curriculum_health.dart --json --output build/curriculum-health.json
