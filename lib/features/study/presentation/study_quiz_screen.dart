@@ -14,6 +14,7 @@ import '../../../core/theme/norie_theme.dart';
 import '../data/norie_study_service.dart';
 import '../domain/norie_study_models.dart';
 import '../domain/norie_study_quiz_session.dart';
+import '../domain/quiz_generation/native_integer_answer.dart';
 import '../../../core/account/norie_account_service.dart';
 import 'study_results_screen.dart';
 
@@ -116,8 +117,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen>
         for (var i = 0; i < session.responses.length; i++) {
           final q = _questions[i];
           final response = session.responses[i];
-          final correct =
-              q.correctValues.any((a) => _normalize(a) == _normalize(response));
+          final correct = _matchesResponse(q, response);
           _answers.add(NorieStudyAnswer(
               question: q, response: response, correct: correct));
         }
@@ -208,14 +208,20 @@ class _StudyQuizScreenState extends State<StudyQuizScreen>
   static String _normalize(String value) =>
       value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
-  bool _isCorrect(String response) {
-    if (_question.kind == NorieStudyQuestionKind.ordering) {
-      return response == _question.orderedItems.join(' → ');
+  bool _isCorrect(String response) => _matchesResponse(_question, response);
+
+  bool _matchesResponse(NorieStudyQuestion question, String response) {
+    if (widget.studySet.isNative &&
+        question.kind == NorieStudyQuestionKind.identification) {
+      return question.correctValues
+          .any((answer) => nativeIntegerAnswerMatches(response, answer));
+    }
+    if (question.kind == NorieStudyQuestionKind.ordering) {
+      return response == question.orderedItems.join(' → ');
     }
     final normalized = _normalize(response);
-    return _question.correctValues.any(
-      (answer) => _normalize(answer) == normalized,
-    );
+    return question.correctValues
+        .any((answer) => _normalize(answer) == normalized);
   }
 
   Future<void> _check() async {
@@ -470,6 +476,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen>
                     Expanded(
                       child: LinearProgressIndicator(
                         value: progress,
+                        semanticsLabel: 'Quiz progress',
                         minHeight: 7,
                         borderRadius: BorderRadius.circular(99),
                         color: NorieColors.cyan,
@@ -477,11 +484,17 @@ class _StudyQuizScreenState extends State<StudyQuizScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      '${_index + 1}/$total',
-                      style: const TextStyle(
-                        color: NorieColors.textSecondary,
-                        fontWeight: FontWeight.w800,
+                    Semantics(
+                      container: true,
+                      liveRegion: true,
+                      excludeSemantics: true,
+                      label: 'Question ${_index + 1} of $total',
+                      child: Text(
+                        '${_index + 1}/$total',
+                        style: const TextStyle(
+                          color: NorieColors.textSecondary,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ],

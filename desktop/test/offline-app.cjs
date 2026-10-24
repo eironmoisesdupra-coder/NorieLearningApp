@@ -214,7 +214,7 @@ async function main() {
     const start = page.getByRole('button', { name: 'Start Practice', exact: true });
     await nativeScroll(start);
     await answerClick(start);
-    await page.getByText('1/20', { exact: true }).waitFor();
+    await page.getByText('Question 1 of 20', { exact: true }).waitFor();
     async function checkWrongChoice() {
       const question = await page.evaluate(id => {
         const raw = JSON.parse(localStorage.getItem('flutter.norie.study.local.offline.v1'));
@@ -235,11 +235,11 @@ async function main() {
     await nativeScroll(next); await answerClick(next);
     await page.reload(); await enableAccessibility();
     await nativeLibrary();
-    await page.getByText('2/20', { exact: true }).waitFor();
+    await page.getByText('Question 2 of 20', { exact: true }).waitFor();
     await captureHiddenPage('windows-native-resume-phone.png');
     async function completeWrong(from) {
       for (let i = from; i < 20; i++) {
-        await page.getByText(`${i + 1}/20`, { exact: true }).waitFor();
+        await page.getByText(`Question ${i + 1} of 20`, { exact: true }).waitFor();
         await checkWrongChoice();
         const advance = page.getByRole('button', { name: i === 19 ? 'View Results' : 'Next', exact: true });
         await nativeScroll(advance); await answerClick(advance);
