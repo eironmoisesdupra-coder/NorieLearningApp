@@ -191,7 +191,7 @@ abstract final class NorieTutorialCatalog {
           targetId: 'anatomy.quiz',
           title: 'Build your identification practice',
           message:
-              'Open Quiz, choose a reference and one or more systems, or select Every part for the broadest pool. Choose 5, 10, or 20 questions, difficulty and question kind. Setup offers a shorter round if the pool cannot fill your selection. Need a hint? opens free general guidance. Structure clue is also free when an exact reviewed clue is ready; otherwise use the general guidance. Detailed hints are locked and spend no Credits. The recenter and music buttons control your view and soundtrack.'),
+              'Open Quiz, choose a reference and one or more systems, or select Every part for the broadest pool. Choose 5, 10, or 20 questions, difficulty and question kind. Setup offers a shorter round if the pool cannot fill your selection. Need a hint? opens free general guidance. Structure clue is also free when an exact reviewed clue is ready; otherwise use the general guidance. Detailed hints are locked and spend no Credits. Unfinished Atlas rounds do not resume after closing the quiz or restarting the app; finish the round before leaving. Guided study saves separately. The recenter and music buttons control your view and soundtrack.'),
       NorieTutorialStep(
           id: 'anatomy-loading',
           targetId: 'anatomy.explore',
