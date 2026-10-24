@@ -23,7 +23,7 @@ class AtlasQuizQuestion {
       : 'Which system is ${target.name} listed under in this atlas?';
 
   String get explanation => kind == AtlasQuestionKind.identify
-      ? 'This is ${target.name}. $hint'
+      ? 'The displayed target has the catalog label ${target.name}. $hint'
       : 'The atlas catalog lists ${target.name} under $answer. '
           'This is its catalog grouping; structures can work with other systems.';
 

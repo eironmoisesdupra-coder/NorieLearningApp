@@ -162,3 +162,16 @@ modified educational visualization, not the original SPL software or atlas.
 ## Educational-use note
 
 These models are used for educational visualization and should not be treated as diagnostic or clinical references.
+
+## Recovery delivery for unchanged legacy models
+
+If the original legacy integration mirror is unavailable, the build can recover
+`overview-skeleton.glb` and `anatomy-organs.glb` from NorieLearning's own published
+[v0.18.0 Windows snapshot](https://github.com/eironmoisesdupra-coder/NorieLearningApp/releases/tag/v0.18.0),
+source `ed9472dbb437127abd8fd09931a86879d4df5ec5`. This is a delivery copy of the
+same derivatives, not a new upstream source or new anatomical content. Archive
+and individual model checksums must match the pins in
+`scripts/anatomy/legacy_models.py`. Original authors, licenses, source references
+and calibration pins above remain applicable. The build records its actual
+recovery route in `build/anatomy-legacy-provenance.json`; it does not claim a
+fresh original-source download when using the published snapshot.

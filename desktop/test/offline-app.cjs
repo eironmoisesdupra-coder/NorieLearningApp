@@ -167,6 +167,120 @@ async function main() {
     await page.reload();
     await enableAccessibility();
   }
+  let nativeDeckId;
+  async function nativeScroll(locator) {
+    for (let i = 0; i < 18 && !await locator.count(); i++) {
+      await page.mouse.move(180, 450);
+      await page.mouse.wheel(0, 420);
+      await page.waitForTimeout(120);
+    }
+    await locator.waitFor();
+    // Flutter can replace semantics nodes during the phone viewport resize.
+    // Locator hover scrolls and re-resolves a detached node without activating
+    // it; scrollIntoViewIfNeeded retains a stale ElementHandle. Do not combine
+    // trial clicks with force: force can bypass trial's event interception.
+    await locator.hover({ force: true });
+  }
+  async function nativeLibrary() {
+    await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
+    await page.getByRole('checkbox', { name: 'Study Tools', exact: true }).click();
+    const library = page.getByRole('button', { name: 'Open Saved Study Sets', exact: true });
+    await nativeScroll(library);
+    await library.click({ force: true });
+    await page.getByRole('button', { name: /Integer linear equations\s+20 items/ }).click({ force: true });
+    const start = page.getByRole('button', { name: 'Start Practice', exact: true });
+    await nativeScroll(start);
+    await start.click({ force: true });
+  }
+  async function checkNativeQuiz() {
+    const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+    const baseline = await page.evaluate(() => ({
+      credits: Number(localStorage.getItem('flutter.norie.credits')),
+      xp: Number(localStorage.getItem('flutter.norie.totalXp')),
+    }));
+    await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
+    await page.getByRole('button', { name: 'Create with Norie AI', exact: true }).click();
+    await page.getByRole('button', { name: 'Native Engine · Free offline practice', exact: true }).click();
+    await setHiddenViewport({ width: 390, height: 844 });
+    const count = page.getByRole('checkbox', { name: '20', exact: true });
+    await nativeScroll(count);
+    await count.click({ force: true });
+    await captureHiddenPage('windows-native-generator-phone.png');
+    const generate = page.getByRole('button', { name: 'Generate Native Quiz', exact: true });
+    await nativeScroll(generate);
+    await answerClick(generate);
+    await page.getByText('Study Set', { exact: true }).waitFor();
+    const deck = await page.evaluate(() => {
+      const raw = JSON.parse(localStorage.getItem('flutter.norie.study.local.offline.v1'));
+      const state = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return Object.values(state.sets).find(set => set.source_type === 'native');
+    });
+    assert.ok(deck);
+    nativeDeckId = deck.id;
+    assert.equal(deck.questions.length, 20);
+    assert.equal(deck.generation_metadata.provider, 'native');
+    assert.equal(deck.generation_metadata.validation, 'computationallyChecked');
+    assert.equal(new Set(deck.questions.map(q => q.id)).size, 20);
+    for (const q of deck.questions) {
+      const m = /^Solve for x: (\d+)x \+ (\d+) = (-?\d+)\.$/.exec(q.prompt);
+      assert.ok(m);
+      assert.equal(Number(m[1]) * Number(q.correct_values[0]) + Number(m[2]), Number(m[3]));
+      assert.equal(q.kind, 'single_select');
+    }
+    assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.credits'))), baseline.credits);
+    assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), baseline.xp);
+    console.log('PASS: native20 generated offline with distinct identities, independently checked answers and no generation charge/reward');
+    const start = page.getByRole('button', { name: 'Start Practice', exact: true });
+    await nativeScroll(start);
+    await answerClick(start);
+    // A live-region update also creates flt-announcement-polite with the same
+    // text. Match the actual counter without assuming a progressbar parent.
+    const nativeQuestion = number => page.getByText(`Question ${number} of 20`, { exact: true })
+      .and(page.locator(':not(flt-announcement-polite):not(flt-announcement-assertive)'));
+    await nativeQuestion(1).waitFor();
+    async function checkWrongChoice() {
+      const question = await page.evaluate(id => {
+        const raw = JSON.parse(localStorage.getItem('flutter.norie.study.local.offline.v1'));
+        const state = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const snapshot = state.quizSessions[id].snapshot;
+        return snapshot.questions[snapshot.index];
+      }, nativeDeckId);
+      await page.mouse.move(180, 240); await page.mouse.wheel(0, -2000);
+      await page.getByText(question.prompt, { exact: true }).waitFor();
+      const wrong = question.options.find(option => !question.correct_values.includes(option));
+      const choice = page.getByText(wrong, { exact: true });
+      await nativeScroll(choice); await answerClick(choice);
+      const check = page.getByRole('button', { name: 'Check Answer', exact: true });
+      await nativeScroll(check); await answerClick(check);
+    }
+    await checkWrongChoice();
+    const next = page.getByRole('button', { name: 'Next', exact: true });
+    await nativeScroll(next); await answerClick(next);
+    await page.reload(); await enableAccessibility();
+    await nativeLibrary();
+    await nativeQuestion(2).waitFor();
+    await captureHiddenPage('windows-native-resume-phone.png');
+    console.log('PASS: native20 resumes at question2 after reload at390x844');
+    async function completeWrong(from) {
+      for (let i = from; i < 20; i++) {
+        await nativeQuestion(i + 1).waitFor();
+        await checkWrongChoice();
+        const advance = page.getByRole('button', { name: i === 19 ? 'View Results' : 'Next', exact: true });
+        await nativeScroll(advance); await answerClick(advance);
+      }
+      await page.getByRole('button', { name: 'Continue', exact: true }).waitFor();
+    }
+    await completeWrong(1);
+    await page.waitForFunction(xp => Number(localStorage.getItem('flutter.norie.totalXp')) === xp + 20, baseline.xp);
+    console.log('PASS: native20 completion awarded the existing20XP');
+    await page.getByRole('button', { name: 'Try Again', exact: true }).click({ force: true });
+    await completeWrong(0);
+    assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), baseline.xp + 20);
+    assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.credits'))), baseline.credits);
+    console.log('PASS: native20 generated offline without credits/inference; exact math, reload/resume, completion20XP once and replay zeroXP');
+    await setHiddenViewport(viewport, 1);
+    await page.reload(); await enableAccessibility();
+  }
   let originalMinimum;
   async function setHiddenViewport(size, tolerance = 0) {
     // Native capture and the rendered surface must share the same viewport/DPR.
@@ -279,6 +393,7 @@ async function main() {
     await page.reload();
     await enableAccessibility();
     await checkAnatomy();
+    await checkNativeQuiz();
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
     await page.getByRole('checkbox', { name: 'Subjects', exact: true }).click();
     await page.getByRole('button', { name: /^Mathematics\b/ }).click();
@@ -344,6 +459,12 @@ async function main() {
     await enableAccessibility();
     await page.getByRole('button', { name: 'Progress Progress', exact: true }).click();
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('flutter.norie.totalXp'))), xp);
+    const nativeRetained = await page.evaluate(id => {
+      const raw = JSON.parse(localStorage.getItem('flutter.norie.study.local.offline.v1'));
+      const state = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return state.sets[id]?.questions.length === 20 && state.rewarded.includes(id);
+    }, nativeDeckId);
+    assert.equal(nativeRetained, true, 'Native questions and completion receipt persist across app restart');
     console.log(`PASS: ${xp} XP persisted after closing and reopening offline`);
     await captureHiddenPage('windows-offline-progress.png');
     assert.deepEqual([...externalFontRequests], [], 'Restarted offline app must not request online fonts');

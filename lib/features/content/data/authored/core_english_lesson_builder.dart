@@ -2,6 +2,7 @@ import '../../domain/norie_content_models.dart';
 import '../authored_topic_builder.dart';
 import 'authored_lesson_visual.dart';
 import 'core_english_contexts.dart';
+import 'english_independent_review.dart';
 
 /// Each record supplies authored instruction and eleven individually keyed items.
 class CoreEnglishLesson {
@@ -68,7 +69,8 @@ class CoreEnglishLesson {
           section('Guided example — try first', guided),
           section('Guided solution', solution, reveal: true),
           section('Common mistakes', mistakes),
-          section('Lesson recap', recap)
+          section('Lesson recap', recap),
+          ...?englishIndependentReview['$grade.$order'],
         ],
         keyConcept: recap,
         prerequisiteTopicId: prerequisite,

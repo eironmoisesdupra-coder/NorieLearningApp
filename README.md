@@ -79,14 +79,19 @@ Update the relevant chapter when changing a user-facing workflow, and run
 
 ## Anatomy Atlas Quiz
 
-Quiz opens a setup screen for one or more body systems and a reference.
-**Every part** includes all available systems and references. A round contains
-20 distinct named structures; smaller selections must be broadened before
-starting. The magnifying-glass button reveals a short description or system
-clue, and the camera and music buttons recenter the structure and toggle music.
-Quiz models retain their original atlas material colors and shading instead
-of the exploration viewer's cyan selection tint. These are educational models,
-not newly textured photorealistic scans.
+Quiz opens a setup screen for body systems, reference, length (5/10/20),
+difficulty and question kind. **Every part** includes available systems and
+references. Shorter sessions retain free catalog-group clues. A group clue is
+not an independently verified part description. In actual 20-question sessions,
+reviewed specific hints remain unavailable and cost zero credits. Answer
+feedback remains free. Paid activation requires qualified exact-structure
+content and a durable idempotent debit/reveal transaction.
+
+Camera and music controls recenter the structure and toggle music. Quiz models
+retain original atlas material colors and shading. Guided study resumes locally;
+if its saved snapshot is unreadable or incompatible, **Retry loading saved
+study** leaves the original data intact. Other offline lessons and atlas
+exploration remain available while that saved guide needs recovery.
 
 ## Background music
 
