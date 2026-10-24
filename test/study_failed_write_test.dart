@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,7 @@ class _FullStudyDisk extends InMemorySharedPreferencesStore {
   _FullStudyDisk() : super.empty();
   bool full = false;
   bool unreadable = false;
+  bool failReadAfterDeniedWrite = false;
   @override
   Future<Map<String, Object>> getAll() async {
     if (unreadable) throw StateError("Device storage unavailable");
@@ -18,8 +20,28 @@ class _FullStudyDisk extends InMemorySharedPreferencesStore {
   }
 
   @override
-  Future<bool> setValue(String type, String key, Object value) async =>
-      full ? false : super.setValue(type, key, value);
+  Future<bool> setValue(String type, String key, Object value) async {
+    if (full) {
+      if (failReadAfterDeniedWrite) unreadable = true;
+      return false;
+    }
+    return super.setValue(type, key, value);
+  }
+}
+
+class _SwitchingDisk extends InMemorySharedPreferencesStore {
+  _SwitchingDisk() : super.empty();
+  final started = Completer<void>();
+  final release = Completer<void>();
+  @override
+  Future<bool> setValue(String type, String key, Object value) async {
+    if (key == 'flutter.norie.study.alice.offline.v1') {
+      started.complete();
+      await release.future;
+    }
+    if (key == 'flutter.norie.study.bob.offline.v1') return false;
+    return super.setValue(type, key, value);
+  }
 }
 
 void main() {
@@ -73,14 +95,28 @@ void main() {
     final set = fixture();
     await SharedPreferences.getInstance();
     disk.full = true;
-    disk.unreadable = true;
+    disk.failReadAfterDeniedWrite = true;
     await expectLater(store.saveSet(set), throwsStateError);
     await expectLater(store.getSet(set.id), throwsStateError);
     await expectLater(store.listSets(), throwsStateError);
     disk.unreadable = false;
+    disk.failReadAfterDeniedWrite = false;
     expect(await store.getSet(set.id), isNull);
     disk.full = false;
     await store.saveSet(set);
     expect((await store.getSet(set.id))!.title, set.title);
+  });
+  test('another learner failed save cannot hide an in-flight durable deck',
+      () async {
+    final disk = _SwitchingDisk();
+    SharedPreferencesStorePlatform.instance = disk;
+    final alice = NorieStudyOfflineStore('alice');
+    final pending = alice.saveSet(fixture());
+    await disk.started.future;
+    await expectLater(
+        NorieStudyOfflineStore('bob').saveSet(fixture()), throwsStateError);
+    disk.release.complete();
+    await pending;
+    expect((await alice.getSet(fixture().id))?.title, fixture().title);
   });
 }

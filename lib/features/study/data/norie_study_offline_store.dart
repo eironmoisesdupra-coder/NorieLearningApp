@@ -14,16 +14,15 @@ class NorieStudyOfflineStore {
 
   final String userId;
   static final Map<String, Future<void>> _writes = {};
-  static final Set<String> _needsReload = {};
   static final Map<String, Future<void>> _rewardDrains = {};
   String get _key => 'norie.study.$userId.offline.v1';
 
   Future<Map<String, dynamic>> _read({bool strict = false}) async {
     final preferences = await SharedPreferences.getInstance();
-    if (_needsReload.contains(userId)) {
-      await preferences.reload();
-      _needsReload.remove(userId);
-    }
+    // Preference reloads for another learner can replace this shared cache
+    // while a write is pending. Refresh the platform backend before using a deck.
+    // Keep read failures outside the tolerant JSON recovery below.
+    await preferences.reload();
     try {
       final value = jsonDecode(preferences.getString(_key) ?? '{}');
       if (value is Map) return Map<String, dynamic>.from(value);
@@ -54,10 +53,8 @@ class NorieStudyOfflineStore {
       } catch (error, stack) {
         // Legacy preferences update their memory cache before disk confirms.
         // A failed write must not reopen as a successful save in this process.
-        _needsReload.add(userId);
         try {
           await (await SharedPreferences.getInstance()).reload();
-          _needsReload.remove(userId);
         } catch (_) {
           // Keep the original storage failure; never report a successful save.
         }
