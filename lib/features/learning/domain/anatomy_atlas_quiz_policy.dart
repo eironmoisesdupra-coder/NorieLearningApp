@@ -22,7 +22,7 @@ class AtlasQuizQuestion {
       : 'Which system is ${target.name} listed under in this atlas?';
 
   String get explanation => kind == AtlasQuestionKind.identify
-      ? 'This is ${target.name}. $hint'
+      ? 'The displayed target has the catalog label ${target.name}. $hint'
       : 'The atlas catalog lists ${target.name} under $answer. '
           'This is its catalog grouping; structures can work with other systems.';
 
@@ -45,19 +45,17 @@ class AtlasQuizQuestion {
       return 'Recall the system categories used when browsing the atlas. '
           'Choose the catalog group for the named structure.';
     }
-    final name =
-        target.name.toLowerCase().replaceFirst(RegExp(r'^(left|right)\s+'), '');
-    for (final system in AnatomyCatalog.systems) {
-      for (final structure in system.structures) {
-        if (structure.name.toLowerCase() == name) {
-          return '${structure.description} ${structure.function}';
-        }
-      }
-    }
-    return AnatomyCatalog.systems
+    // Catalog membership is a general navigation clue, not approval of a
+    // description for this exact modeled part. Never infer facts from names.
+    final groups = AnatomyCatalog.systems
         .where((system) => target.systems.contains(system.id.name))
         .map((system) => '${system.label}: ${system.subtitle}.')
         .join(' ');
+    return groups.isEmpty
+        ? 'A reviewed part-specific description is unavailable. '
+            'Inspect the model from another angle before choosing.'
+        : 'Use the catalog group as a general clue: $groups '
+            'This does not verify a part-specific description.';
   }
 }
 

@@ -191,13 +191,13 @@ abstract final class NorieTutorialCatalog {
           targetId: 'anatomy.quiz',
           title: 'Build your 20-part challenge',
           message:
-              'Open Quiz, choose a reference and one or more systems, or select Every part for the broadest pool. Select at least 20 distinct structures to start. During the quiz, the model keeps its original anatomical colors and shading. The magnifying glass reveals a short clue; the recenter and music buttons control your view and soundtrack.'),
+              'Open Quiz, choose a reference and one or more systems, or select Every part for the broadest pool. Choose a 5, 10, or 20-part round, difficulty, and question kind. The setup shows whether the selected pool can fill that length and offers a shorter session where available. During the quiz, the model keeps its original anatomical colors and shading. Shorter sessions offer free catalog-group clues. In a 20-part round, a reviewed specific hint is unavailable and costs zero credits; answer feedback remains free. The recenter and music buttons control your view and soundtrack.'),
       NorieTutorialStep(
           id: 'anatomy-loading',
           targetId: 'anatomy.explore',
           title: 'When the model does not load',
           message:
-              'Give the 3D assets time to load, especially on the first visit. Use Retry if shown and check connectivity before assuming a model is missing. Supported browser/device graphics and available memory matter. Cached lessons being available offline does not prove every 3D asset is already downloaded.'),
+              'Give the 3D assets time to load, especially on the first visit. Use Retry if shown and check connectivity before assuming a model is missing. Supported browser/device graphics and available memory matter. Cached lessons being available offline does not prove every 3D asset is already downloaded. If guided study cannot read its saved data, Retry loading saved study preserves the original while trying again. Other lessons and atlas exploration remain available.'),
     ],
   );
 
@@ -211,7 +211,7 @@ abstract final class NorieTutorialCatalog {
         targetId: 'ai-study.source',
         mascotState: NorieMascotState.guiding,
         message:
-            'Open Create with Norie AI. Add a useful title and optional topic tag. Paste a clear paragraph or choose Upload and a supported file. Cloud uploads are limited to 10 MB. The experimental Local Study Generator accepts pasted notes only, between 80 and 16,000 characters; its runtime must be running on this computer.',
+            'For free offline Mathematics practice, choose Native Engine in the generator. It supports the listed topics, Foundation difficulty and English; completed exercises are excluded unless you allow repeats. Native quizzes save on this device and resume checked progress. For source-based AI, add a useful title and optional topic tag. Paste a clear paragraph or choose Upload and a supported file. Cloud uploads are limited to 10 MB. The experimental Local Study Generator accepts pasted notes only, between 80 and 16,000 characters; its runtime must be running on this computer.',
         preferredPosition: NorieTutorialPosition.bottom,
       ),
       NorieTutorialStep(
@@ -236,7 +236,7 @@ abstract final class NorieTutorialCatalog {
           id: 'ai-quality',
           title: 'Check generated content',
           message:
-              'AI can return fewer usable questions than requested and can choose ambiguous wording or wrong distractors. Read the source excerpt and explanation before relying on an answer. Edit or delete weak cards. Source preservation is not proof of educational accuracy, and generated material is not a substitute for a trusted reference.'),
+              'AI can return fewer usable questions than requested and can choose ambiguous wording or wrong distractors. Open Compare answers with source in a saved deck, including flashcard-only decks. Check each retained excerpt, answer and explanation, or flag a card for correction. Your comparisons save on this device for the current learner; edits to the question or its source require a fresh comparison. Missing excerpts cannot be confirmed for graded practice. Edit or delete weak cards. Native Mathematics uses computational checks and does not need this learner comparison. Source preservation is not proof of educational accuracy, and generated material is not a substitute for a trusted reference.'),
       NorieTutorialStep(
           id: 'ai-privacy',
           title: 'Protect your material',
