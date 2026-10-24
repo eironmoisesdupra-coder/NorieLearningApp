@@ -44,6 +44,22 @@ class _SwitchingDisk extends InMemorySharedPreferencesStore {
   }
 }
 
+class _UnrelatedProgressDisk extends InMemorySharedPreferencesStore {
+  _UnrelatedProgressDisk() : super.empty();
+  bool failStudy = false;
+  final started = Completer<void>();
+  final release = Completer<void>();
+  @override
+  Future<bool> setValue(String type, String key, Object value) async {
+    if (failStudy && key.startsWith('flutter.norie.study.')) return false;
+    if (key == 'flutter.norie.completedLessons') {
+      started.complete();
+      await release.future;
+    }
+    return super.setValue(type, key, value);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late _FullStudyDisk disk;
@@ -89,7 +105,7 @@ void main() {
     expect((await NorieStudyOfflineStore('local').getSet(set.id))!.title,
         'Pending edit');
   });
-  test('failed write and failed reload cannot expose an optimistic save',
+  test('failed write and recovery read cannot expose an optimistic save',
       () async {
     final store = NorieStudyOfflineStore('local');
     final set = fixture();
@@ -119,4 +135,38 @@ void main() {
     await pending;
     expect((await alice.getSet(fixture().id))?.title, fixture().title);
   });
+
+  test('failed edit restores exactly the previous Study cache bytes', () async {
+    final preferences = await SharedPreferences.getInstance();
+    const original = '  {"sets":{}, "sourceReviews":{}}  ';
+    await preferences.setString('norie.study.local.offline.v1', original);
+    disk.full = true;
+    await expectLater(
+        NorieStudyOfflineStore('local').saveSet(fixture()), throwsStateError);
+    expect(preferences.getString('norie.study.local.offline.v1'), original);
+    expect((await disk.getAll())['flutter.norie.study.local.offline.v1'],
+        original);
+  });
+  for (final failedWrite in [false, true]) {
+    test(
+        'Study operation preserves unrelated pending progress (failedWrite=$failedWrite)',
+        () async {
+      final disk = _UnrelatedProgressDisk();
+      SharedPreferencesStorePlatform.instance = disk;
+      final preferences = await SharedPreferences.getInstance();
+      final pending = preferences.setInt('norie.completedLessons', 4);
+      await disk.started.future;
+      if (failedWrite) {
+        disk.failStudy = true;
+        await expectLater(NorieStudyOfflineStore('local').saveSet(fixture()),
+            throwsStateError);
+      } else {
+        await NorieStudyOfflineStore('local').getSet('unrelated-read');
+      }
+      disk.release.complete();
+      expect(await pending, isTrue);
+      expect(preferences.getInt('norie.completedLessons'), 4);
+      expect((await disk.getAll())['flutter.norie.completedLessons'], 4);
+    });
+  }
 }
