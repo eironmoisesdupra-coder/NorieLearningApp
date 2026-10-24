@@ -156,13 +156,13 @@ jobs:
           test -f android/app/src/main/res/drawable/norie_launcher_icon.xml
 
       - name: Build Android APK
-        run: flutter build apk --release
+        run: flutter build apk --no-pub --release
 
       - name: Audit exact Android APK against reviewed preview budget
         run: python scripts/release/asset_budget.py --android build/app/outputs/flutter-apk/app-release.apk --json-output build/android-package-size-report.json --fail-on-growth
 
       - name: Build preview Android App Bundle (not production signed)
-        run: flutter build appbundle --release
+        run: flutter build appbundle --no-pub --release
 
       - name: Bind tested AAB bytes to this exact source and build
         run: |
@@ -207,7 +207,7 @@ jobs:
           fi
 
       - name: Build web release
-        run: flutter build web --release --no-web-resources-cdn
+        run: flutter build web --no-pub --release --no-web-resources-cdn
 
       - name: Verify offline web artifacts
         run: |

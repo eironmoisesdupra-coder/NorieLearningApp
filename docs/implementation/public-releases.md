@@ -1,10 +1,24 @@
-﻿# Public release packages
+# Public release packages
 
 The [download page](../../branding/web/downloads.html) is published with the web
 preview at <https://eironmoisesdupra-coder.github.io/NorieLearningApp/downloads.html>.
 It reads the latest complete public release through the unauthenticated GitHub API.
 If no release exists or the API is unavailable/rate limited, it explains the state
 and links to GitHub Releases. It never substitutes expiring Actions artifacts.
+
+## Publication authorization
+
+A candidate PR, passing CI or permission to merge into develop does not authorize
+publication. For the0.19 milestone, prepare exact merged-source packages and
+checksums first, then request explicit owner approval of that full source SHA.
+Do not create a version tag or release/v branch before approval: both trigger
+the Preview release publisher.
+
+Web preview publication is now manual through deploy-pages.yml on develop.
+Enter the approved full commit SHA, matching version tag and explicit approval.
+The trusted gate requires integrated source and exact-source successful trusted
+CI. Pushing develop alone does not publish a web preview. This also applies to
+repair and version-only merges after the gate is integrated.
 
 ## Build and publish
 
