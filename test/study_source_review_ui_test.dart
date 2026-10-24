@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 import 'package:norie_learning/features/study/domain/norie_study_models.dart';
+import 'package:norie_learning/features/study/domain/study_source_review.dart';
+import 'package:norie_learning/features/study/data/norie_study_offline_store.dart';
 import 'package:norie_learning/features/study/presentation/study_source_accuracy_screen.dart';
 import 'package:norie_learning/features/study/presentation/study_set_screen.dart';
 import 'package:norie_learning/features/study/presentation/study_quiz_screen.dart';
@@ -161,6 +163,96 @@ void main() {
     await _settle(tester);
     expect(tester.takeException(), isNull);
     expect(find.text('No cards to compare.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+  testWidgets(
+      'card editor retains corrected source text and invalidates its comparison',
+      (tester) async {
+    const q = NorieStudyQuestion(
+        id: 'plant-card',
+        position: 0,
+        kind: NorieStudyQuestionKind.flashcard,
+        prompt: 'What grows from a seed?',
+        options: [],
+        correctValues: ['A seedling'],
+        explanation: 'A seed grows into a seedling.',
+        sourceExcerpt: 'A seed grows into a seedling.',
+        difficulty: 'foundation');
+    final set = NorieStudySet.fromMap({
+      ...fixture().toMap(),
+      'user_id': 'local',
+      'generation_mode': 'flashcards'
+    }, questions: [
+      q
+    ]);
+    final store = NorieStudyOfflineStore('local');
+    await store.saveSet(set);
+    await store.saveSourceReview(set, q.id, SourceReviewDecision.compared);
+    await tester.pumpWidget(MaterialApp(home: StudySetScreen(studySet: set)));
+    await _settle(tester);
+    final menu = find.byType(PopupMenuButton<String>);
+    await tester.scrollUntilVisible(menu, 200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(menu);
+    await tester.pumpAndSettle();
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    final source = find.widgetWithText(TextField, 'Source excerpt');
+    expect(source, findsOneWidget);
+    const revised =
+        '  Original material: a seed can develop into a seedling.  ';
+    await tester.enterText(source, revised);
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await _settle(tester);
+    final saved = (await store.getSet(set.id))!;
+    expect(saved.questions.single.sourceExcerpt, revised);
+    expect(
+        (await store.loadSourceReview(saved))
+            .statusFor(saved, saved.questions.single),
+        SourceReviewStatus.unchecked);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+  testWidgets('new flashcard can retain a source without approving itself',
+      (tester) async {
+    final set = fixture();
+    final store = NorieStudyOfflineStore('local');
+    await store.saveSet(set);
+    await tester.pumpWidget(MaterialApp(home: StudySetScreen(studySet: set)));
+    await _settle(tester);
+    final add = find.byTooltip('Add flashcard');
+    await tester.scrollUntilVisible(add, 200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(add);
+    await tester.pumpAndSettle();
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Question'), 'What grows from a seed?');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Accepted answers (one per line)'),
+        'A seedling');
+    await tester.enterText(find.widgetWithText(TextField, 'Explanation'),
+        'A seed grows into a seedling.');
+    const excerpt = 'A seed grows into a seedling.';
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Source excerpt'), excerpt);
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await _settle(tester);
+    final saved = (await store.getSet(set.id))!;
+    final added =
+        saved.questions.singleWhere((q) => q.id != set.questions.single.id);
+    expect(added.sourceExcerpt, excerpt);
+    final review = await store.loadSourceReview(saved);
+    expect(review.statusFor(saved, added), SourceReviewStatus.unchecked);
+    expect(review.completeFor(saved), isFalse);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });
