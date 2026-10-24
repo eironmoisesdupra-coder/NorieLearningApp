@@ -1,8 +1,13 @@
 abstract final class NorieAppInfo {
-  static const version =
-      String.fromEnvironment('FLUTTER_BUILD_NAME', defaultValue: '0.18.0');
-  static const build =
-      String.fromEnvironment('FLUTTER_BUILD_NUMBER', defaultValue: '24');
+  static const version = String.fromEnvironment(
+    'FLUTTER_BUILD_NAME',
+    defaultValue: '0.19.0',
+  );
+  static const build = String.fromEnvironment(
+    'FLUTTER_BUILD_NUMBER',
+    defaultValue: '25',
+  );
   static final downloads = Uri.parse(
-      'https://eironmoisesdupra-coder.github.io/NorieLearningApp/downloads.html');
+    'https://eironmoisesdupra-coder.github.io/NorieLearningApp/downloads.html',
+  );
 }

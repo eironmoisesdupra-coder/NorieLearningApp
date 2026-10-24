@@ -57,6 +57,8 @@ jobs:
         run: node desktop/test/classroom-seasonal-web.cjs
       - name: Verify private diagnostics export and offline reward controls
         run: node desktop/test/economy-diagnostics-web.cjs
+      - name: Verify durable source comparisons in compiled phone UI
+        run: node desktop/test/study-source-review.cjs
       - name: Exercise every atlas system with networking blocked
         run: |
           node anatomy_viewer/test/browser-smoke.mjs
