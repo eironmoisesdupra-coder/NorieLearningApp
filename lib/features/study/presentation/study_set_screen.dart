@@ -460,6 +460,8 @@ class _CardEditorState extends State<_CardEditor> {
       TextEditingController(text: widget.question?.options.join('\n'));
   late final _explanation =
       TextEditingController(text: widget.question?.explanation);
+  late final _excerpt =
+      TextEditingController(text: widget.question?.sourceExcerpt);
   NorieStudyQuestionKind get _kind =>
       widget.question?.kind ?? NorieStudyQuestionKind.flashcard;
   bool get _choice => const [
@@ -480,6 +482,7 @@ class _CardEditorState extends State<_CardEditor> {
     _answers.dispose();
     _options.dispose();
     _explanation.dispose();
+    _excerpt.dispose();
     super.dispose();
   }
 
@@ -499,7 +502,7 @@ class _CardEditorState extends State<_CardEditor> {
           orderedItems:
               _kind == NorieStudyQuestionKind.ordering ? answers : const [],
           explanation: _explanation.text.trim(),
-          sourceExcerpt: original?.sourceExcerpt ?? '',
+          sourceExcerpt: _excerpt.text,
           topicTag: original?.topicTag,
           difficulty: original?.difficulty ?? 'foundation',
         ));
@@ -581,10 +584,15 @@ class _CardEditorState extends State<_CardEditor> {
                     validator: (value) => value == null || value.trim().isEmpty
                         ? 'Enter an explanation.'
                         : null),
-                if (widget.question?.sourceExcerpt.isNotEmpty == true)
-                  Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(widget.question!.sourceExcerpt)),
+                TextFormField(
+                    controller: _excerpt,
+                    minLines: 2,
+                    maxLines: 6,
+                    decoration: const InputDecoration(
+                        labelText: 'Source excerpt',
+                        helperMaxLines: 3,
+                        helperText:
+                            'Keep the original wording. Needed before source-reviewed practice. Leave blank for ungraded recall.')),
               ]),
             ))),
         actions: [
