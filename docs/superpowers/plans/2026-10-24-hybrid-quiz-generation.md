@@ -26,22 +26,28 @@ No main writes, merges, production deployment, provider activation or credential
 
 Files: domain/quiz_generation contracts; data/quiz_generation native provider/router/validator/bank repository; test/hybrid_quiz_generation_test.dart.
 Consumes: NorieStudyQuestion and curriculumFingerprint. Produces: QuizGenerationRequest/Result, QuizGenerationProvider, NativeQuizProvider, HybridQuizRouter.
-- [ ] Write and run RED tests for seeded exact counts/answers, cancellation, source/language/difficulty/grade/format constraints, canonical duplicate detection, shortage, bank trust and no unauthorized inference.
-- [ ] Implement minimal pure Dart contracts, deterministic proof checking, approved-bank boundary and local-only router.
-- [ ] Run targeted GREEN tests, analyzer and meaningful golden mathematical checks.
+- [x] Write and run RED tests for seeded exact counts/answers, cancellation, source/language/difficulty/grade/format constraints, canonical duplicate detection, shortage, bank trust and no unauthorized inference.
+- [x] Implement minimal pure Dart contracts, deterministic proof checking, approved-bank boundary and local-only router.
+- [x] Run targeted GREEN tests, analyzer and meaningful golden mathematical checks.
 
 ### Task2: Persistence and native practice UI
 
 Files: NorieStudySet additive metadata; native repository; NorieStudyService refresh/delete/sync preservation; native generator screen reached from existing generator; quiz-session store/screen; tutorial; test/native_study_generation_test.dart and widget tests.
 Consumes: Task1 validated results. Produces: durable owner-isolated native decks, visible offline generator and quiz resume with unchanged rewards.
-- [ ] Write and run RED tests for native create/reload/delete, old JSON compatibility, empty cloud refresh, no native upload, duplicate rewards, account change and resumed quiz state.
-- [ ] Integrate local generation/save, clear coverage and free mode controls, preserve source AI route and tutorial.
+- [x] Write and run RED tests for native create/reload/delete, old JSON compatibility, empty cloud refresh, no native upload, duplicate rewards, account change and resumed quiz state.
+- [x] Integrate local generation/save, clear coverage and free mode controls, preserve source AI route and tutorial.
 - [ ] Run targeted GREEN tests, whole Flutter tests, analysis, web build, relevant Node tests; report host restrictions precisely.
 
 ### Task3: Independent review and delivery
 
-- [ ] Request fresh read-only code review; reproduce substantive findings RED/GREEN.
+- [x] Request fresh read-only code review; reproduce substantive findings RED/GREEN.
 - [ ] Publish focused draft PRs into develop using exact-tree commits; inspect exact-head CI and platform artifacts.
 - [ ] Record source SHAs, file list, coverage, validation evidence, pending Chemistry/provider/billing work, Android/Windows links and preview-only status. No merge.
 
 Pre-flight: Task2 consumes Task1 study-question-compatible validated result; retain exact existing answer strings and additive metadata. Task3 reviews both. No conflicting interfaces.
+
+Execution evidence: core15 tests GREEN; baseline30 GREEN; integrated29 new tests GREEN, full local994 pass/9 host-LAN failures/1 existing skip;29 renderer and24 pipeline GREEN; web release GREEN. Final-source checks and platform CI are recorded in the PR.
+
+Ruling: keep the new runtime native scope to exact bounded integer Mathematics; do not relabel legacy authored content or AI output as newly academically approved. Cost: other subjects and general symbolic equivalence remain unsupported until reviewed domain work.
+Ruling: source-bound and translated requests fail closed because this milestone has no corresponding local processor. Cost: they still require their original optional service.
+Final review: three reported important findings (cached-read deletion, stale proof after editing, final-read owner race) reproduced RED and fixed GREEN. No reported minor findings. Chemistry/providers/billing were explicitly deferred by milestone scope; they are not complete and no approval was fabricated.

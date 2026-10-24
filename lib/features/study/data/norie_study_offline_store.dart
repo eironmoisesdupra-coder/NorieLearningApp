@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../domain/norie_study_models.dart';
+import '../../curriculum/domain/curriculum_fingerprint.dart';
 
 /// Each account has its own private cache and durable upload queue.
 class NorieStudyOfflineStore {
@@ -16,12 +17,17 @@ class NorieStudyOfflineStore {
   static final Map<String, Future<void>> _rewardDrains = {};
   String get _key => 'norie.study.$userId.offline.v1';
 
-  Future<Map<String, dynamic>> _read() async {
+  Future<Map<String, dynamic>> _read({bool strict = false}) async {
     final preferences = await SharedPreferences.getInstance();
     try {
       final value = jsonDecode(preferences.getString(_key) ?? '{}');
       if (value is Map) return Map<String, dynamic>.from(value);
+      if (strict) throw const FormatException('Invalid study cache.');
     } catch (_) {
+      if (strict) {
+        throw StateError(
+            'The saved study cache is unreadable. Back it up before recovery.');
+      }
       // An invalid cache must not stop ordinary learning.
     }
     return {};
@@ -31,7 +37,7 @@ class NorieStudyOfflineStore {
     final result = Completer<T>();
     _writes[userId] = (_writes[userId] ?? Future<void>.value()).then((_) async {
       try {
-        final state = await _read();
+        final state = await _read(strict: true);
         final value = change(state);
         final preferences = await SharedPreferences.getInstance();
         if (!await preferences.setString(_key, jsonEncode(state))) {
@@ -117,6 +123,10 @@ class NorieStudyOfflineStore {
   Future<void> editCard(NorieStudySet set, NorieStudyQuestion question,
           {bool deleted = false}) =>
       _write((state) {
+        if (set.isNative) {
+          throw StateError(
+              'Native question keys are fixed to their checked template.');
+        }
         final sets = Map<String, dynamic>.from(state['sets'] as Map? ?? {});
         final value =
             Map<String, dynamic>.from(sets[set.id] as Map? ?? set.toMap());
@@ -138,6 +148,7 @@ class NorieStudyOfflineStore {
           'study_set_id': set.id,
           'question': question.toMap(),
           'deleted': deleted,
+          if (set.isNative) 'device_local': true,
           'revision': const Uuid().v4()
         };
         state['cardChanges'] = changes;
@@ -154,7 +165,8 @@ class NorieStudyOfflineStore {
       ((await _read())['cardChanges'] as Map? ?? {})
           .values
           .whereType<Map>()
-          .where((value) => value['synced'] != true)
+          .where((value) =>
+              value['synced'] != true && value['device_local'] != true)
           .map((value) => Map<String, dynamic>.from(value))
           .toList();
 
@@ -214,6 +226,10 @@ class NorieStudyOfflineStore {
   Future<void> removeSet(String id) => _write((state) {
         final sets = Map<String, dynamic>.from(state['sets'] as Map? ?? {});
         sets.remove(id);
+        final sessions =
+            Map<String, dynamic>.from(state['quizSessions'] as Map? ?? {});
+        sessions.remove(id);
+        state['quizSessions'] = sessions;
         state['sets'] = sets;
         final attempts = List<dynamic>.from(state['attempts'] as List? ?? []);
         attempts.removeWhere(
@@ -228,6 +244,62 @@ class NorieStudyOfflineStore {
             Map<String, dynamic>.from(state['reviews'] as Map? ?? {});
         reviews.remove(id);
         state['reviews'] = reviews;
+      });
+
+  Future<Set<String>> completedNativeIdentities() async {
+    final state = await _read(strict: true);
+    final rewarded = Set<String>.from(state['rewarded'] as List? ?? const []);
+    final identities = <String>{};
+    for (final raw in (state['sets'] as Map? ?? {}).values) {
+      final set = _decodeSet(raw);
+      if (set == null || !set.isNative || !rewarded.contains(set.id)) continue;
+      final questions = set.generationMetadata['questions'];
+      if (questions is! List) continue;
+      for (final q in questions.whereType<Map>()) {
+        if (q['identity'] is String) identities.add(q['identity'] as String);
+      }
+    }
+    return Set.unmodifiable(identities);
+  }
+
+  String _sessionRevision(NorieStudySet set) =>
+      curriculumFingerprint(set.questions.map((q) => q.toMap()).toList());
+
+  Future<Map<String, dynamic>?> loadQuizSession(NorieStudySet set) async {
+    final raw =
+        ((await _read(strict: true))['quizSessions'] as Map? ?? {})[set.id];
+    if (raw == null) return null;
+    if (raw is! Map ||
+        raw['revision'] != _sessionRevision(set) ||
+        raw['snapshot'] is! Map) {
+      throw const FormatException(
+          'Saved quiz changed or is unreadable. Restart this quiz explicitly.');
+    }
+    return Map<String, dynamic>.from(raw['snapshot'] as Map);
+  }
+
+  Future<void> saveQuizSession(
+      NorieStudySet set, Map<String, dynamic> snapshot) {
+    if (set.ownerId != null && set.ownerId != userId) {
+      throw StateError('Reopen this quiz in its owner account.');
+    }
+    final detached = jsonDecode(jsonEncode(snapshot));
+    return _write((state) {
+      final sessions =
+          Map<String, dynamic>.from(state['quizSessions'] as Map? ?? {});
+      sessions[set.id] = {
+        'revision': _sessionRevision(set),
+        'snapshot': detached
+      };
+      state['quizSessions'] = sessions;
+    });
+  }
+
+  Future<void> clearQuizSession(String id) => _write((state) {
+        final sessions =
+            Map<String, dynamic>.from(state['quizSessions'] as Map? ?? {});
+        sessions.remove(id);
+        state['quizSessions'] = sessions;
       });
 
   Future<void> markRewarded(String id) => _write((state) {
@@ -314,6 +386,7 @@ class NorieStudyOfflineStore {
         attempts.add({
           'id': const Uuid().v4(),
           'user_id': userId,
+          if (studySet.isNative) 'device_local': true,
           'study_set_id': studySet.id,
           'correct_count': correct,
           'total_count': total,
@@ -340,6 +413,7 @@ class NorieStudyOfflineStore {
     final state = await _read();
     return (state['attempts'] as List? ?? [])
         .whereType<Map>()
+        .where((value) => value['device_local'] != true)
         .map((value) => Map<String, dynamic>.from(value))
         .toList();
   }

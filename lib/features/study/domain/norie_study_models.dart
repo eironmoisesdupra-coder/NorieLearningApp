@@ -118,6 +118,7 @@ class NorieStudySet {
     this.topicTag,
     this.aiModel,
     this.ownerId,
+    this.generationMetadata = const <String, dynamic>{},
   });
 
   final String id;
@@ -130,6 +131,8 @@ class NorieStudySet {
   final String? topicTag;
   final String? aiModel;
   final String? ownerId;
+  final Map<String, dynamic> generationMetadata;
+  bool get isNative => sourceType == 'native';
   final DateTime createdAt;
   final List<NorieStudyQuestion> questions;
 
@@ -146,6 +149,8 @@ class NorieStudySet {
         'topic_tag': topicTag,
         'ai_model': aiModel,
         'user_id': ownerId,
+        if (generationMetadata.isNotEmpty)
+          'generation_metadata': generationMetadata,
         'created_at': createdAt.toIso8601String(),
         'questions': questions.map((question) => question.toMap()).toList(),
       };
@@ -167,6 +172,8 @@ class NorieStudySet {
       topicTag: map['topic_tag']?.toString(),
       aiModel: map['ai_model']?.toString(),
       ownerId: map['user_id']?.toString(),
+      generationMetadata: Map<String, dynamic>.from(
+          map['generation_metadata'] as Map? ?? const {}),
       createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       questions: questions,

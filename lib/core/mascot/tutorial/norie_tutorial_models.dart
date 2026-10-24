@@ -211,7 +211,7 @@ abstract final class NorieTutorialCatalog {
         targetId: 'ai-study.source',
         mascotState: NorieMascotState.guiding,
         message:
-            'Open Create with Norie AI. Add a useful title and optional topic tag. Paste a clear paragraph or choose Upload and a supported file. Cloud uploads are limited to 10 MB. The experimental Local Study Generator accepts pasted notes only, between 80 and 16,000 characters; its runtime must be running on this computer.',
+            'For free offline Mathematics practice, choose Native Engine in the generator. It supports the listed topics, Foundation difficulty and English; completed exercises are excluded unless you allow repeats. Native quizzes save on this device and resume checked progress. For source-based AI, add a useful title and optional topic tag. Paste a clear paragraph or choose Upload and a supported file. Cloud uploads are limited to 10 MB. The experimental Local Study Generator accepts pasted notes only, between 80 and 16,000 characters; its runtime must be running on this computer.',
         preferredPosition: NorieTutorialPosition.bottom,
       ),
       NorieTutorialStep(
