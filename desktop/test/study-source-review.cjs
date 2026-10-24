@@ -100,7 +100,8 @@ async function main() {
     assert.equal(await compared().getAttribute('aria-checked'), 'true');
     assert.equal((await read()).sourceReviews['source-flashcards'].records['source-card'].decision, 'compared');
     await button('Back').click();
-    await click(button('Card actions'));
+    // Flutter adds the tooltip text to the menu's accessible name on hover.
+    await click(page.getByRole('button', { name: /Card actions/ }));
     await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
     await page.getByRole('textbox', { name: 'Explanation', exact: true }).fill('Changed synthetic explanation.');
     await click(button('Save'));
@@ -117,7 +118,10 @@ async function main() {
     assert.deepEqual(errors, []);
     console.log('PASS: compiled phone source review flags survive reload, flashcards compare independently, edits invalidate comparison, reviewed source practice opens; all external origins blocked');
   } catch (error) {
-    if (page) await page.screenshot({ path: 'build/windows-source-review-failure.png' }).catch(() => {});
+    if (page) {
+      await page.screenshot({ path: 'build/windows-source-review-failure.png' }).catch(() => {});
+      console.error('Source fixture semantics:', await page.locator('body').innerText().catch(() => 'unavailable'));
+    }
     throw error;
   } finally {
     if (browser) await browser.close();
