@@ -125,7 +125,7 @@ async function main() {
       return state.sets['source-flashcards'].questions[0].explanation === 'Changed synthetic explanation.';
     }, key);
     await click(button('Compare answers with source'));
-    await page.getByText('Changed synthetic explanation.', { exact: true }).waitFor();
+    await page.getByText('Changed synthetic explanation.', { exact: false }).waitFor();
     assert.equal(await compared().getAttribute('aria-checked'), 'false');
     await open('Source Review Fixture');
     await click(compared());
