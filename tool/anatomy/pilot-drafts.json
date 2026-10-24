@@ -1,0 +1,875 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3237",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3237"
+        ]
+      },
+      "canonicalName": "Left clavicle",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "a9805261333cb407104ce851493da0b7726ba25491c24750435de767a3abae57",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3362",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3362"
+        ]
+      },
+      "canonicalName": "Right clavicle",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "b55189c1ba7c182140f6affe35c182c355865f0b31a96410760a8faa5a7c57b5",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3279",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3279"
+        ]
+      },
+      "canonicalName": "Left scapula",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "4342b15650a449a02c439e615fcc8daf2122aa7151d35abc6643ab152ed21c7e",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3384",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3384"
+        ]
+      },
+      "canonicalName": "Right scapula",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "687fb56e1e24aac858995490542932bcf3705eff649a2b2e5703db512ff8d335",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3262",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3262"
+        ]
+      },
+      "canonicalName": "Left humerus",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "895a65bd241b646b92fb00691e9741691f49e67bb9ff60d86e1bb8e92862b8f2",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3368",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3368"
+        ]
+      },
+      "canonicalName": "Right humerus",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "9a0ebc00b4f49cefb065b86949afb88bd0b1c1b0895b4747b5cfd2b10a4abe85",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3277",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3277"
+        ]
+      },
+      "canonicalName": "Left radius",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "bb656b3ac50e6a311582f8bccb7cb85b433871e87a4da137dda22db792653ceb",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3349",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3349"
+        ]
+      },
+      "canonicalName": "Right radius",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "68b870f54bd2f9a94a329645d7c6d1dbcb52e5f4bad855d26e5094528b81c2fb",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3286",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3286"
+        ]
+      },
+      "canonicalName": "Left ulna",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "52640dc904acbc28e1a310f35f675fb079bbc3d81c9bf4e37f9139acc3832f8c",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3391",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3391"
+        ]
+      },
+      "canonicalName": "Right ulna",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "8f6149eb13852d864de2b3f109c0ee8efc478f8e1f164dde7c217442a13c601b",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3259",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3259"
+        ]
+      },
+      "canonicalName": "Left femur",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "fedf730e2d8d64b978a03a7d2077bbdc21ba61210bfb67cdac944fb1a5d865bd",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3365",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3365"
+        ]
+      },
+      "canonicalName": "Right femur",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "dea404830dabab0d3f1f9cfcb9ae70efee6616eb5a66d27ff982b48631200edd",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3275",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3275"
+        ]
+      },
+      "canonicalName": "Left patella",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "192e12450c93816096639d7af0065127af36ee2c875fb82fabd6754f1f0106fd",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3381",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3381"
+        ]
+      },
+      "canonicalName": "Right patella",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "fe036c6d10f75672b0848b476ca94efe521a625ba7b237065aec3c14b49cc2b2",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3282",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3282"
+        ]
+      },
+      "canonicalName": "Left tibia",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "542ff41870ef906bab61599b5e927277a7dd122c8d4e2e6aa180d81879da253e",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3387",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3387"
+        ]
+      },
+      "canonicalName": "Right tibia",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "ad692ea0242893377c366fbbe203153709a48fbb0db56f831b807796c5f9dcee",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3260",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3260"
+        ]
+      },
+      "canonicalName": "Left fibula",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "42b62c6db37c64d144ae67fceb39eaf84957da9335b8412757f6d140283a5f51",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3366",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3366"
+        ]
+      },
+      "canonicalName": "Right fibula",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "236f198039a9110161f7806bec762b7073344b6ea43d552cb7f94ded5cd62d0b",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3256",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3256"
+        ]
+      },
+      "canonicalName": "Left calcaneus",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "30110ba4d1cc44cffd3ef4c12fa8ff8fc17cef4b5af69224ecf09db352fddd8d",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3360",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3360"
+        ]
+      },
+      "canonicalName": "Right calcaneus",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "c19a07ca86faff26f5da4eafa8a3efc6a7fb8589f8d2a5f7594b0fc641b99a5c",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3280",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3280"
+        ]
+      },
+      "canonicalName": "Left talus",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "90b519577da32f7c2fa6df8bcd7ff0770c6409e3a47dfd6988675f49d4577483",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3385",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3385"
+        ]
+      },
+      "canonicalName": "Right talus",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "02d54e62aa30b8275dce251069195df72a48c7dc28ba535186ce1a1514ce34a4",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3258",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3258"
+        ]
+      },
+      "canonicalName": "Left cuboid bone",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "e5226c8e034906716d21a200292ad97da9d8cd3c8e4ba6edf34d62ab3201a86f",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3364",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3364"
+        ]
+      },
+      "canonicalName": "Right cuboid bone",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "8696cf9b0de6f07c0616da5c62b9c7c26816e892abcdab123b206d0177fe1168",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3274",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3274"
+        ]
+      },
+      "canonicalName": "Left parietal bone",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "450e6f5c5d46995b7310def5b31281b353a840c6e3ac436e3aeed07d3486c4e5",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3380",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3380"
+        ]
+      },
+      "canonicalName": "Right parietal bone",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "d15589f1f7208540579f10ded8916c8d3323b7fd2cf32ee66b1bff1a3fb97c76",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3200",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3200"
+        ]
+      },
+      "canonicalName": "Frontal bone",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "6841311ceed3a87f21fade6fa4173309cae691391c14e8048e5469278353da48",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3309",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3309"
+        ]
+      },
+      "canonicalName": "Occipital bone",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "7268899026386a069bf1946b3741fa4b1095bfab33f1b026268bbe2b885e593d",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3289",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3289"
+        ]
+      },
+      "canonicalName": "Mandible",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "9de4bc52a709fff56272fbe0afe62826c6506802176231f0b6d5ef98242e633f",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    },
+    {
+      "schemaVersion": 1,
+      "revision": 1,
+      "identity": {
+        "structureId": "bp-FJ3178",
+        "reference": "male",
+        "assetId": "male-skeletal",
+        "assetSha256": "914a7909649550b1eeee99c170c2ad8049157f1faa74b5111916c426f34f2ea5",
+        "meshIds": [
+          "FJ3178"
+        ]
+      },
+      "canonicalName": "Body of sternum",
+      "synonyms": [],
+      "system": "skeletal",
+      "laterality": "unknown",
+      "generalHint": "",
+      "structuralHint": "",
+      "detailedHint": "",
+      "source": {
+        "url": "",
+        "location": ""
+      },
+      "contentHash": "bf4b698e96e06dbdc9682c82d3eb0ae698b3e02e196064c5219bb89a914eebcc",
+      "status": "draft",
+      "reviewerId": null,
+      "approvedAt": null,
+      "approvalHash": null
+    }
+  ]
+}
