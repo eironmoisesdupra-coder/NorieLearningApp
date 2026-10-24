@@ -31,6 +31,119 @@ AnatomyAtlasCatalog guidedCatalog() => AnatomyAtlasCatalog.fromJson({
     });
 
 void main() {
+  test('failed local read and flush cannot overwrite saved evidence', () async {
+    var unavailable = false;
+    final disk = <String, String>{};
+    AnatomyStudyStore open() => AnatomyStudyStore(
+          catalog: guidedCatalog(),
+          ownerId: () => 'a',
+          read: (key) async {
+            if (unavailable) throw StateError('storage unavailable');
+            return disk[key];
+          },
+          write: (key, value) async {
+            disk[key] = value;
+          },
+        );
+    final original = open();
+    await original.initialize();
+    original.select('bp-FJ3365');
+    original.completeStep();
+    await original.flush();
+    original.dispose();
+    final before = Map<String, String>.from(disk);
+    unavailable = true;
+    final reopened = open();
+    await reopened.initialize();
+    expect(reopened.select('bp-FJ2541'), isFalse);
+    await reopened.flush();
+    expect(disk, before);
+    expect(reopened.saveError, isNotNull);
+    unavailable = false;
+    await reopened.initialize();
+    expect(reopened.ready, isTrue);
+    expect(reopened.current!.structureId, 'bp-FJ3365');
+    expect(reopened.current!.step, AnatomyStudyStep.locate);
+    expect(disk, before);
+    reopened.dispose();
+  });
+
+  test('invalid saved study never adopts a partial snapshot or allows writes',
+      () async {
+    final valid = AnatomyStudyProgress(structureId: 'bp-FJ3365').toJson();
+    for (final raw in [
+      '{broken',
+      jsonEncode({'version': 99}),
+      jsonEncode({'version': 1, 'contentVersion': 1, 'entries': []}),
+      jsonEncode({
+        'version': 1.0,
+        'contentVersion': 1,
+        'selected': null,
+        'entries': []
+      }),
+      jsonEncode({
+        'version': 1,
+        'contentVersion': 1.0,
+        'selected': null,
+        'entries': []
+      }),
+      jsonEncode({
+        'version': 1,
+        'contentVersion': 1,
+        'selected': null,
+        'entries': [],
+        'unexpected': true
+      }),
+      jsonEncode({
+        'version': 1,
+        'contentVersion': 99,
+        'selected': null,
+        'entries': []
+      }),
+      jsonEncode({
+        'version': 1,
+        'contentVersion': 1,
+        'selected': null,
+        'entries': [
+          valid,
+          {'id': 'unknown'}
+        ]
+      }),
+      jsonEncode({
+        'version': 1,
+        'contentVersion': 1,
+        'selected': null,
+        'entries': [valid, valid]
+      }),
+      jsonEncode({
+        'version': 1,
+        'contentVersion': 1,
+        'selected': 'unknown',
+        'entries': [valid]
+      }),
+      ' ' * 262145,
+    ]) {
+      var disk = raw;
+      final store = AnatomyStudyStore(
+          catalog: guidedCatalog(),
+          ownerId: () => 'a',
+          read: (_) async => disk,
+          write: (_, value) async {
+            disk = value;
+          });
+      await store.initialize();
+      expect(store.entries, isEmpty);
+      expect(store.ready, isFalse);
+      expect(store.saveError, isNotNull);
+      expect(store.select('bp-FJ2541'), isFalse);
+      await store.flush();
+      expect(disk, raw);
+      await store.reset();
+      expect(disk, raw);
+      store.dispose();
+    }
+  });
+
   test('skipping leaves unfinished evidence after review and reload', () async {
     final memory = <String, String>{};
     final store = AnatomyStudyStore(

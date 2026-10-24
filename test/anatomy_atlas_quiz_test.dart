@@ -22,6 +22,26 @@ void main() {
         }
     ],
   });
+  test('similar names cannot supply unverified part descriptions', () {
+    for (final reference in ['male', 'female']) {
+      for (final name in ['Mandible', 'Left mandible', 'Right mandible']) {
+        final target = AtlasStructure.fromJson({
+          'id': 'unreviewed-$reference-$name',
+          'name': name,
+          'reference': reference,
+          'systems': ['skeletal'],
+          'asset': 'bones',
+          'source': 'test',
+        });
+        final question = AtlasQuizQuestion(target, [name, 'Other part']);
+        expect(question.hint, contains('catalog group'));
+        expect(question.hint, contains('Skeletal'));
+        expect(question.hint, isNot(contains('lower jaw')));
+        expect(question.explanation, contains('catalog label'));
+        expect(question.specificHint, isNull);
+      }
+    }
+  });
   test('questions and distractors stay inside the requested reference', () {
     final quiz = AtlasQuizSession.generate(catalog, 'female', {'skeletal'},
         random: Random(2));

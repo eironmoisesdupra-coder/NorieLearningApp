@@ -63,6 +63,7 @@ class AnatomyStudyStore extends ChangeNotifier {
   Future<void> _pending = Future.value();
   Future<void>? _loading;
   String? _saveError;
+  bool _restoreFailed = false;
 
   bool get ready =>
       _ready && !(_persistence?.isRestoring(_backupOwner) ?? false);
@@ -121,12 +122,22 @@ class AnatomyStudyStore extends ChangeNotifier {
       _selected = value['selected'] as String?;
     }
     _ready = true;
+    _restoreFailed = false;
     _saveError = null;
     notifyListeners();
   }
 
   Future<void> initialize() {
     _synchronizeOwner();
+    if (!_disposed && _restoreFailed) {
+      // Only an explicit initialization retry may leave recovery mode. Do not
+      // let flush or selection turn an unreadable save into an empty snapshot.
+      _restoreFailed = false;
+      _saveError = null;
+      _generation++;
+      _loading = _restore(_generation, _storageKey);
+      notifyListeners();
+    }
     return _loading ?? Future.value();
   }
 
@@ -140,6 +151,7 @@ class AnatomyStudyStore extends ChangeNotifier {
     _entries.clear();
     _selected = null;
     _ready = false;
+    _restoreFailed = false;
     _saveError = null;
     _loading = _restore(_generation, _storageKey);
     notifyListeners();
@@ -158,36 +170,55 @@ class AnatomyStudyStore extends ChangeNotifier {
           ? await _read(key)
           : await _persistence.readPart(_backupOwner, 'study');
       if (!_isCurrent(generation)) return;
-      if (raw != null && raw.length <= _maxPayload) {
+      final restored = <String, AnatomyStudyProgress>{};
+      String? selected;
+      if (raw != null) {
+        if (utf8.encode(raw).length > _maxPayload) {
+          throw const FormatException('Saved study exceeds the size limit.');
+        }
         final value = jsonDecode(raw);
-        if (value is Map<String, dynamic> &&
-            value['version'] == 1 &&
-            value['contentVersion'] == AnatomyGuidedModule.contentVersion &&
-            value['entries'] is List &&
-            (value['entries'] as List).length <= _maxEntries) {
-          for (final row in value['entries'] as List) {
-            final entry = AnatomyStudyProgress.restore(row, _validIds);
-            if (entry != null) {
-              _entries[entry.structureId] = entry;
-              if (entry.answersRevealed) {
-                _persistence?.noteAnswerRevealed(
-                    _backupOwner, entry.structureId);
-              }
-            }
+        if (value is! Map<String, dynamic> ||
+            value.length != 4 ||
+            !value.containsKey('selected') ||
+            value['version'] is! int ||
+            value['version'] != 1 ||
+            value['contentVersion'] is! int ||
+            value['contentVersion'] != AnatomyGuidedModule.contentVersion ||
+            value['entries'] is! List ||
+            (value['entries'] as List).length > _maxEntries) {
+          throw const FormatException('Incompatible saved study.');
+        }
+        for (final row in value['entries'] as List) {
+          final entry = AnatomyStudyProgress.restore(row, _validIds);
+          if (entry == null || restored.containsKey(entry.structureId)) {
+            throw const FormatException('Invalid saved study entry.');
           }
-          final selected = value['selected'];
-          if (selected is String && _entries.containsKey(selected)) {
-            _selected = selected;
-          }
+          restored[entry.structureId] = entry;
+        }
+        final selection = value['selected'];
+        if (selection != null &&
+            (selection is! String || !restored.containsKey(selection))) {
+          throw const FormatException('Invalid saved study selection.');
+        }
+        selected = selection as String?;
+      }
+      // Adopt only a complete validated snapshot. Invalid later rows must not
+      // leave partial evidence or answer-reveal provenance in a live store.
+      _entries.addAll(restored);
+      _selected = selected;
+      for (final entry in restored.values) {
+        if (entry.answersRevealed) {
+          _persistence?.noteAnswerRevealed(_backupOwner, entry.structureId);
         }
       }
     } on Object catch (_) {
       if (!_isCurrent(generation)) return;
-      // Malformed or unavailable local storage must not block offline study.
-      _saveError = 'Saved study could not be read. You can continue locally.';
+      _restoreFailed = true;
+      _saveError = 'Saved study could not be read. Existing data is preserved. '
+          'Retry loading before continuing this saved guide.';
     }
     if (_isCurrent(generation)) {
-      _ready = true;
+      _ready = !_restoreFailed;
       notifyListeners();
     }
   }
