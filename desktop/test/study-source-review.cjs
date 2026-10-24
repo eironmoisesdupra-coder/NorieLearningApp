@@ -65,6 +65,7 @@ async function main() {
       await locator.hover({ force: true });
       await page.waitForTimeout(350);
       await locator.click({ force: true });
+      await page.waitForTimeout(100);
     }
     async function open(title) {
       await page.goto(site, { waitUntil: 'domcontentloaded' });
@@ -107,6 +108,10 @@ async function main() {
     // Flutter adds the tooltip text to the menu's accessible name on hover.
     await click(page.getByRole('button', { name: /Card actions/ }));
     await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
+    await page.getByText('Edit card', { exact: true }).waitFor();
+    // A semantic input can appear while the popup/dialog transition still
+    // absorbs pointer and keyboard events. Match the existing Study smoke test.
+    await page.waitForTimeout(400);
     const explanation = page.getByRole('textbox', { name: 'Explanation', exact: true });
     await explanation.click();
     await explanation.press('ControlOrMeta+A');
