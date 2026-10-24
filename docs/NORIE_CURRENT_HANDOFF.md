@@ -1,8 +1,14 @@
-# 0.19 integration candidate — not released
+# 0.19 educational integration — candidate, not released
 
-Published release remains0.18.0+24 Preview at ed9472dbb437127abd8fd09931a86879d4df5ec5. Repair PR78 merged at develop2323df1; its old push-triggered web preview completed. PR77 adds an explicit manual exact-source publication gate before further feature integration. No0.19 release/tag or paid Anatomy activation. Review current PR72/73/74/75/76/77/79 heads and CI rather than the historical candidate statements below.
+Feature PRs78,77,79,72,73,74,75,76 are reviewed and merged into develop in that order. Their final heads passed Flutter/Android/web, packaged Windows offline and Store checks. The0.19.0+25 preparation PR80 is authoritative for its current source, CI, packages and merge/release status. Published downloads remain0.18.0+24 Preview at ed9472dbb437127abd8fd09931a86879d4df5ec5; no0.19 release/tag or paid Anatomy activation. Repair-only PR78 triggered the old automatic web preview once; PR77 removed that develop-push trigger. No later publication was dispatched.
 
-This refreshed educational candidate combines durable owner/revision-bound learner source comparisons, Native offline quiz save recovery, guided Anatomy stale-control and honest save-feedback repairs, and the existing three English lesson improvements. Independent code review found no remaining critical/important issue in these repairs; targeted evidence is in the PRs. Qualified Anatomy hints0, blank authoring pilot30; detailed paid hints remain disabled. Source comparison and computational arithmetic checking are separate from qualified academic approval.
+Native offline Mathematics, exact owner/revision-bound source comparisons, guided Anatomy recovery, three English review improvements, exact hint validation, authoring tools and free hints are integrated. Study reads isolated platform snapshots; failed writes restore only the affected key's exact prior bytes/absence. It does not reload the global preference cache or replace the economy authority. Library approvals0; empty pilot drafts30; detailed hints locked/no debit.
+
+Phase5/full master acceptance is partial: graded Atlas rounds do not cold-resume. A recreation audit failed at2/5→1/5 and independent review confirms this pre-existing baseline behavior. Guided study and Native sessions are separately persisted. Safe Atlas recovery needs durable answer/mastery receipts and a stable reward identity; snapshot-only restoration risks duplicate progress. Setup/guide disclose the limit, but disclosure does not implement persistence. Do not call the full milestone complete or unconditionally release-ready.
+
+Local combined evidence: analysis clean; full Flutter1089 passed,9 host-blocked LAN failures,1 existing skip;36 Native/cache tests,22 source/recovery tests,98 Anatomy tests and32 layout/tutorial follow-up tests passed. Web0.19.0+25 built. Qualified anatomy/source review, production signing, physical hardware and upgrade QA remain separate gates. Use PR80 and docs/implementation/0.19-readiness.md for current evidence; no publication approval is requested while required recovery work remains unresolved.
+
+## Historical component handoffs
 
 ---
 
