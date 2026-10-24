@@ -162,9 +162,10 @@ async function main() {
     }
     await locator.waitFor();
     // Flutter can replace semantics nodes during the phone viewport resize.
-    // Locator click's trial path scrolls without clicking and re-resolves a
-    // detached node; scrollIntoViewIfNeeded retains a stale ElementHandle.
-    await locator.click({ trial: true, force: true });
+    // Locator hover scrolls and re-resolves a detached node without activating
+    // it; scrollIntoViewIfNeeded retains a stale ElementHandle. Do not combine
+    // trial clicks with force: force can bypass trial's event interception.
+    await locator.hover({ force: true });
   }
   async function nativeLibrary() {
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
