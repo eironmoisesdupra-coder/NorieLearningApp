@@ -27,6 +27,7 @@ jobs:
         shell: pwsh
         run: |
           flutter create --no-pub --platforms=web --project-name norie_learning .
+          git restore --source=HEAD -- pubspec.lock
           Copy-Item branding/web/* web/ -Force
           Remove-Item test/widget_test.dart -ErrorAction SilentlyContinue
       - uses: actions/cache@v4

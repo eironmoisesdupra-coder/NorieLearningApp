@@ -65,7 +65,9 @@ jobs:
           cache: true
 
       - name: Generate web platform scaffolding
-        run: flutter create --no-pub --platforms=web --project-name norie_learning .
+        run: |
+          flutter create --no-pub --platforms=web --project-name norie_learning .
+          git restore --source=HEAD -- pubspec.lock
 
       - uses: actions/setup-node@v4
         with:
