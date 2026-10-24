@@ -8,6 +8,7 @@ import '../domain/norie_study_models.dart';
 import 'study_qa_screen.dart';
 import 'study_quiz_screen.dart';
 import 'study_review_screen.dart';
+import 'study_source_accuracy_screen.dart';
 
 class StudySetScreen extends StatefulWidget {
   const StudySetScreen({
@@ -28,6 +29,66 @@ class _StudySetScreenState extends State<StudySetScreen>
   late Future<int> _due = _dueCount();
   String _search = '';
   bool _saving = false;
+  bool _openingPractice = false;
+
+  Future<bool?> _openSourceReview({bool continueToPractice = false}) async {
+    requireCurrentCurriculumSession();
+    final accepted = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+            builder: (_) => StudySourceAccuracyScreen(
+                studySet: _set, continueToPractice: continueToPractice)));
+    return curriculumSessionCurrent ? accepted : false;
+  }
+
+  Future<void> _compareSource() async {
+    if (_openingPractice) return;
+    setState(() => _openingPractice = true);
+    try {
+      await _openSourceReview();
+    } catch (_) {
+      if (mounted && curriculumSessionCurrent) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Could not open source comparison. Reopen this deck and retry.')));
+      }
+    } finally {
+      if (mounted) setState(() => _openingPractice = false);
+    }
+  }
+
+  Future<void> _startReviewedPractice() async {
+    if (_openingPractice) return;
+    setState(() => _openingPractice = true);
+    try {
+      requireCurrentCurriculumSession();
+      if (!_set.isNative) {
+        final review = await NorieStudyService.instance.loadSourceReview(_set);
+        requireCurrentCurriculumSession();
+        if (!review.completeFor(_set) &&
+            await _openSourceReview(continueToPractice: true) != true) {
+          return;
+        }
+        requireCurrentCurriculumSession();
+        final current = await NorieStudyService.instance.loadSourceReview(_set);
+        requireCurrentCurriculumSession();
+        if (!current.completeFor(_set)) {
+          throw StateError('Review changed. Compare the current cards.');
+        }
+      }
+      if (!mounted) return;
+      requireCurrentCurriculumSession();
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => StudyQuizScreen(studySet: _set)));
+    } catch (_) {
+      if (mounted && curriculumSessionCurrent) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Could not confirm saved source comparisons. Reopen source review and retry.')));
+      }
+    } finally {
+      if (mounted) setState(() => _openingPractice = false);
+    }
+  }
 
   Future<int> _dueCount() async {
     final cards = await NorieStudyService.instance.reviewCards(_set);
@@ -143,9 +204,8 @@ class _StudySetScreenState extends State<StudySetScreen>
   @override
   Widget build(BuildContext context) {
     final set = _set;
-    if (set.isNative &&
-        (!curriculumSessionCurrent ||
-            !NorieStudyService.instance.canAccessStudySet(set))) {
+    if (!curriculumSessionCurrent ||
+        !NorieStudyService.instance.canAccessStudySet(set)) {
       return changedCurriculumSession;
     }
 
@@ -259,21 +319,26 @@ class _StudySetScreenState extends State<StudySetScreen>
                   label: const Text('Browse flashcards'),
                 ),
                 const SizedBox(height: 10),
+                if (!set.isNative) ...[
+                  OutlinedButton.icon(
+                    onPressed:
+                        _openingPractice || _saving ? null : _compareSource,
+                    icon: const Icon(Icons.fact_check_outlined),
+                    label: const Text('Compare answers with source'),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 FilledButton.icon(
-                  onPressed: set.questions.every((question) =>
-                          question.kind == NorieStudyQuestionKind.flashcard)
+                  onPressed: _openingPractice ||
+                          _saving ||
+                          set.questions.every(
+                              (q) => q.kind == NorieStudyQuestionKind.flashcard)
                       ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => StudyQuizScreen(
-                                studySet: set,
-                              ),
-                            ),
-                          );
-                        },
+                      : _startReviewedPractice,
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Start Practice'),
+                  label: Text(set.isNative
+                      ? 'Start Practice'
+                      : 'Review source and start practice'),
                   style: FilledButton.styleFrom(
                     backgroundColor: NorieColors.cyan,
                     foregroundColor: NorieColors.background,

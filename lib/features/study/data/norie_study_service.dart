@@ -10,6 +10,7 @@ import '../../../core/progression/norie_progression.dart';
 import '../../../core/sync/norie_economy_store.dart';
 import '../../../core/cloud/supabase_config.dart';
 import '../domain/norie_study_models.dart';
+import '../domain/study_source_review.dart';
 import 'norie_study_offline_store.dart';
 import 'norie_local_job_client.dart';
 import '../domain/quiz_generation/quiz_generation.dart';
@@ -89,6 +90,28 @@ class NorieStudyService {
 
   Future<Map<String, dynamic>?> loadQuizSession(NorieStudySet set) =>
       _storeFor(set).loadQuizSession(set);
+
+  Future<StudySourceReview> loadSourceReview(NorieStudySet set) async {
+    final current = NorieAccountService.instance.captureLearnerGuard();
+    final store = _storeFor(set);
+    final review = await store.loadSourceReview(set);
+    if (!current() || store.userId != _offlineStore.userId) {
+      throw StateError('Learner changed. Reopen source review.');
+    }
+    return review;
+  }
+
+  Future<StudySourceReview> saveSourceReview(NorieStudySet set,
+      String questionId, SourceReviewDecision decision) async {
+    final current = NorieAccountService.instance.captureLearnerGuard();
+    final store = _storeFor(set);
+    final review = await store.saveSourceReview(set, questionId, decision);
+    if (!current() || store.userId != _offlineStore.userId) {
+      throw StateError('Learner changed. Reopen source review.');
+    }
+    return review;
+  }
+
   Future<void> saveQuizSession(
           NorieStudySet set, Map<String, dynamic> snapshot) =>
       _storeFor(set).saveQuizSession(set, snapshot);

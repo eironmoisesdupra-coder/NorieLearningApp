@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../domain/norie_study_models.dart';
+import '../domain/study_source_review.dart';
 import '../../curriculum/domain/curriculum_fingerprint.dart';
 
 /// Each account has its own private cache and durable upload queue.
@@ -158,6 +159,40 @@ class NorieStudyOfflineStore {
         state['sets'] = sets;
       });
 
+  StudySourceReview _sourceReview(
+      Map<String, dynamic> state, NorieStudySet set) {
+    if (set.ownerId != null && set.ownerId != userId) {
+      throw StateError('Source comparison belongs to a different learner.');
+    }
+    try {
+      final all = state['sourceReviews'];
+      if (all != null && all is! Map) throw const FormatException();
+      final raw = (all as Map? ?? {})[set.id];
+      if (raw == null) return StudySourceReview(ownerId: userId, setId: set.id);
+      if (raw is! Map) throw const FormatException();
+      return StudySourceReview.fromMap(Map<String, dynamic>.from(raw),
+          ownerId: userId, setId: set.id);
+    } catch (_) {
+      throw StateError(
+          'Saved source comparison is unreadable. Its data has been kept.');
+    }
+  }
+
+  Future<StudySourceReview> loadSourceReview(NorieStudySet set) async =>
+      _sourceReview(await _read(strict: true), set);
+
+  Future<StudySourceReview> saveSourceReview(NorieStudySet set,
+          String questionId, SourceReviewDecision decision) =>
+      _write((state) {
+        final next =
+            _sourceReview(state, set).decide(set, questionId, decision);
+        state['sourceReviews'] = {
+          ...Map<String, dynamic>.from(state['sourceReviews'] as Map? ?? {}),
+          set.id: next.toMap(),
+        };
+        return next;
+      });
+
   Future<void> editCard(NorieStudySet set, NorieStudyQuestion question,
           {bool deleted = false}) =>
       _write((state) {
@@ -262,6 +297,10 @@ class NorieStudyOfflineStore {
       });
 
   Future<void> removeSet(String id) => _write((state) {
+        final comparisons =
+            Map<String, dynamic>.from(state['sourceReviews'] as Map? ?? {});
+        comparisons.remove(id);
+        state['sourceReviews'] = comparisons;
         final sets = Map<String, dynamic>.from(state['sets'] as Map? ?? {});
         sets.remove(id);
         final sessions =

@@ -236,7 +236,7 @@ abstract final class NorieTutorialCatalog {
           id: 'ai-quality',
           title: 'Check generated content',
           message:
-              'AI can return fewer usable questions than requested and can choose ambiguous wording or wrong distractors. Read the source excerpt and explanation before relying on an answer. Edit or delete weak cards. Source preservation is not proof of educational accuracy, and generated material is not a substitute for a trusted reference.'),
+              'AI can return fewer usable questions than requested and can choose ambiguous wording or wrong distractors. Open Compare answers with source in a saved deck, including flashcard-only decks. Check each retained excerpt, answer and explanation, or flag a card for correction. Your comparisons save on this device for the current learner; edits to the question or its source require a fresh comparison. Missing excerpts cannot be confirmed for graded practice. Edit or delete weak cards. Native Mathematics uses computational checks and does not need this learner comparison. Source preservation is not proof of educational accuracy, and generated material is not a substitute for a trusted reference.'),
       NorieTutorialStep(
           id: 'ai-privacy',
           title: 'Protect your material',
