@@ -1,3 +1,4 @@
+import '../../curriculum/presentation/curriculum_session_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -20,7 +21,8 @@ class StudySetScreen extends StatefulWidget {
   State<StudySetScreen> createState() => _StudySetScreenState();
 }
 
-class _StudySetScreenState extends State<StudySetScreen> {
+class _StudySetScreenState extends State<StudySetScreen>
+    with CurriculumSessionGuard<StudySetScreen> {
   bool _deleting = false;
   late NorieStudySet _set = widget.studySet;
   late Future<int> _due = _dueCount();
@@ -103,8 +105,10 @@ class _StudySetScreenState extends State<StudySetScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete study set?'),
-        content: const Text(
-          'This will remove the generated questions and its uploaded source from Norie. An internet connection is required.',
+        content: Text(
+          _set.isNative
+              ? 'This removes the native quiz from this device.'
+              : 'This will remove the generated questions and its uploaded source from Norie. An internet connection is required.',
         ),
         actions: [
           TextButton(
@@ -139,6 +143,11 @@ class _StudySetScreenState extends State<StudySetScreen> {
   @override
   Widget build(BuildContext context) {
     final set = _set;
+    if (set.isNative &&
+        (!curriculumSessionCurrent ||
+            !NorieStudyService.instance.canAccessStudySet(set))) {
+      return changedCurriculumSession;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -160,6 +169,12 @@ class _StudySetScreenState extends State<StudySetScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
               children: [
+                if (set.isNative)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Text(
+                        'Native practice · Saved on this device · Exact arithmetic checks. Editorial review is separate.'),
+                  ),
                 Container(
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
@@ -266,20 +281,21 @@ class _StudySetScreenState extends State<StudySetScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => StudyQaScreen(studySet: set),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.question_answer_rounded),
-                  label: const Text('Ask Norie About This Source'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                if (!set.isNative)
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => StudyQaScreen(studySet: set),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.question_answer_rounded),
+                    label: const Text('Ask Norie About This Source'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 24),
                 Row(children: [
                   const Expanded(
@@ -287,7 +303,7 @@ class _StudySetScreenState extends State<StudySetScreen> {
                           style: TextStyle(
                               fontSize: 20, fontWeight: FontWeight.w900))),
                   IconButton(
-                      onPressed: _saving ? null : () => _edit(),
+                      onPressed: _saving || set.isNative ? null : () => _edit(),
                       tooltip: 'Add flashcard',
                       icon: const Icon(Icons.add_rounded)),
                 ]),
@@ -334,18 +350,20 @@ class _StudySetScreenState extends State<StudySetScreen> {
                               ),
                             ),
                           ),
-                          PopupMenuButton<String>(
-                            enabled: !_saving,
-                            tooltip: 'Card actions',
-                            onSelected: (action) => action == 'edit'
-                                ? _edit(question)
-                                : _remove(question),
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'edit', child: Text('Edit')),
-                              PopupMenuItem(
-                                  value: 'delete', child: Text('Delete')),
-                            ],
-                          ),
+                          if (!set.isNative)
+                            PopupMenuButton<String>(
+                              enabled: !_saving,
+                              tooltip: 'Card actions',
+                              onSelected: (action) => action == 'edit'
+                                  ? _edit(question)
+                                  : _remove(question),
+                              itemBuilder: (_) => const [
+                                PopupMenuItem(
+                                    value: 'edit', child: Text('Edit')),
+                                PopupMenuItem(
+                                    value: 'delete', child: Text('Delete')),
+                              ],
+                            ),
                         ],
                       ),
                     ),
