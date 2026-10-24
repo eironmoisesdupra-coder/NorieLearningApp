@@ -290,6 +290,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen>
         if (mounted) setState(() => _sessionBusy = false);
       }
     }
+    if (!mounted || (widget.studySet.isNative && !_sameLearner())) return;
     if (correct) {
       setState(() => _rewarding = true);
       try {

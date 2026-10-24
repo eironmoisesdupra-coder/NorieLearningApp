@@ -64,8 +64,6 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
           dialogTitle: 'Save learning progress',
           fileName:
               'NorieLearning-progress-${DateTime.now().toIso8601String().substring(0, 10)}.json',
-          type: FileType.custom,
-          allowedExtensions: ['json'],
           bytes: Uint8List.fromList(utf8.encode(text)),
         );
         _notice = result == null
@@ -215,8 +213,6 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
             dialogTitle: 'Save Anatomy study and views',
             fileName:
                 'NorieLearning-anatomy-${DateTime.now().toIso8601String().substring(0, 10)}.json',
-            type: FileType.custom,
-            allowedExtensions: ['json'],
             bytes: Uint8List.fromList(utf8.encode(text)),
           );
           checkCurrent();

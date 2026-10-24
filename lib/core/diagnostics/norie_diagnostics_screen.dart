@@ -50,8 +50,6 @@ class _NorieDiagnosticsScreenState extends State<NorieDiagnosticsScreen> {
         final result = await FilePicker.saveFile(
             dialogTitle: 'Save local diagnostics',
             fileName: 'NorieLearning-diagnostics.json',
-            type: FileType.custom,
-            allowedExtensions: ['json'],
             bytes: Uint8List.fromList(utf8
                 .encode(const JsonEncoder.withIndent('  ').convert(document))));
         _notice = result == null
