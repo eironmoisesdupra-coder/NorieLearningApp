@@ -324,7 +324,7 @@ abstract final class NorieTutorialCatalog {
             id: 'library-edit',
             title: 'Search, add, and correct cards',
             message:
-                'Inside a deck, Search cards filters its contents. The plus button adds a flashcard. Open a card action menu to edit or delete that card. Keep the prompt, answer, explanation, and source excerpt consistent. Review your edits before using the card to grade yourself.'),
+                'Inside a deck, Search cards filters its contents. The plus button adds a flashcard. Open a card action menu to edit or delete that card. Keep the prompt, answer, explanation, and source excerpt consistent. The card editor lets you retain or correct the excerpt from your original material. A missing excerpt leaves the card unverified; ungraded recall remains available. Review changes before using the card to grade yourself.'),
         NorieTutorialStep(
             id: 'library-delete',
             title: 'Delete carefully',
