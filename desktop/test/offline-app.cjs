@@ -97,6 +97,20 @@ async function main() {
     await page.getByRole('button', { name: 'Start 20-question quiz', exact: true }).click();
     await page.getByText('Identify · 1/20', { exact: true }).waitFor();
     const quizFrame = page.frames().filter(frame => frame.url().includes('atlas-viewer.html')).at(-1);
+    const beforeHintCredits = await page.evaluate(() => localStorage.getItem('flutter.norie.credits'));
+    await page.getByRole('button', { name: 'Need a hint?', exact: true }).first().click();
+    await page.getByText(/Examine the object.*overall proportions/).waitFor();
+    await answerClick(page.getByRole('button', { name: 'Structure clue · Free', exact: true }));
+    // The live-region announcement repeats the same words outside the app.
+    // Assert the visible rendered semantics span, preserving the announcement.
+    await page.getByText(/This structure.*clue is not ready/)
+      .and(page.locator('flt-semantics span')).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Detailed hint · Locked', exact: true }).isEnabled(), false);
+    assert.equal(await page.evaluate(() => localStorage.getItem('flutter.norie.credits')), beforeHintCredits);
+    await captureHiddenPage('windows-offline-anatomy-free-hints-phone.png');
+    await page.getByRole('button', { name: 'Hide hint', exact: true }).click();
+    console.log('PASS: phone-sized free general help and missing-content fallback; detailed hint locked, Credits unchanged');
+
     for (let item = 0; item < 20; item++) {
       await page.getByText(`Identify · ${item + 1}/20`, { exact: true }).waitFor();
       await quizFrame.waitForFunction(index => window.atlasCommands.filter(c => c.type === 'configure').length >= index + 1, item);

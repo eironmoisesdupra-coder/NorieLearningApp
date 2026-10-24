@@ -189,9 +189,9 @@ abstract final class NorieTutorialCatalog {
       NorieTutorialStep(
           id: 'anatomy-quiz',
           targetId: 'anatomy.quiz',
-          title: 'Build your 20-part challenge',
+          title: 'Build your identification practice',
           message:
-              'Open Quiz, choose a reference and one or more systems, or select Every part for the broadest pool. Choose a 5, 10, or 20-part round, difficulty, and question kind. The setup shows whether the selected pool can fill that length and offers a shorter session where available. During the quiz, the model keeps its original anatomical colors and shading. Shorter sessions offer free catalog-group clues. In a 20-part round, a reviewed specific hint is unavailable and costs zero credits; answer feedback remains free. The recenter and music buttons control your view and soundtrack.'),
+              'Open Quiz, choose a reference and one or more systems, or select Every part for the broadest pool. Choose 5, 10, or 20 questions, difficulty and question kind. Setup offers a shorter round if the pool cannot fill your selection. Need a hint? opens free general guidance. Structure clue is also free when an exact reviewed clue is ready; otherwise use the general guidance. Detailed hints are locked and spend no Credits. The recenter and music buttons control your view and soundtrack.'),
       NorieTutorialStep(
           id: 'anatomy-loading',
           targetId: 'anatomy.explore',

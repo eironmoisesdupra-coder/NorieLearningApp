@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'anatomy_atlas_catalog.dart';
 import 'anatomy_models.dart';
+import 'anatomy_hint_library.dart';
 
 enum AtlasQuizDifficulty { guided, standard, challenge }
 
@@ -45,17 +46,7 @@ class AtlasQuizQuestion {
       return 'Recall the system categories used when browsing the atlas. '
           'Choose the catalog group for the named structure.';
     }
-    // Catalog membership is a general navigation clue, not approval of a
-    // description for this exact modeled part. Never infer facts from names.
-    final groups = AnatomyCatalog.systems
-        .where((system) => target.systems.contains(system.id.name))
-        .map((system) => '${system.label}: ${system.subtitle}.')
-        .join(' ');
-    return groups.isEmpty
-        ? 'A reviewed part-specific description is unavailable. '
-            'Inspect the model from another angle before choosing.'
-        : 'Use the catalog group as a general clue: $groups '
-            'This does not verify a part-specific description.';
+    return AnatomyHintLibrary.generalGuidance;
   }
 }
 

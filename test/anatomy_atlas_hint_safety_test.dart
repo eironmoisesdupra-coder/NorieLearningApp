@@ -42,11 +42,18 @@ void main() {
         expect(viewer.systems, target.systems);
         expect(find.text(target.name), findsOneWidget);
         for (var tap = 0; tap < 2; tap++) {
-          await tester.tap(
-              find.byTooltip('Specific hint unavailable; costs 0 credits'));
+          await tester.tap(find.byTooltip(
+              find.byTooltip('Need a hint?').evaluate().isNotEmpty
+                  ? 'Need a hint?'
+                  : 'Hide hint'));
           await tester.pump();
         }
-        expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsNothing);
+        if (find.byKey(const ValueKey('atlas-quiz-hint')).evaluate().isEmpty) {
+          await tester.tap(find.byTooltip('Need a hint?'));
+          await tester.pump();
+        }
+        expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsOneWidget);
+        expect(find.textContaining('overall proportions'), findsOneWidget);
         expect(progress.credits, before['credits']);
         expect(progress.totalXp, before['total_xp']);
         expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
