@@ -1,3 +1,4 @@
+import '../../curriculum/presentation/curriculum_session_guard.dart';
 import '../../../core/quiz/quiz_result_summary.dart';
 import '../../../core/quiz/norie_quiz_outro.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +13,9 @@ import '../../../core/mascot/norie_quiz_reaction_policy.dart';
 import '../../../core/theme/norie_theme.dart';
 import '../data/norie_study_service.dart';
 import '../domain/norie_study_models.dart';
+import '../domain/norie_study_quiz_session.dart';
+import '../domain/quiz_generation/native_integer_answer.dart';
+import '../../../core/account/norie_account_service.dart';
 import 'study_results_screen.dart';
 
 class StudyQuizScreen extends StatefulWidget {
@@ -26,13 +30,18 @@ class StudyQuizScreen extends StatefulWidget {
   State<StudyQuizScreen> createState() => _StudyQuizScreenState();
 }
 
-class _StudyQuizScreenState extends State<StudyQuizScreen> {
+class _StudyQuizScreenState extends State<StudyQuizScreen>
+    with CurriculumSessionGuard<StudyQuizScreen> {
   final _attemptId = const Uuid().v4();
   late final Object _audioToken;
   final _textController = TextEditingController();
   final List<NorieStudyAnswer> _answers = [];
   final _random = Random.secure();
-  late final List<NorieStudyQuestion> _questions;
+  late List<NorieStudyQuestion> _questions;
+  late final bool Function() _sameLearner;
+  bool _loadingSession = false;
+  bool _sessionBusy = false;
+  String? _sessionError;
 
   int _index = 0;
   String? _selected;
@@ -48,10 +57,15 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
   @override
   void initState() {
     super.initState();
+    _sameLearner = NorieAccountService.instance.captureLearnerGuard();
     _audioToken =
         NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
     _questions = widget.studySet.questions.map(_randomizeQuestion).toList()
       ..shuffle(_random);
+    if (widget.studySet.isNative && _questions.isNotEmpty) {
+      _loadingSession = true;
+      _restoreNativeSession();
+    }
     if (_questions.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
@@ -69,6 +83,101 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
         if (mounted) Navigator.of(context).maybePop();
       });
     }
+  }
+
+  Map<String, dynamic> _nativeSnapshot({int? nextIndex}) => {
+        'schema': 1,
+        'questions': _questions.map((q) => q.toMap()).toList(),
+        'responses': _answers.map((a) => a.response).toList(),
+        'index': nextIndex ?? _index,
+        'answer_xp': _answerXp,
+      };
+
+  Future<void> _persistNative({int? nextIndex}) async {
+    if (!widget.studySet.isNative) return;
+    if (!_sameLearner()) throw StateError('Account changed. Reopen this quiz.');
+    await NorieStudyService.instance.saveQuizSession(
+        widget.studySet, _nativeSnapshot(nextIndex: nextIndex));
+    if (!_sameLearner()) throw StateError('Account changed. Reopen this quiz.');
+  }
+
+  Future<void> _restoreNativeSession() async {
+    try {
+      final raw =
+          await NorieStudyService.instance.loadQuizSession(widget.studySet);
+      if (!mounted || !_sameLearner()) {
+        throw StateError('Account changed. Reopen this quiz.');
+      }
+      if (raw != null) {
+        final session = NorieStudyQuizSession.restore(raw, widget.studySet);
+        _questions = List.of(session.questions);
+        _index = session.index;
+        _answerXp = session.answerXp;
+        _answers.clear();
+        for (var i = 0; i < session.responses.length; i++) {
+          final q = _questions[i];
+          final response = session.responses[i];
+          final correct = _matchesResponse(q, response);
+          _answers.add(NorieStudyAnswer(
+              question: q, response: response, correct: correct));
+        }
+        _checked = _answers.length > _index;
+        if (_checked) {
+          _correct = _answers.last.correct;
+          _selected = _answers.last.response;
+          _textController.text = _answers.last.response;
+          // Durable per-card receipts reconcile a crash between save and award.
+          if (_correct) {
+            _answerXp += await NorieStudyService.instance
+                .rewardAnswer(widget.studySet, _answers.last);
+          }
+        }
+      }
+      await _persistNative();
+      if (mounted) setState(() => _loadingSession = false);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loadingSession = false;
+          _sessionError =
+              'Your saved quiz could not be restored. Its data has been kept. Reopen the owner account or restart this quiz.';
+        });
+      }
+    }
+  }
+
+  Future<void> _restartNativeSession() async {
+    final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+                title: const Text('Restart this quiz?'),
+                content: const Text(
+                    'This clears this unfinished attempt. Saved questions and reward receipts are kept.'),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel')),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Restart'))
+                ]));
+    if (confirmed != true || !mounted) return;
+    try {
+      if (!_sameLearner()) throw StateError('Account changed.');
+      await NorieStudyService.instance.clearQuizSession(widget.studySet);
+      if (!mounted) return;
+      setState(() {
+        _index = 0;
+        _answers.clear();
+        _checked = false;
+        _answerXp = 0;
+        _selected = null;
+        _textController.clear();
+        _sessionError = null;
+        _loadingSession = true;
+      });
+      await _restoreNativeSession();
+    } catch (_) {/* Preserve the original bytes on recovery/storage failure. */}
   }
 
   NorieStudyQuestion _randomizeQuestion(NorieStudyQuestion source) {
@@ -99,18 +208,30 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
   static String _normalize(String value) =>
       value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
-  bool _isCorrect(String response) {
-    if (_question.kind == NorieStudyQuestionKind.ordering) {
-      return response == _question.orderedItems.join(' → ');
+  bool _isCorrect(String response) => _matchesResponse(_question, response);
+
+  bool _matchesResponse(NorieStudyQuestion question, String response) {
+    if (widget.studySet.isNative &&
+        question.kind == NorieStudyQuestionKind.identification) {
+      return question.correctValues
+          .any((answer) => nativeIntegerAnswerMatches(response, answer));
+    }
+    if (question.kind == NorieStudyQuestionKind.ordering) {
+      return response == question.orderedItems.join(' → ');
     }
     final normalized = _normalize(response);
-    return _question.correctValues.any(
-      (answer) => _normalize(answer) == normalized,
-    );
+    return question.correctValues
+        .any((answer) => _normalize(answer) == normalized);
   }
 
   Future<void> _check() async {
-    if (_checked || _rewarding) return;
+    if (_checked ||
+        _rewarding ||
+        _sessionBusy ||
+        _loadingSession ||
+        _sessionError != null) {
+      return;
+    }
 
     String response;
     switch (_question.kind) {
@@ -152,6 +273,24 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
         correct: correct,
       ),
     );
+    if (widget.studySet.isNative) {
+      setState(() => _sessionBusy = true);
+      try {
+        await _persistNative();
+      } catch (_) {
+        _answers.removeLast();
+        if (mounted) setState(() => _checked = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  'Could not save this answer. Check storage and retry.')));
+        }
+        return;
+      } finally {
+        if (mounted) setState(() => _sessionBusy = false);
+      }
+    }
+    if (!mounted || (widget.studySet.isNative && !_sameLearner())) return;
     if (correct) {
       setState(() => _rewarding = true);
       try {
@@ -159,6 +298,8 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
             .rewardAnswer(widget.studySet, _answers.last);
         if (!mounted) return;
         _answerXp += xp;
+        await _persistNative();
+        if (!mounted) return;
         await NorieRewardPopup.show(context,
             credits: xp > 0 ? 1 : 0,
             xp: xp,
@@ -198,9 +339,28 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
   }
 
   Future<void> _next() async {
-    if (!_checked || _finishing || _rewarding) return;
+    if (!_checked || _finishing || _rewarding || _sessionBusy) return;
+    if (widget.studySet.isNative && !_sameLearner()) {
+      setState(() => _sessionError = 'Account changed. Reopen this quiz.');
+      return;
+    }
 
     if (_index < _questions.length - 1) {
+      if (widget.studySet.isNative) {
+        setState(() => _sessionBusy = true);
+        try {
+          await _persistNative(nextIndex: _index + 1);
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Could not save progress. Retry Next.')));
+          }
+          return;
+        } finally {
+          if (mounted) setState(() => _sessionBusy = false);
+        }
+        if (!mounted) return;
+      }
       final previousTier =
           NorieQuizReactionPolicy.difficultyTier(_questions[_index].difficulty);
       final nextTier = NorieQuizReactionPolicy.difficultyTier(
@@ -235,6 +395,10 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
         answers: _answers,
       );
       if (!mounted) return;
+      if (widget.studySet.isNative) {
+        await NorieStudyService.instance.clearQuizSession(widget.studySet);
+      }
+      if (!mounted) return;
 
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
@@ -266,6 +430,28 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.studySet.isNative &&
+        (!curriculumSessionCurrent ||
+            !NorieStudyService.instance.canAccessStudySet(widget.studySet))) {
+      return changedCurriculumSession;
+    }
+    if (_loadingSession) {
+      return const Scaffold(
+          body: Center(
+              child: CircularProgressIndicator(
+                  semanticsLabel: 'Restoring saved quiz')));
+    }
+    if (_sessionError != null) {
+      return Scaffold(
+          appBar: AppBar(title: Text(widget.studySet.title)),
+          body: SafeArea(
+              child: ListView(padding: const EdgeInsets.all(20), children: [
+            Semantics(liveRegion: true, child: Text(_sessionError!)),
+            TextButton(
+                onPressed: _restartNativeSession,
+                child: const Text('Restart quiz'))
+          ])));
+    }
     if (_questions.isEmpty) {
       return const Scaffold(
           body: Center(child: Text('No questions available.')));
@@ -291,6 +477,7 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                     Expanded(
                       child: LinearProgressIndicator(
                         value: progress,
+                        semanticsLabel: 'Quiz progress',
                         minHeight: 7,
                         borderRadius: BorderRadius.circular(99),
                         color: NorieColors.cyan,
@@ -298,17 +485,23 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      '${_index + 1}/$total',
-                      style: const TextStyle(
-                        color: NorieColors.textSecondary,
-                        fontWeight: FontWeight.w800,
+                    Semantics(
+                      container: true,
+                      liveRegion: true,
+                      excludeSemantics: true,
+                      label: 'Question ${_index + 1} of $total',
+                      child: Text(
+                        '${_index + 1}/$total',
+                        style: const TextStyle(
+                          color: NorieColors.textSecondary,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                const _RandomizedSessionBanner(),
+                _RandomizedSessionBanner(resumable: widget.studySet.isNative),
                 const SizedBox(height: 14),
                 _KindPill(kind: _question.kind),
                 const SizedBox(height: 10),
@@ -392,10 +585,12 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
                 if (_question.kind != NorieStudyQuestionKind.flashcard)
                   FilledButton(
                     onPressed: _checked
-                        ? (_finishing || _rewarding ? null : _next)
+                        ? (_finishing || _rewarding || _sessionBusy
+                            ? null
+                            : _next)
                         : ((_selected != null ||
                                 _textController.text.trim().isNotEmpty)
-                            ? _check
+                            ? (_sessionBusy ? null : _check)
                             : null),
                     style: FilledButton.styleFrom(
                       backgroundColor: NorieColors.cyan,
@@ -427,7 +622,8 @@ class _StudyQuizScreenState extends State<StudyQuizScreen> {
 }
 
 class _RandomizedSessionBanner extends StatelessWidget {
-  const _RandomizedSessionBanner();
+  const _RandomizedSessionBanner({this.resumable = false});
+  final bool resumable;
 
   @override
   Widget build(BuildContext context) {
@@ -438,14 +634,16 @@ class _RandomizedSessionBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: NorieColors.violet.withValues(alpha: .35)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.casino_rounded, size: 17, color: NorieColors.violet),
-          SizedBox(width: 8),
+          const Icon(Icons.casino_rounded, size: 17, color: NorieColors.violet),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Randomized run · item order and answer positions change each attempt',
-              style: TextStyle(
+              resumable
+                  ? 'Saved run · Reopens at your last checked question'
+                  : 'Randomized run · item order and answer positions change each attempt',
+              style: const TextStyle(
                 color: NorieColors.textSecondary,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,

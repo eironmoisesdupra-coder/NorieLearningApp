@@ -106,8 +106,6 @@ class _NorieCurriculumPacksScreenState extends State<NorieCurriculumPacksScreen>
         final saved = await FilePicker.saveFile(
             dialogTitle: 'Export local curriculum drafts',
             fileName: 'NorieLearning-curriculum-drafts.json',
-            type: FileType.custom,
-            allowedExtensions: ['json'],
             bytes: Uint8List.fromList(utf8.encode(text)));
         if (curriculumSessionCurrent) {
           _notice = saved == null

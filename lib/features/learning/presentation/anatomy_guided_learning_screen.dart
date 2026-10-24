@@ -75,11 +75,13 @@ class _AnatomyGuidedLearningScreenState
         current == null ? null : '${current.structureId}:$checking';
     if (_activity != activity || !_store.ready) _clearOwnedHint();
     setState(() {
-      if (_modelConfiguration != configuration || !_store.ready) {
+      if (_modelConfiguration != configuration ||
+          _activity != activity ||
+          !_store.ready) {
         _modelLoaded = false;
         _modelConfiguration = configuration;
       }
-      if (!_store.ready) _modelSession = Object();
+      if (_activity != activity || !_store.ready) _modelSession = Object();
       if (_activity != activity || !_store.ready) {
         _activity = activity;
         _helpUsed = current?.answersRevealed ?? false;
@@ -119,6 +121,32 @@ class _AnatomyGuidedLearningScreenState
   String _referenceLabel(String id) => widget.catalog.references
       .firstWhere((reference) => reference.id == id)
       .label;
+
+  // Capture identity and activity when the control is built, rather than when
+  // its delayed callback runs. An old control must never act on a new guide.
+  VoidCallback _guardAction(VoidCallback action) {
+    final ownerIsCurrent = _store.captureOwnerGuard();
+    final progress = _store.current;
+    final session = _modelSession;
+    final choices = _showChoices;
+    return () {
+      if (!mounted ||
+          !ownerIsCurrent() ||
+          !_store.ready ||
+          !identical(_modelSession, session) ||
+          _showChoices != choices ||
+          _store.current?.structureId != progress?.structureId ||
+          _store.current?.step != progress?.step) {
+        return;
+      }
+      action();
+    };
+  }
+
+  ValueChanged<bool> _guardChoice(VoidCallback action) {
+    final guarded = _guardAction(action);
+    return (_) => guarded();
+  }
 
   void _choose(AtlasStructure structure) {
     if (!_store.select(structure.id)) return;
@@ -161,11 +189,11 @@ class _AnatomyGuidedLearningScreenState
       _answered = true;
       _feedback = correct
           ? (assisted
-              ? 'Correct. Saved as assisted or repeat practice.'
-              : 'Correct. Saved as an independent check.')
+              ? 'Correct. Recorded as assisted or repeat practice.'
+              : 'Correct. Recorded as an independent check.')
           : (assisted
-              ? 'Keep comparing. Saved as assisted or repeat practice.'
-              : 'Keep comparing. Saved as an independent attempt.');
+              ? 'Keep comparing. Recorded as assisted or repeat practice.'
+              : 'Keep comparing. Recorded as an independent attempt.');
     });
   }
 
@@ -180,7 +208,7 @@ class _AnatomyGuidedLearningScreenState
       if (_store.current != null) ...[
         const SizedBox(height: 12),
         FilledButton(
-            onPressed: () => _setGuideVisible(true),
+            onPressed: _guardAction(() => _setGuideVisible(true)),
             child: const Text('Resume current guide')),
       ],
       for (final module in modules)
@@ -190,7 +218,7 @@ class _AnatomyGuidedLearningScreenState
           subtitle: Text('${module.structure.systems.join(', ')} · '
               '${_referenceLabel(module.structure.reference)}'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => _choose(module.structure),
+          onTap: _guardAction(() => _choose(module.structure)),
         )),
       if (modules.isEmpty)
         const Padding(
@@ -254,7 +282,8 @@ class _AnatomyGuidedLearningScreenState
                   key: ValueKey('system-$system'),
                   onPressed: _answered || !_modelLoaded
                       ? null
-                      : () => _answer(structure.systems.contains(system)),
+                      : _guardAction(
+                          () => _answer(structure.systems.contains(system))),
                   child: Text(system))),
       if (available && !apply)
         for (final option in options)
@@ -264,11 +293,11 @@ class _AnatomyGuidedLearningScreenState
                   key: ValueKey('answer-${option.id}'),
                   onPressed: _answered || !_modelLoaded
                       ? null
-                      : () => _answer(option.id == structure.id),
+                      : _guardAction(() => _answer(option.id == structure.id)),
                   child: Text(option.name))),
       const SizedBox(height: 8),
       TextButton.icon(
-          onPressed: _answered ? null : () => _help(structure),
+          onPressed: _answered ? null : _guardAction(() => _help(structure)),
           icon: const Icon(Icons.lightbulb_outline),
           label: const Text('Show help')),
       if (_helpUsed)
@@ -299,8 +328,8 @@ class _AnatomyGuidedLearningScreenState
                   'Find ${structure.name} in this reference. Tap the highlighted '
                   'part. You can rotate and zoom the model.'),
               OutlinedButton.icon(
-                  onPressed: () =>
-                      _controller.send('focus', {'id': structure.id}),
+                  onPressed: _guardAction(
+                      () => _controller.send('focus', {'id': structure.id})),
                   icon: const Icon(Icons.center_focus_strong),
                   label: const Text('Focus this part')),
               Text(progress.identified
@@ -319,7 +348,7 @@ class _AnatomyGuidedLearningScreenState
                   'is pending human review. This card teaches the source name and '
                   'system classification only.'),
               TextButton(
-                  onPressed: _store.recordStudy,
+                  onPressed: _guardAction(_store.recordStudy),
                   child: Text(progress.studied
                       ? 'Catalog card studied'
                       : 'I studied this catalog card')),
@@ -335,8 +364,8 @@ class _AnatomyGuidedLearningScreenState
                   'parts to compare their catalog names.'),
               if (_explored != null) Text('Selected catalog entry: $_explored'),
               OutlinedButton(
-                  onPressed: () =>
-                      _controller.send('focus', {'id': structure.id}),
+                  onPressed: _guardAction(
+                      () => _controller.send('focus', {'id': structure.id})),
                   child: const Text('Return to this part')),
               const Text('Model position is a visual reference. No additional '
                   'location or function claims are made by this guide.'),
@@ -386,7 +415,7 @@ class _AnatomyGuidedLearningScreenState
             label: Text('${step.index + 1}. ${step.label}'
                 '${progress.skippedSteps.contains(step) ? ' (skipped)' : ''}'),
             selected: step == progress.step,
-            onSelected: (_) => _store.goToStep(step),
+            onSelected: _guardChoice(() => _store.goToStep(step)),
           ),
       ]),
       const SizedBox(height: 12),
@@ -435,14 +464,15 @@ class _AnatomyGuidedLearningScreenState
       _stepBody(structure, progress),
       const SizedBox(height: 16),
       FilledButton(
-          onPressed: _store.completeStep,
+          onPressed: _guardAction(_store.completeStep),
           child: Text(progress.step == AnatomyStudyStep.review
               ? 'Mark review done'
               : 'Mark step done and continue')),
       TextButton(
-          onPressed: _store.skipStep, child: const Text('Skip this step')),
+          onPressed: _guardAction(_store.skipStep),
+          child: const Text('Skip this step')),
       TextButton(
-          onPressed: () => _setGuideVisible(false),
+          onPressed: _guardAction(() => _setGuideVisible(false)),
           child: const Text('Choose another guide')),
     ]);
   }
@@ -451,11 +481,31 @@ class _AnatomyGuidedLearningScreenState
   Widget build(BuildContext context) {
     final structure = _structure;
     final progress = _store.current;
+    final ownerIsCurrent = _store.captureOwnerGuard();
     return Scaffold(
       appBar: AppBar(title: const Text('Guided anatomy')),
       body: SafeArea(
           child: !_store.ready
-              ? const Center(child: CircularProgressIndicator())
+              ? _store.saveError == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView(padding: const EdgeInsets.all(16), children: [
+                      Semantics(
+                          liveRegion: true, child: Text(_store.saveError!)),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                          onPressed: () {
+                            if (mounted &&
+                                ownerIsCurrent() &&
+                                !_store.ready &&
+                                _store.saveError != null) {
+                              unawaited(_open());
+                            }
+                          },
+                          child: const Text('Retry loading saved study')),
+                      const SizedBox(height: 12),
+                      const Text('Other offline lessons and atlas exploration '
+                          'remain available. Return to the lab to use them.'),
+                    ])
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -464,7 +514,8 @@ class _AnatomyGuidedLearningScreenState
                       if (_store.saveError != null) ...[
                         Text(_store.saveError!),
                         TextButton(
-                            onPressed: () => unawaited(_store.flush()),
+                            onPressed:
+                                _guardAction(() => unawaited(_store.flush())),
                             child: const Text('Retry saving')),
                       ],
                       if (_showChoices || structure == null || progress == null)

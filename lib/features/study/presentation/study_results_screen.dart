@@ -1,3 +1,5 @@
+import '../../curriculum/presentation/curriculum_session_guard.dart';
+import '../data/norie_study_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
@@ -27,7 +29,8 @@ class StudyResultsScreen extends StatefulWidget {
   State<StudyResultsScreen> createState() => _StudyResultsScreenState();
 }
 
-class _StudyResultsScreenState extends State<StudyResultsScreen> {
+class _StudyResultsScreenState extends State<StudyResultsScreen>
+    with CurriculumSessionGuard<StudyResultsScreen> {
   @override
   void initState() {
     super.initState();
@@ -36,9 +39,17 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
     });
   }
 
+  bool get _nativeOwnerCurrent =>
+      !widget.studySet.isNative ||
+      (curriculumSessionCurrent &&
+          NorieStudyService.instance.canAccessStudySet(widget.studySet));
+
   Future<void> _showOutro() async {
+    if (!_nativeOwnerCurrent) return;
     final action = await NorieQuizOutro.show(context,
         canViewDetails: true,
+        stillCurrent:
+            widget.studySet.isNative ? () => _nativeOwnerCurrent : null,
         summary: QuizResultSummary(
             attemptId: widget.attemptId ?? const Uuid().v4(),
             historyKey: quizHistoryKey(
@@ -69,7 +80,11 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
                     selfRated: answer.question.kind ==
                         NorieStudyQuestionKind.flashcard)
             ]));
-    if (!mounted || action == QuizOutroAction.viewDetails) return;
+    if (!mounted ||
+        !_nativeOwnerCurrent ||
+        action == QuizOutroAction.viewDetails) {
+      return;
+    }
     if (action == QuizOutroAction.retry) {
       Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
           builder: (_) => StudyQuizScreen(studySet: widget.studySet)));
@@ -80,6 +95,7 @@ class _StudyResultsScreenState extends State<StudyResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_nativeOwnerCurrent) return changedCurriculumSession;
     final missed = widget.answers.where((answer) => !answer.correct).toList();
     final percent = (widget.result.accuracy * 100).round();
 
