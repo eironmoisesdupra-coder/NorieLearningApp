@@ -1,3 +1,4 @@
+import '../../curriculum/presentation/curriculum_session_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,25 +22,72 @@ class StudySetScreen extends StatefulWidget {
   State<StudySetScreen> createState() => _StudySetScreenState();
 }
 
-class _StudySetScreenState extends State<StudySetScreen> {
+class _StudySetScreenState extends State<StudySetScreen>
+    with CurriculumSessionGuard<StudySetScreen> {
   bool _deleting = false;
   late NorieStudySet _set = widget.studySet;
   late Future<int> _due = _dueCount();
   String _search = '';
   bool _saving = false;
-  bool _reviewedForPractice = false;
+  bool _openingPractice = false;
+
+  Future<bool?> _openSourceReview({bool continueToPractice = false}) async {
+    requireCurrentCurriculumSession();
+    final accepted = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+            builder: (_) => StudySourceAccuracyScreen(
+                studySet: _set, continueToPractice: continueToPractice)));
+    return curriculumSessionCurrent ? accepted : false;
+  }
+
+  Future<void> _compareSource() async {
+    if (_openingPractice) return;
+    setState(() => _openingPractice = true);
+    try {
+      await _openSourceReview();
+    } catch (_) {
+      if (mounted && curriculumSessionCurrent) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Could not open source comparison. Reopen this deck and retry.')));
+      }
+    } finally {
+      if (mounted) setState(() => _openingPractice = false);
+    }
+  }
 
   Future<void> _startReviewedPractice() async {
-    if (!_reviewedForPractice) {
-      final accepted = await Navigator.of(context).push<bool>(
-        MaterialPageRoute<bool>(
-          builder: (_) => StudySourceAccuracyScreen(studySet: _set)));
-      if (!mounted || accepted != true) return;
-      setState(() => _reviewedForPractice = true);
+    if (_openingPractice) return;
+    setState(() => _openingPractice = true);
+    try {
+      requireCurrentCurriculumSession();
+      if (!_set.isNative) {
+        final review = await NorieStudyService.instance.loadSourceReview(_set);
+        requireCurrentCurriculumSession();
+        if (!review.completeFor(_set) &&
+            await _openSourceReview(continueToPractice: true) != true) {
+          return;
+        }
+        requireCurrentCurriculumSession();
+        final current = await NorieStudyService.instance.loadSourceReview(_set);
+        requireCurrentCurriculumSession();
+        if (!current.completeFor(_set)) {
+          throw StateError('Review changed. Compare the current cards.');
+        }
+      }
+      if (!mounted) return;
+      requireCurrentCurriculumSession();
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => StudyQuizScreen(studySet: _set)));
+    } catch (_) {
+      if (mounted && curriculumSessionCurrent) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Could not confirm saved source comparisons. Reopen source review and retry.')));
+      }
+    } finally {
+      if (mounted) setState(() => _openingPractice = false);
     }
-    if (!mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => StudyQuizScreen(studySet: _set)));
   }
 
   Future<int> _dueCount() async {
@@ -80,7 +128,6 @@ class _StudySetScreenState extends State<StudySetScreen> {
       if (!mounted) return;
       setState(() {
         _set = updated;
-        _reviewedForPractice = false;
         _due = _dueCount();
       });
     } catch (_) {
@@ -119,8 +166,10 @@ class _StudySetScreenState extends State<StudySetScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete study set?'),
-        content: const Text(
-          'This will remove the generated questions and its uploaded source from Norie. An internet connection is required.',
+        content: Text(
+          _set.isNative
+              ? 'This removes the native quiz from this device.'
+              : 'This will remove the generated questions and its uploaded source from Norie. An internet connection is required.',
         ),
         actions: [
           TextButton(
@@ -155,6 +204,10 @@ class _StudySetScreenState extends State<StudySetScreen> {
   @override
   Widget build(BuildContext context) {
     final set = _set;
+    if (!curriculumSessionCurrent ||
+        !NorieStudyService.instance.canAccessStudySet(set)) {
+      return changedCurriculumSession;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -176,6 +229,12 @@ class _StudySetScreenState extends State<StudySetScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
               children: [
+                if (set.isNative)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Text(
+                        'Native practice · Saved on this device · Exact arithmetic checks. Editorial review is separate.'),
+                  ),
                 Container(
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
@@ -260,13 +319,26 @@ class _StudySetScreenState extends State<StudySetScreen> {
                   label: const Text('Browse flashcards'),
                 ),
                 const SizedBox(height: 10),
+                if (!set.isNative) ...[
+                  OutlinedButton.icon(
+                    onPressed:
+                        _openingPractice || _saving ? null : _compareSource,
+                    icon: const Icon(Icons.fact_check_outlined),
+                    label: const Text('Compare answers with source'),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 FilledButton.icon(
-                  onPressed: set.questions.every((q) =>
-                          q.kind == NorieStudyQuestionKind.flashcard)
+                  onPressed: _openingPractice ||
+                          _saving ||
+                          set.questions.every(
+                              (q) => q.kind == NorieStudyQuestionKind.flashcard)
                       ? null
                       : _startReviewedPractice,
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Review source and start practice'),
+                  label: Text(set.isNative
+                      ? 'Start Practice'
+                      : 'Review source and start practice'),
                   style: FilledButton.styleFrom(
                     backgroundColor: NorieColors.cyan,
                     foregroundColor: NorieColors.background,
@@ -274,20 +346,21 @@ class _StudySetScreenState extends State<StudySetScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => StudyQaScreen(studySet: set),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.question_answer_rounded),
-                  label: const Text('Ask Norie About This Source'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                if (!set.isNative)
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => StudyQaScreen(studySet: set),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.question_answer_rounded),
+                    label: const Text('Ask Norie About This Source'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 24),
                 Row(children: [
                   const Expanded(
@@ -295,7 +368,7 @@ class _StudySetScreenState extends State<StudySetScreen> {
                           style: TextStyle(
                               fontSize: 20, fontWeight: FontWeight.w900))),
                   IconButton(
-                      onPressed: _saving ? null : () => _edit(),
+                      onPressed: _saving || set.isNative ? null : () => _edit(),
                       tooltip: 'Add flashcard',
                       icon: const Icon(Icons.add_rounded)),
                 ]),
@@ -342,18 +415,20 @@ class _StudySetScreenState extends State<StudySetScreen> {
                               ),
                             ),
                           ),
-                          PopupMenuButton<String>(
-                            enabled: !_saving,
-                            tooltip: 'Card actions',
-                            onSelected: (action) => action == 'edit'
-                                ? _edit(question)
-                                : _remove(question),
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'edit', child: Text('Edit')),
-                              PopupMenuItem(
-                                  value: 'delete', child: Text('Delete')),
-                            ],
-                          ),
+                          if (!set.isNative)
+                            PopupMenuButton<String>(
+                              enabled: !_saving,
+                              tooltip: 'Card actions',
+                              onSelected: (action) => action == 'edit'
+                                  ? _edit(question)
+                                  : _remove(question),
+                              itemBuilder: (_) => const [
+                                PopupMenuItem(
+                                    value: 'edit', child: Text('Edit')),
+                                PopupMenuItem(
+                                    value: 'delete', child: Text('Delete')),
+                              ],
+                            ),
                         ],
                       ),
                     ),

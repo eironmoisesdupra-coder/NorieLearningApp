@@ -1,3 +1,13 @@
+# Hybrid Quiz Generation 2.0 — 2026-10-24 update
+
+Current verified baseline remains develop ed9472dbb437127abd8fd09931a86879d4df5ec5 / published0.18.0+24 Preview. New draft core PR77 (4cf6445b72bf8dcdcaad3ef89975f12dce1312c5) and dependent native integration branch feat/hybrid-quiz-generation add free offline bounded Mathematics practice, exact answer proofs, explicit coverage/repeat consent, owner-scoped persistence/resume and no-charge/no-inference safeguards. No main change, merge or deployment.
+
+See [baseline audit](HYBRID_QUIZ_BASELINE.md) and [implementation/report](implementation/hybrid-quiz-generation.md) for actual coverage, modified files, validation evidence and all remaining phases. New approved production bank0; no Chemistry benchmark or academic verification claimed. Existing AI providers remain unchanged and no new provider/credential/billing operation is activated. Separate build repair PR78 recovers byte-identical licensed legacy models after the original mirror began returning404; core and integration include that dependency. Initial CI failures are recorded, not hidden. Exact-head CI, human review, compiled screenshot inspection and physical QA are release gates; latest heads/artifacts live in each PR.
+
+Keep separate PR72's source review and Anatomy73–76 intact when resolving overlaps in StudySetScreen, the tutorial and desktop tests. Do not treat these unmerged branches as deployed. Earlier historical handoff follows and may contain superseded version/download statements.
+
+---
+
 # Explorer, subject choices, rank redesign and tutorial refresh
 
 Target **0.18.0+24 Preview**, branch `feat/explorer-tutorial-refresh`, develop baseline `31d24151d2fb05031042df797d9afb49e82445bc`. The owner confirmed all five 2026-10-23 WIP packets plus the complete tutorial improvement and library-step repair. Original dirty checkout remains untouched. See [implementation and compatibility checklist](implementation/explorer-tutorial-refresh.md), [design](superpowers/specs/2026-10-23-explorer-tutorial-design.md), and [execution plan](superpowers/plans/2026-10-23-explorer-tutorial-refresh.md). The PR is authoritative for exact SHA, final validation and publication state.
