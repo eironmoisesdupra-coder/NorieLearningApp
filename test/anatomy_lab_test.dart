@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -36,20 +37,23 @@ void main() {
     }
   });
 
-  test('anatomy structure ids are unique and marker positions are normalized', () {
-    final ids = <String>{};
+  test(
+    'anatomy structure ids are unique and marker positions are normalized',
+    () {
+      final ids = <String>{};
 
-    for (final system in AnatomyCatalog.systems) {
-      for (final structure in system.structures) {
-        expect(ids.add(structure.id), isTrue, reason: structure.id);
-        expect(structure.x, inInclusiveRange(0.0, 1.0));
-        expect(structure.y, inInclusiveRange(0.0, 1.0));
-        expect(structure.name, isNotEmpty);
-        expect(structure.function, isNotEmpty);
-        expect(structure.description, isNotEmpty);
+      for (final system in AnatomyCatalog.systems) {
+        for (final structure in system.structures) {
+          expect(ids.add(structure.id), isTrue, reason: structure.id);
+          expect(structure.x, inInclusiveRange(0.0, 1.0));
+          expect(structure.y, inInclusiveRange(0.0, 1.0));
+          expect(structure.name, isNotEmpty);
+          expect(structure.function, isNotEmpty);
+          expect(structure.description, isNotEmpty);
+        }
       }
-    }
-  });
+    },
+  );
 
   test('multi-layer structure lookup combines selected systems', () {
     final selected = AnatomyCatalog.structuresFor({
@@ -59,14 +63,11 @@ void main() {
     });
 
     expect(selected, hasLength(23));
-    expect(
-      selected.map((item) => item.system).toSet(),
-      {
-        AnatomySystemId.skeletal,
-        AnatomySystemId.muscular,
-        AnatomySystemId.endocrine,
-      },
-    );
+    expect(selected.map((item) => item.system).toSet(), {
+      AnatomySystemId.skeletal,
+      AnatomySystemId.muscular,
+      AnatomySystemId.endocrine,
+    });
   });
   test('real 3D renderer is used only for the standalone skeletal layer', () {
     expect(
@@ -119,11 +120,13 @@ void main() {
   test('3D skeletal hotspots have unique ids and resolve to structures', () {
     final ids = <String>{};
 
-    for (final hotspot
-        in AnatomyHotspotCatalog.skeletal.where((item) => item.enabled)) {
+    for (final hotspot in AnatomyHotspotCatalog.skeletal.where(
+      (item) => item.enabled,
+    )) {
       expect(ids.add(hotspot.id), isTrue, reason: hotspot.id);
-      final structure =
-          AnatomyHotspotCatalog.resolveStructure(hotspot.structureId);
+      final structure = AnatomyHotspotCatalog.resolveStructure(
+        hotspot.structureId,
+      );
       expect(structure, isNotNull, reason: hotspot.structureId);
       expect(structure!.system, AnatomySystemId.skeletal);
       expect(hotspot.x, inInclusiveRange(-0.5, 0.5));
@@ -175,18 +178,9 @@ void main() {
       AnatomyHotspotCatalog.calibration.sha256,
       '253c47077e4ae11421c8ff3eae68c9414335ee2f0ad911eddf8ea0ea7dc0a6ce',
     );
-    expect(
-      AnatomyHotspotCatalog.calibration.centerX,
-      closeTo(-.130685, 1e-6),
-    );
-    expect(
-      AnatomyHotspotCatalog.calibration.centerY,
-      closeTo(.857076, 1e-6),
-    );
-    expect(
-      AnatomyHotspotCatalog.calibration.centerZ,
-      closeTo(.009998, 1e-6),
-    );
+    expect(AnatomyHotspotCatalog.calibration.centerX, closeTo(-.130685, 1e-6));
+    expect(AnatomyHotspotCatalog.calibration.centerY, closeTo(.857076, 1e-6));
+    expect(AnatomyHotspotCatalog.calibration.centerZ, closeTo(.009998, 1e-6));
     expect(
       AnatomyHotspotCatalog.calibration.dimensionsX,
       closeTo(.409679, 1e-6),
@@ -201,26 +195,49 @@ void main() {
     );
   });
 
-  test('skeleton fetch script pins the calibrated skeleton source', () {
-    final script = File('scripts/fetch_anatomy_assets.sh').readAsStringSync();
-
-    expect(
-      script,
-      contains(AnatomyHotspotCatalog.calibration.sourceCommit),
-    );
-    expect(
-      script,
-      contains(AnatomyHotspotCatalog.calibration.sha256),
-    );
-    expect(
-      script,
-      contains('SKELETON_SOURCE='),
-    );
-    expect(
-      script,
-      contains('scripts/build_full_skeleton.py'),
-    );
-  });
+  test(
+    'legacy asset command verifies the source pin and calibrated output',
+    () {
+      expect(
+        File('assets/anatomy/overview-skeleton.glb').existsSync(),
+        isTrue,
+        reason: 'Run the licensed asset fetch before the suite.',
+      );
+      expect(File('assets/anatomy/anatomy-organs.glb').existsSync(), isTrue);
+      final process = Process.runSync(
+        Platform.isWindows ? 'python' : 'python3',
+        ['scripts/anatomy/legacy_models.py'],
+      );
+      expect(
+        process.exitCode,
+        0,
+        reason: '${process.stdout} ${process.stderr}',
+      );
+      final report = jsonDecode(
+        File('build/anatomy-legacy-provenance.json').readAsStringSync(),
+      ) as Map;
+      final source = report['expected_upstream'] as Map;
+      expect(
+        source['skeleton_url'],
+        contains(AnatomyHotspotCatalog.calibration.sourceCommit),
+      );
+      expect(
+        source['skeleton_source_sha256'],
+        AnatomyHotspotCatalog.calibration.sha256,
+      );
+      final line = (process.stdout as String)
+          .split('\n')
+          .firstWhere((line) => line.startsWith('ANATOMY_GLB_BOUNDS='));
+      final bounds =
+          jsonDecode(line.substring('ANATOMY_GLB_BOUNDS='.length)) as Map;
+      expect(
+        bounds['sha256'],
+        '5cff2708bf15083a034cd4aa0f47361432be1e60687ef0f9993dc4fb3cae78d1',
+      );
+      expect(bounds['meshNodes'], 252);
+      expect(bounds['bytes'], 2416728);
+    },
+  );
 
   test('clean hotspot mode exposes no renderable hotspots', () {
     expect(
@@ -231,5 +248,4 @@ void main() {
       isEmpty,
     );
   });
-
 }
