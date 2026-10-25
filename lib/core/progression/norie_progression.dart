@@ -7,6 +7,8 @@ import 'package:uuid/uuid.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
+import 'norie_atlas_mastery_receipts.dart';
 
 import '../../features/commerce/domain/norie_shop_models.dart';
 import 'norie_lesson_journey.dart';
@@ -128,12 +130,14 @@ class NorieTopicMastery {
     required this.topic,
     required this.correct,
     required this.attempts,
+    this.atlasReceipts,
   });
 
   final String category;
   final String topic;
   final int correct;
   final int attempts;
+  final AtlasMasteryReceipts? atlasReceipts;
 
   double get accuracy => attempts == 0 ? 0 : correct / attempts;
 
@@ -166,6 +170,7 @@ class NorieTopicMastery {
       topic: topic,
       correct: correct + correctAnswers,
       attempts: attempts + totalAttempts,
+      atlasReceipts: atlasReceipts,
     );
   }
 
@@ -175,6 +180,46 @@ class NorieTopicMastery {
         'correct': correct,
         'attempts': attempts,
       };
+
+  Map<String, Object> toLocalJson() => {
+        ...toJson(),
+        if (atlasReceipts != null) '_atlas': atlasReceipts!.toJson(),
+      };
+
+  factory NorieTopicMastery.fromLocalJson(Map<String, dynamic> json) {
+    if (json['category'] is! String ||
+        (json['category'] as String).trim().isEmpty ||
+        json['topic'] is! String ||
+        (json['topic'] as String).trim().isEmpty ||
+        json['correct'] is! int ||
+        json['attempts'] is! int) {
+      throw const FormatException('Invalid saved mastery fields.');
+    }
+    final record = NorieTopicMastery.fromJson(json);
+    if (record.correct < 0 ||
+        record.attempts < record.correct ||
+        record.attempts > 1000000000) {
+      throw const FormatException('Invalid saved mastery counters.');
+    }
+    final ledger = json.containsKey('_atlas')
+        ? AtlasMasteryReceipts.restore(json['_atlas'])
+        : null;
+    if (ledger != null) {
+      final correctReceipts = ledger.receipts.values.where((v) => v).length;
+      final incorrectReceipts = ledger.receipts.length - correctReceipts;
+      if (record.attempts < ledger.receipts.length ||
+          record.correct < correctReceipts ||
+          record.attempts - record.correct < incorrectReceipts) {
+        throw const FormatException('Saved mastery receipts exceed counters.');
+      }
+    }
+    return NorieTopicMastery(
+        category: record.category,
+        topic: record.topic,
+        correct: record.correct,
+        attempts: record.attempts,
+        atlasReceipts: ledger);
+  }
 
   static NorieTopicMastery fromJson(Map<String, dynamic> json) {
     return NorieTopicMastery(
@@ -354,6 +399,9 @@ class NorieProgression extends ChangeNotifier {
   Set<String> _rewardedLessonTopics = <String>{};
   Set<String> _rewardedPerfectLessonTopics = <String>{};
   Map<String, NorieTopicMastery> _topicMastery = <String, NorieTopicMastery>{};
+  bool _masteryReadError = false;
+  int _stateRevision = 0;
+  int get stateRevision => _stateRevision;
   DateTime _lastModifiedAt =
       DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   bool _onboardingComplete = false;
@@ -495,6 +543,7 @@ class NorieProgression extends ChangeNotifier {
       achievements.where((achievement) => achievement.unlocked).length;
 
   Future<void> load() async {
+    _stateRevision++;
     await NorieFeatureState.load(force: true);
     final prefs = await SharedPreferences.getInstance();
     _rewardedAssessmentAttempts =
@@ -551,21 +600,28 @@ class NorieProgression extends ChangeNotifier {
                 const <String>[])
             .toSet();
 
-    final rawMastery = prefs.getString(_topicMasteryKey);
-    if (rawMastery != null && rawMastery.isNotEmpty) {
-      try {
+    _masteryReadError = false;
+    _topicMastery = <String, NorieTopicMastery>{};
+    try {
+      final rawMastery = (await SharedPreferencesStorePlatform.instance
+          .getAll())['flutter.$_topicMasteryKey'];
+      if (rawMastery != null) {
+        if (rawMastery is! String) {
+          throw const FormatException('Invalid mastery storage type.');
+        }
         final decoded = jsonDecode(rawMastery) as Map<String, dynamic>;
         _topicMastery = decoded.map(
           (key, value) => MapEntry(
             key,
-            NorieTopicMastery.fromJson(
+            NorieTopicMastery.fromLocalJson(
               Map<String, dynamic>.from(value as Map),
             ),
           ),
         );
-      } on FormatException {
-        _topicMastery = <String, NorieTopicMastery>{};
       }
+    } on Object {
+      _topicMastery = <String, NorieTopicMastery>{};
+      _masteryReadError = true;
     }
 
     final rawModified = prefs.getString(_lastModifiedKey);
@@ -878,6 +934,7 @@ class NorieProgression extends ChangeNotifier {
     required String topic,
     required bool correct,
   }) {
+    if (_masteryReadError) return;
     _recordTopicBatch(
       category: category,
       topic: topic,
@@ -886,6 +943,95 @@ class NorieProgression extends ChangeNotifier {
     );
     _changed();
   }
+
+  Future<void> ensureAtlasOwner(
+      {String? ownerId, required bool Function() stillCurrent}) async {
+    if (!stillCurrent() || _journeyRestores != 0) {
+      throw StateError('Learner or progress changed before saving.');
+    }
+    final owner = (await SharedPreferencesStorePlatform.instance
+        .getAll())['flutter.norie.cloudOwnerUserId'];
+    if (!stillCurrent() || _journeyRestores != 0 || owner != ownerId) {
+      throw StateError(
+          'Account progress is not ready for this learner. Wait for account synchronization before grading.');
+    }
+  }
+
+  Future<void> _atlasMasteryMutation(
+      void Function() apply, bool Function() stillCurrent,
+      {String? ownerId}) async {
+    final revision = _stateRevision;
+    await _saves.catchError((Object _) {});
+    if (!stillCurrent() ||
+        revision != _stateRevision ||
+        _journeyRestores != 0) {
+      throw StateError('Learning progress changed; reopen the saved round.');
+    }
+    await ensureAtlasOwner(ownerId: ownerId, stillCurrent: stillCurrent);
+    if (revision != _stateRevision || _journeyRestores != 0) {
+      throw StateError('Saved progress changed; reopen this round.');
+    }
+    if (_masteryReadError) {
+      throw StateError(
+          'Saved mastery needs recovery; original data is preserved.');
+    }
+    apply();
+    _changed();
+    await _saves;
+    if (!stillCurrent() || revision != _stateRevision) {
+      throw StateError('Learning progress changed while saving.');
+    }
+  }
+
+  Future<String> prepareAtlasMastery(String topic,
+      {String? ownerId, required bool Function() stillCurrent}) async {
+    late String lineage;
+    await _atlasMasteryMutation(() {
+      final key = _topicKey('Anatomy', topic);
+      final record = _topicMastery[key] ??
+          NorieTopicMastery(
+              category: 'Anatomy', topic: topic, correct: 0, attempts: 0);
+      final ledger =
+          record.atlasReceipts ?? AtlasMasteryReceipts(const Uuid().v4(), {});
+      lineage = ledger.lineage;
+      _topicMastery[key] = NorieTopicMastery(
+          category: record.category,
+          topic: record.topic,
+          correct: record.correct,
+          attempts: record.attempts,
+          atlasReceipts: ledger);
+    }, stillCurrent, ownerId: ownerId);
+    return lineage;
+  }
+
+  Future<void> recordAtlasMastery(
+          {required String topic,
+          required String lineage,
+          required String receipt,
+          required bool correct,
+          String? ownerId,
+          required bool Function() stillCurrent}) =>
+      _atlasMasteryMutation(() {
+        final key = _topicKey('Anatomy', topic);
+        final record = _topicMastery[key];
+        final ledger = record?.atlasReceipts;
+        if (record == null || ledger == null || ledger.lineage != lineage) {
+          throw StateError(
+              'Saved answer cannot be safely reconciled after progress replacement.');
+        }
+        final duplicate = ledger.receipts.containsKey(receipt);
+        final updated = ledger.add(receipt, correct);
+        if (!duplicate && record.attempts >= 1000000000) {
+          throw StateError(
+              'Mastery storage limit reached; existing progress is preserved.');
+        }
+        _topicMastery[key] = NorieTopicMastery(
+            category: record.category,
+            topic: record.topic,
+            correct: record.correct + (!duplicate && correct ? 1 : 0),
+            attempts: record.attempts + (duplicate ? 0 : 1),
+            atlasReceipts: updated);
+      }, stillCurrent, ownerId: ownerId);
 
   void _recordTopicBatch({
     required String category,
@@ -1216,14 +1362,15 @@ class NorieProgression extends ChangeNotifier {
         _rewardedPerfectLessonTopicsKey,
         _rewardedPerfectLessonTopics.toList()..sort(),
       ),
-      prefs.setString(
-        _topicMasteryKey,
-        jsonEncode(
-          _topicMastery.map(
-            (key, value) => MapEntry(key, value.toJson()),
+      if (!_masteryReadError)
+        prefs.setString(
+          _topicMasteryKey,
+          jsonEncode(
+            _topicMastery.map(
+              (key, value) => MapEntry(key, value.toLocalJson()),
+            ),
           ),
         ),
-      ),
       prefs.setBool(_onboardingKey, _onboardingComplete),
       prefs.setString(_lastModifiedKey, _lastModifiedAt.toIso8601String()),
     ]);
@@ -1232,12 +1379,43 @@ class NorieProgression extends ChangeNotifier {
     }
   }
 
+  Future<void> _preserveUnreadableMastery(
+      {bool Function()? stillCurrent}) async {
+    if (!_masteryReadError) return;
+    if (stillCurrent?.call() == false) {
+      throw StateError('Learner changed before recovery.');
+    }
+    final disk = await SharedPreferencesStorePlatform.instance.getAll();
+    if (stillCurrent?.call() == false) {
+      throw StateError('Learner changed before recovery.');
+    }
+    final raw = disk['flutter.$_topicMasteryKey'];
+    if (raw == null) return;
+    final value = jsonEncode({
+      'schema': 1,
+      'owner': disk['flutter.norie.cloudOwnerUserId'],
+      'raw': raw
+    });
+    final prefs = await SharedPreferences.getInstance();
+    if (stillCurrent?.call() == false) {
+      throw StateError('Learner changed before recovery.');
+    }
+    if (!await prefs.setString(
+        'norie.mastery.quarantineRecovery.v1.${const Uuid().v4()}', value)) {
+      throw StateError(
+          'Could not preserve unreadable mastery; progress replacement was cancelled.');
+    }
+  }
+
   Future<bool> resetForNewAccount({bool Function()? stillCurrent}) async {
     _journeyRestores++;
     try {
+      await _preserveUnreadableMastery(stillCurrent: stillCurrent);
       final applied = await NorieLessonJourney.instance.reset(
         stillCurrent: stillCurrent,
         onApply: () {
+          _stateRevision++;
+          _masteryReadError = false;
           _rewardedAssessmentAttempts = {};
           NorieFeatureState.applyValidatedState({});
           NorieAdventureProgress.instance
@@ -1289,47 +1467,52 @@ class NorieProgression extends ChangeNotifier {
     }
   }
 
-  Map<String, dynamic> exportCloudState({bool includeEconomy = true}) => {
-        ...NorieFeatureState.exportState(),
-        if (includeEconomy)
-          'economy_state': NorieEconomyStore.instance.exportState(),
-        'adventure_progress': NorieAdventureProgress.instance.exportState(),
-        'profile_appearance':
-            NorieProfileAppearanceStore.instance.exportState(),
-        'rewarded_assessment_attempts': _rewardedAssessmentAttempts.toList()
-          ..sort(),
-        'lesson_journey': NorieLessonJourney.instance.exportState(),
-        'schema_version': 1,
-        'total_xp': _totalXp,
-        'credits': _credits,
-        'streak_shields': _streakShields,
-        'owned_shop_items': _ownedShopItems.toList()..sort(),
-        'equipped_frame_id': _equippedFrameId,
-        'equipped_badge_id': _equippedBadgeId,
-        'equipped_theme_id': _equippedThemeId,
-        'credit_transactions':
-            _creditTransactions.map((item) => item.toJson()).toList(),
-        'completed_lessons': _completedLessons,
-        'study_sessions': _studySessions,
-        'correct_answers': _correctAnswers,
-        'questions_answered': _questionsAnswered,
-        'challenge_sessions': _challengeSessions,
-        'speed_best_score': _speedBestScore,
-        'explored_subjects': _exploredSubjects.toList()..sort(),
-        'study_dates': _studyDates.toList()..sort(),
-        'daily_challenge_dates': _dailyChallengeDates.toList()..sort(),
-        'speed_reward_dates': _speedRewardDates.toList()..sort(),
-        'weekly_rewarded_weeks': _weeklyRewardedWeeks.toList()..sort(),
-        'completed_topic_ids': _completedTopicIds.toList()..sort(),
-        'rewarded_lesson_topics': _rewardedLessonTopics.toList()..sort(),
-        'rewarded_perfect_lesson_topics': _rewardedPerfectLessonTopics.toList()
-          ..sort(),
-        'topic_mastery': _topicMastery.map(
-          (key, value) => MapEntry(key, value.toJson()),
-        ),
-        'onboarding_complete': _onboardingComplete,
-        'modified_at': _lastModifiedAt.toIso8601String(),
-      };
+  Map<String, dynamic> exportCloudState({bool includeEconomy = true}) {
+    if (_masteryReadError) {
+      throw StateError(
+          'Saved mastery needs recovery before backup or synchronization. Original data is preserved.');
+    }
+    return {
+      ...NorieFeatureState.exportState(),
+      if (includeEconomy)
+        'economy_state': NorieEconomyStore.instance.exportState(),
+      'adventure_progress': NorieAdventureProgress.instance.exportState(),
+      'profile_appearance': NorieProfileAppearanceStore.instance.exportState(),
+      'rewarded_assessment_attempts': _rewardedAssessmentAttempts.toList()
+        ..sort(),
+      'lesson_journey': NorieLessonJourney.instance.exportState(),
+      'schema_version': 1,
+      'total_xp': _totalXp,
+      'credits': _credits,
+      'streak_shields': _streakShields,
+      'owned_shop_items': _ownedShopItems.toList()..sort(),
+      'equipped_frame_id': _equippedFrameId,
+      'equipped_badge_id': _equippedBadgeId,
+      'equipped_theme_id': _equippedThemeId,
+      'credit_transactions':
+          _creditTransactions.map((item) => item.toJson()).toList(),
+      'completed_lessons': _completedLessons,
+      'study_sessions': _studySessions,
+      'correct_answers': _correctAnswers,
+      'questions_answered': _questionsAnswered,
+      'challenge_sessions': _challengeSessions,
+      'speed_best_score': _speedBestScore,
+      'explored_subjects': _exploredSubjects.toList()..sort(),
+      'study_dates': _studyDates.toList()..sort(),
+      'daily_challenge_dates': _dailyChallengeDates.toList()..sort(),
+      'speed_reward_dates': _speedRewardDates.toList()..sort(),
+      'weekly_rewarded_weeks': _weeklyRewardedWeeks.toList()..sort(),
+      'completed_topic_ids': _completedTopicIds.toList()..sort(),
+      'rewarded_lesson_topics': _rewardedLessonTopics.toList()..sort(),
+      'rewarded_perfect_lesson_topics': _rewardedPerfectLessonTopics.toList()
+        ..sort(),
+      'topic_mastery': _topicMastery.map(
+        (key, value) => MapEntry(key, value.toJson()),
+      ),
+      'onboarding_complete': _onboardingComplete,
+      'modified_at': _lastModifiedAt.toIso8601String(),
+    };
+  }
 
   /// Used only for the same authenticated owner, never guest/account transfers.
   /// XP remains a snapshot maximum; independent offline XP is not summed.
@@ -1397,10 +1580,13 @@ class NorieProgression extends ChangeNotifier {
             {'appearance': const NorieProfileAppearance().toJson()});
     _journeyRestores++;
     try {
+      await _preserveUnreadableMastery(stillCurrent: stillCurrent);
       final applied = await NorieLessonJourney.instance.replaceState(
         journey,
         stillCurrent: stillCurrent,
         onApply: () {
+          _stateRevision++;
+          _masteryReadError = false;
           _rewardedAssessmentAttempts =
               _readStringSet(state['rewarded_assessment_attempts']);
           NorieFeatureState.applyValidatedState(state);

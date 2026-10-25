@@ -12,6 +12,7 @@ import '../progression/norie_lesson_journey.dart';
 import '../progression/norie_progress_backup.dart';
 import '../progression/anatomy_progress_backup.dart';
 import '../../features/learning/data/anatomy_backup_persistence.dart';
+import '../../features/learning/data/anatomy_atlas_quiz_store.dart';
 import '../../features/learning/domain/anatomy_atlas_catalog.dart';
 import '../progression/norie_progression.dart';
 import '../sync/norie_economy_store.dart';
@@ -165,6 +166,9 @@ class _NorieAppProgressScreenState extends State<NorieAppProgressScreen> {
           throw const FormatException('Account changed. Please retry.');
         }
         bool stillCurrent() => owner == _owner && sessionCurrent();
+        // Retain old round bytes, but retire their effects before explicitly
+        // replacing this owner's progression. Account switching is separate.
+        await AtlasQuizStore.invalidateOwner(owner, stillCurrent: stillCurrent);
         final restored = await NorieProgression.instance.importCloudState(
           state,
           remoteModifiedAt: DateTime.now().toUtc(),

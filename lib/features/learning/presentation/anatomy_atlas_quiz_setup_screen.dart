@@ -216,7 +216,7 @@ class _AnatomyAtlasQuizSetupScreenState
                   ),
                 ),
                 const Text(
-                    'Unfinished Atlas rounds cannot be resumed after closing this quiz or restarting the app. Round XP is awarded on completion. Guided study saves separately.'),
+                    'Unfinished Atlas rounds save on this device. Reopen Quiz to resume the saved round, or explicitly start a new one. Round XP is awarded once on completion. Restoring a progress backup retires older local rounds. Guided study saves separately.'),
               ],
             ),
           ),

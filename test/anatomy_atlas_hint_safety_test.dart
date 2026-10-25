@@ -1,3 +1,4 @@
+import 'atlas_quiz_test_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,7 @@ import 'package:norie_learning/features/learning/domain/anatomy_atlas_quiz_polic
 import 'anatomy_atlas_flexible_quiz_test.dart' as fixtures;
 
 void main() {
+  setUp(prepareAtlasWidgetTest);
   for (final balance in [0, 4, 5, 10]) {
     testWidgets(
         'unapproved hints never debit $balance credits or alter quiz readiness',
@@ -17,6 +19,8 @@ void main() {
       final progress = NorieProgression.instance;
       final before = progress.exportCloudState();
       for (final difficulty in AtlasQuizDifficulty.values) {
+        SharedPreferences.setMockInitialValues(
+            {'norie.credits': balance, 'norie.totalXp': 0});
         tester.view.physicalSize = const Size(320, 568);
         tester.view.devicePixelRatio = 1;
         await tester.pumpWidget(MaterialApp(
@@ -32,6 +36,7 @@ void main() {
                 systems: const {'skeletal'},
                 difficulty: difficulty)));
         await tester.pump();
+        await waitForAtlasIo(tester);
         final viewer = tester
             .widget<AnatomyAtlasModelView>(find.byType(AnatomyAtlasModelView));
         expect(viewer.reference, 'male');
@@ -47,10 +52,12 @@ void main() {
                   ? 'Need a hint?'
                   : 'Hide hint'));
           await tester.pump();
+          await waitForAtlasIo(tester);
         }
         if (find.byKey(const ValueKey('atlas-quiz-hint')).evaluate().isEmpty) {
           await tester.tap(find.byTooltip('Need a hint?'));
           await tester.pump();
+          await waitForAtlasIo(tester);
         }
         expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsOneWidget);
         expect(find.textContaining('overall proportions'), findsOneWidget);
@@ -75,26 +82,32 @@ void main() {
             reference: 'male',
             systems: const {'skeletal'},
             requestedCount: 5)));
+    await waitForAtlasIo(tester);
     final oldViewer = tester
         .widget<AnatomyAtlasModelView>(find.byType(AnatomyAtlasModelView));
     oldViewer.onLoaded!(true);
     await tester.pump();
+    await waitForAtlasIo(tester);
     final answer =
         catalog.structures.singleWhere((s) => s.id == oldViewer.target).name;
     await tester.ensureVisible(find.text(answer));
     await tester.tap(find.text(answer));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.ensureVisible(find.text('Check answer'));
     await tester.tap(find.text('Check answer'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.ensureVisible(find.text('Next structure'));
     await tester.tap(find.text('Next structure'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     final nextViewer = tester
         .widget<AnatomyAtlasModelView>(find.byType(AnatomyAtlasModelView));
     expect(nextViewer.target, isNot(oldViewer.target));
     oldViewer.onLoaded!(true);
     await tester.pump();
+    await waitForAtlasIo(tester);
     expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
         isNull);
     final option =
@@ -102,6 +115,7 @@ void main() {
     expect(option.onPressed, isNull);
     nextViewer.onLoaded!(true);
     await tester.pump();
+    await waitForAtlasIo(tester);
     expect(
         tester
             .widget<OutlinedButton>(find.byType(OutlinedButton).first)

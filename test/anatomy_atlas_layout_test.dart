@@ -1,3 +1,4 @@
+import 'atlas_quiz_test_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/core/mascot/norie_mascot_host.dart';
@@ -12,15 +13,19 @@ import 'package:norie_learning/features/learning/presentation/anatomy_atlas_quiz
 import 'package:norie_learning/features/learning/presentation/anatomy_atlas_quiz_screen.dart';
 
 void main() {
+  setUp(prepareAtlasWidgetTest);
   testWidgets('lab quiz shortcut opens the category selector', (tester) async {
     await tester.runAsync(AnatomyAtlasCatalog.load);
     await tester
         .pumpWidget(const MaterialApp(home: AnatomyLabPlaceholderScreen()));
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.tap(find.text('Quiz Selected'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await waitForAtlasIo(tester);
     expect(find.byType(AnatomyAtlasQuizSetupScreen), findsOneWidget);
     expect(find.byType(AnatomyAtlasQuizScreen), findsNothing);
     expect(tester.takeException(), isNull);
@@ -35,6 +40,7 @@ void main() {
             initialSystems: {AnatomySystemId.skeletal})));
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump();
+    await waitForAtlasIo(tester);
     final viewer = tester
         .widget<AnatomyAtlasModelView>(find.byType(AnatomyAtlasModelView));
     final coordinator = NorieMascotScope.maybeOf(
@@ -44,7 +50,9 @@ void main() {
     coordinator.goTo(NorieTutorialCatalog.complete.steps
         .indexWhere((step) => step.id == 'anatomy-camera'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await waitForAtlasIo(tester);
     expect(viewer.controller.lastCommand?['type'], 'focus');
     final catalog = await tester.runAsync(AnatomyAtlasCatalog.load);
     final payload = viewer.controller.lastCommand?['payload'] as Map;
@@ -57,7 +65,9 @@ void main() {
     coordinator.goTo(NorieTutorialCatalog.complete.steps
         .indexWhere((step) => step.id == 'anatomy-systems'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await waitForAtlasIo(tester);
     final rect = coordinator.targetRect('anatomy.systems');
     expect(rect?.height, 49);
     expect(find.byKey(const ValueKey('tutorial-location')), findsOneWidget);
@@ -80,11 +90,14 @@ void main() {
         isNull);
     await tester.tap(find.text('Every part'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
         isNotNull);
     await tester.tap(find.text('Start 20-question quiz'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await waitForAtlasIo(tester);
     expect(find.byType(AnatomyAtlasQuizScreen), findsOneWidget);
     expect(find.text('Identify · 1/20'), findsOneWidget);
     final viewer = tester
@@ -94,6 +107,7 @@ void main() {
     expect(viewer.reference, target.reference);
     await tester.tap(find.byTooltip('Need a hint?'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsOneWidget);
     expect(find.textContaining('overall proportions'), findsOneWidget);
     expect(tester.getSize(find.byType(AnatomyAtlasModelView)).height,
@@ -119,6 +133,7 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     // Native WebView startup stays pending in widget tests; only lay out Flutter.
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.pump(const Duration(milliseconds: 100));
     final viewer = find.byType(AnatomyAtlasModelView);
     expect(viewer, findsOneWidget);
@@ -129,14 +144,17 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('Adult male · BodyParts3D'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.pump(const Duration(milliseconds: 300));
     final glandChoice =
         find.widgetWithText(ListTile, 'Endocrine glands · detail');
     expect(glandChoice, findsOneWidget);
     await tester.ensureVisible(glandChoice);
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.tap(glandChoice);
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.widget<AnatomyAtlasModelView>(viewer).reference, 'glands');
     expect(find.text('Search 11 parts'), findsOneWidget);

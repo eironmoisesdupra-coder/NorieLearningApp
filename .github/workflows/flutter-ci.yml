@@ -161,6 +161,17 @@ jobs:
       - name: Audit exact Android APK against reviewed preview budget
         run: python scripts/release/asset_budget.py --android build/app/outputs/flutter-apk/app-release.apk --json-output build/android-package-size-report.json --fail-on-growth
 
+      - name: Report Android existing-learner upgrade compatibility (non-publishing)
+        run: |
+          python -m unittest discover -s test -p android_preview_upgrade_test.py
+          python scripts/release/android_preview_upgrade.py --apk build/app/outputs/flutter-apk/app-release.apk --report build/android-upgrade-compatibility.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Android-upgrade-compatibility
+          path: build/android-upgrade-compatibility.json
+          if-no-files-found: error
+
       - name: Build preview Android App Bundle (not production signed)
         run: flutter build appbundle --no-pub --release
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
+import 'dart:async';
 import '../../../core/account/norie_account_service.dart';
 import '../../../core/audio/norie_audio_manager.dart';
 import '../../../core/quiz/quiz_result_summary.dart';
@@ -10,6 +10,8 @@ import '../domain/anatomy_atlas_catalog.dart';
 import '../domain/anatomy_atlas_quiz_policy.dart';
 import '../domain/anatomy_models.dart';
 import '../domain/anatomy_hint_library.dart';
+import '../domain/anatomy_atlas_quiz_snapshot.dart';
+import '../data/anatomy_atlas_quiz_store.dart';
 import 'anatomy_atlas_hint_panel.dart';
 import 'anatomy_atlas_controller.dart';
 import 'anatomy_atlas_model_view.dart';
@@ -40,7 +42,21 @@ class AnatomyAtlasQuizScreen extends StatefulWidget {
 class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
   final _controller = AnatomyAtlasController();
   final _questionScroll = ScrollController();
-  late final AtlasQuizSession _quiz;
+  AtlasQuizSession? _activeQuiz;
+  AtlasQuizSession get _quiz => _activeQuiz!;
+  AtlasSavedRound? _round;
+  late final AtlasQuizStore _store;
+  late final String? _ownerId;
+  int _modelSession = 0;
+  bool _loading = true, _busy = false, _conflict = false;
+  String? _saveError;
+  Future<void> Function()? _retryOperation;
+  AtlasQuizRequest get _request => AtlasQuizRequest(
+      reference: widget.reference,
+      systems: widget.systems,
+      requestedCount: widget.requestedCount,
+      difficulty: widget.difficulty,
+      kinds: widget.kinds);
   late final bool Function() _stillCurrent;
   String? _choice;
   bool _modelReady = false;
@@ -69,33 +85,37 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
   }
 
   void _toggleHint() {
-    if (!_stillCurrent() || _quiz.finished) return;
+    if (!_stillCurrent() || _busy || _quiz.finished) return;
     setState(() => _hintVisible = !_hintVisible);
   }
 
   bool _outroShown = false;
-  final _attemptId = const Uuid().v4();
+  String get _attemptId => _round!.attemptId;
   final _answers = <QuizAnswerRecord>[];
   late final Object _audioContext;
   @override
   void initState() {
     super.initState();
-    _stillCurrent = NorieAccountService.instance.captureLearnerGuard();
-    _quiz = AtlasQuizSession.generate(
-        widget.catalog, widget.reference, widget.systems,
-        requestedCount: widget.requestedCount,
-        difficulty: widget.difficulty,
-        kinds: widget.kinds,
-        stillCurrent: _stillCurrent);
+    final learner = NorieAccountService.instance.captureLearnerGuard();
+    final revision = NorieProgression.instance.stateRevision;
+    _stillCurrent = () =>
+        mounted &&
+        learner() &&
+        NorieProgression.instance.stateRevision == revision;
+    _ownerId = NorieAccountService.instance.user?.id;
+    _store = AtlasQuizStore(owner: _ownerId, stillCurrent: _stillCurrent);
     _hintVisible = widget.difficulty == AtlasQuizDifficulty.guided;
     NorieAccountService.instance.addListener(_learnerChanged);
+    NorieProgression.instance.addListener(_learnerChanged);
     _audioContext =
         NorieAudioManager.instance.enterContext(NorieAudioContext.quiz);
+    unawaited(_load());
   }
 
   @override
   void dispose() {
     NorieAccountService.instance.removeListener(_learnerChanged);
+    NorieProgression.instance.removeListener(_learnerChanged);
     NorieAudioManager.instance.leaveContext(_audioContext);
     _controller.dispose();
     _questionScroll.dispose();
@@ -106,90 +126,245 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
     if (mounted && !_stillCurrent()) setState(() {});
   }
 
-  void _check() {
-    if (!_stillCurrent() || _choice == null || !_modelReady) return;
-    final correct = _quiz.answer(_choice!);
-    if (correct == null) return;
-    final target = _quiz.current.target;
-    final system = AnatomyCatalog.systems
-        .where((s) => target.systems.contains(s.id.name))
-        .firstOrNull;
-    final topic = system?.label ?? 'Atlas structures';
-    _answers.add(QuizAnswerRecord(
-        questionId: target.id,
-        prompt: _quiz.current.prompt,
-        response: _choice!,
-        correctAnswer: _quiz.current.answer,
-        explanation: _quiz.current.explanation,
-        correct: correct,
-        conceptId: system?.id.name ?? target.systems.first,
-        conceptLabel: topic));
-    if (correct) {
-      NorieAudioManager.instance.playCorrect();
-    } else {
-      NorieAudioManager.instance.playWrong();
+  void _adopt(AtlasSavedRound round) {
+    _round = round;
+    _activeQuiz = round.session(widget.catalog, stillCurrent: _stillCurrent);
+    _choice = _quiz.responses[_quiz.index];
+    _answers.clear();
+    for (var i = 0; i < _quiz.questions.length; i++) {
+      final response = _quiz.responses[i];
+      if (response == null) continue;
+      final question = _quiz.questions[i];
+      final system = AnatomyCatalog.systems
+          .where((s) => question.target.systems.contains(s.id.name))
+          .firstOrNull;
+      _answers.add(QuizAnswerRecord(
+          questionId: question.target.id,
+          prompt: question.prompt,
+          response: response,
+          correctAnswer: question.answer,
+          explanation: question.explanation,
+          correct: response == question.answer,
+          conceptId: system?.id.name ?? question.target.systems.first,
+          conceptLabel: question.masteryTopic));
     }
-    NorieProgression.instance
-        .recordTopicAnswer(category: 'Anatomy', topic: topic, correct: correct);
-    setState(() {});
+  }
+
+  Future<bool> _run(Future<void> Function() operation) async {
+    if (_busy || !_stillCurrent()) return false;
+    setState(() {
+      _busy = true;
+      _saveError = null;
+    });
+    var success = false;
+    try {
+      await operation();
+      success = _stillCurrent();
+    } on Object catch (error) {
+      if (mounted) {
+        _saveError = error is StateError
+            ? error.message
+            : error is FormatException
+                ? error.message
+                : 'Local save failed. Your saved round is preserved. Retry or reload it.';
+        _retryOperation = operation;
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _loading = false;
+        });
+      }
+    }
+    return success;
+  }
+
+  Future<void> _reconcile() async {
+    final pending = _round!.pending;
+    if (pending != null) {
+      final quiz = _round!.session(widget.catalog);
+      await _store.reconcileEffect(
+          widget.catalog,
+          _round!,
+          () => NorieProgression.instance.recordAtlasMastery(
+              topic: quiz.current.masteryTopic,
+              lineage: pending.lineage,
+              ownerId: _ownerId,
+              receipt: pending.receipt,
+              correct: quiz.responses[quiz.index] == quiz.current.answer,
+              stillCurrent: _stillCurrent));
+      _round = await _store.save(
+          widget.catalog, _round!.replace(widget.catalog, quiz));
+    }
+    if (_round!.finished && !_round!.rewardAck) {
+      final quiz = _round!.session(widget.catalog);
+      if (!_stillCurrent()) throw StateError('Learner changed while saving.');
+      await _store.reconcileEffect(widget.catalog, _round!, () async {
+        await NorieProgression.instance
+            .ensureAtlasOwner(ownerId: _ownerId, stillCurrent: _stillCurrent);
+        NorieProgression.instance.addXp(quiz.score * 10,
+            claimKey: 'anatomy-atlas:${_round!.attemptId}');
+        await NorieProgression.instance.flushPendingSaves(retry: true);
+      });
+      _round = await _store.save(widget.catalog,
+          _round!.replace(widget.catalog, quiz, rewardAck: true));
+    }
+    _adopt(_round!);
+  }
+
+  Future<void> _load({bool resumeExisting = false}) async {
+    await _run(() async {
+      final saved = await _store.read(widget.catalog);
+      _round = saved ?? await _store.start(widget.catalog, _request);
+      _conflict = !resumeExisting &&
+          !_round!.finished &&
+          !_round!.request.matches(_request);
+      if (_conflict) return;
+      await _reconcile();
+      _modelSession++;
+      _modelReady = false;
+      _hintVisible = _round!.request.difficulty == AtlasQuizDifficulty.guided;
+    });
+  }
+
+  Future<void> _startNew({bool confirm = true}) async {
+    if (_busy || !_stillCurrent()) return;
+    if (confirm) {
+      final accepted = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+                  title: const Text('Start a new round?'),
+                  content: const Text(
+                      'The current round will stop. Its existing save will be preserved as a recovery copy. Unfinished rounds do not earn round XP.'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Keep saved round')),
+                    FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Start new round'))
+                  ]));
+      if (accepted != true || !_stillCurrent()) return;
+    }
+    await _run(() async {
+      final round = await _store.start(widget.catalog, _request, discard: true);
+      _adopt(round);
+      _conflict = false;
+      _outroShown = false;
+      _modelReady = false;
+      _hintVisible = round.request.difficulty == AtlasQuizDifficulty.guided;
+    });
+  }
+
+  Future<void> _check() async {
+    if (_busy || !_stillCurrent() || _choice == null || !_modelReady) return;
+    await _run(() async {
+      if (_round!.pending != null) {
+        await _reconcile();
+        return;
+      }
+      final lineage = await NorieProgression.instance.prepareAtlasMastery(
+          _quiz.current.masteryTopic,
+          ownerId: _ownerId,
+          stillCurrent: _stillCurrent);
+      final next = _round!.session(widget.catalog, stillCurrent: _stillCurrent);
+      final correct = next.answer(_choice!);
+      if (correct == null) return;
+      final answered = _round!.replace(widget.catalog, next);
+      final pending = AtlasPendingAnswer(
+          next.index, lineage, answered.answerReceipt(next.index));
+      _round = await _store.save(widget.catalog,
+          answered.replace(widget.catalog, next, pending: pending));
+      await _reconcile();
+      if (correct) {
+        NorieAudioManager.instance.playCorrect();
+      } else {
+        NorieAudioManager.instance.playWrong();
+      }
+    });
   }
 
   Future<void> _next() async {
-    if (!_stillCurrent()) return;
-    if (!_quiz.next()) return;
-    final reward = _quiz.takeReward();
-    if (reward != null) {
-      NorieProgression.instance
-          .addXp(reward, claimKey: 'anatomy-atlas:$_attemptId');
-    }
-    setState(() {
-      _choice = null;
-      _modelReady = false;
-      _hintVisible = widget.difficulty == AtlasQuizDifficulty.guided;
-    });
-    if (_questionScroll.hasClients) _questionScroll.jumpTo(0);
-    if (_quiz.finished && !_outroShown) {
-      _outroShown = true;
-      final legacyMode = widget.difficulty == AtlasQuizDifficulty.standard &&
-          widget.kinds.length == 1 &&
-          widget.kinds.contains(AtlasQuestionKind.identify);
-      final action = await NorieQuizOutro.show(context,
-          stillCurrent: _stillCurrent,
-          summary: QuizResultSummary(
-              attemptId: _attemptId,
-              historyKey: quizHistoryKey(
-                  legacyMode
-                      ? 'atlas:${widget.reference}'
-                      : 'atlas:${widget.reference}:${widget.difficulty.name}:'
-                          '${(widget.kinds.map((kind) => kind.name).toList()..sort()).join(",")}',
-                  _quiz.questions.map((q) => q.target.id)),
-              title: 'Anatomy Atlas',
-              correctCount: _quiz.score,
-              totalCount: _quiz.questions.length,
-              xpEarned: reward ?? 0,
-              answers: _answers), reviewVisualBuilder: (_, answer) {
-        final target = widget.catalog.structures
-            .firstWhere((structure) => structure.id == answer.questionId);
-        return _AtlasReviewModel(target: target, reference: target.reference);
-      });
-      if (!mounted || !_stillCurrent()) return;
-      if (action == QuizOutroAction.retry) {
-        Navigator.pushReplacement(
-            context,
-            MaterialPageRoute<void>(
-                builder: (_) => AnatomyAtlasQuizScreen(
-                    catalog: widget.catalog,
-                    hints: widget.hints,
-                    reference: widget.reference,
-                    systems: widget.systems,
-                    requestedCount: widget.requestedCount,
-                    difficulty: widget.difficulty,
-                    kinds: widget.kinds)));
-      } else {
-        Navigator.pop(context);
+    if (_busy || !_stillCurrent()) return;
+    final success = await _run(() async {
+      if (_round!.finished || _round!.pending != null) {
+        await _reconcile();
+        return;
       }
+      final next = _round!.session(widget.catalog, stillCurrent: _stillCurrent);
+      if (!next.next()) return;
+      _round = await _store.save(
+          widget.catalog, _round!.replace(widget.catalog, next));
+      await _reconcile();
+      _modelReady = false;
+      _hintVisible = _round!.request.difficulty == AtlasQuizDifficulty.guided;
+      if (_questionScroll.hasClients) _questionScroll.jumpTo(0);
+    });
+    if (success && _quiz.finished) await _showOutro();
+  }
+
+  Future<void> _showOutro() async {
+    if (!_stillCurrent() || _outroShown || !_round!.rewardAck) return;
+    _outroShown = true;
+    final request = _round!.request;
+    final legacyMode = request.difficulty == AtlasQuizDifficulty.standard &&
+        request.kinds.length == 1 &&
+        request.kinds.contains(AtlasQuestionKind.identify);
+    final action = await NorieQuizOutro.show(context,
+        stillCurrent: _stillCurrent,
+        summary: QuizResultSummary(
+            attemptId: _attemptId,
+            historyKey: quizHistoryKey(
+                legacyMode
+                    ? 'atlas:${request.reference}'
+                    : 'atlas:${request.reference}:${request.difficulty.name}:'
+                        '${(request.kinds.map((k) => k.name).toList()..sort()).join(",")}',
+                _quiz.questions.map((q) => q.target.id)),
+            title: 'Anatomy Atlas',
+            correctCount: _quiz.score,
+            totalCount: _quiz.questions.length,
+            xpEarned: _quiz.score * 10,
+            answers: _answers), reviewVisualBuilder: (_, answer) {
+      final target = widget.catalog.structures
+          .firstWhere((s) => s.id == answer.questionId);
+      return _AtlasReviewModel(target: target, reference: target.reference);
+    });
+    if (!mounted || !_stillCurrent()) return;
+    _outroShown = false;
+    if (action == QuizOutroAction.retry) {
+      await _startNew(confirm: false);
+    } else {
+      Navigator.pop(context);
     }
   }
+
+  Widget _recoveryControls() =>
+      Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(_saveError ?? 'Saved round needs attention.',
+            textAlign: TextAlign.center),
+        const SizedBox(height: 12),
+        Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              FilledButton(
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final operation = _retryOperation;
+                          if (operation != null) await _run(operation);
+                        },
+                  child: const Text('Retry saving')),
+              TextButton(
+                  onPressed: _busy ? null : () => _load(),
+                  child: const Text('Reload saved round')),
+              TextButton(
+                  onPressed: _busy ? null : _startNew,
+                  child: const Text('Start new round')),
+            ]),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -198,13 +373,48 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
         appBar: AppBar(title: const Text('Atlas quiz')),
         body: ListView(padding: const EdgeInsets.all(24), children: [
           const Text(
-              'The learner changed during this quiz. Start a new quiz for the current learner.'),
+              'The learner changed or saved progress was replaced. Reopen the quiz for the current learner.'),
           const SizedBox(height: 16),
           FilledButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Back to Anatomy Lab')),
         ]),
       );
+    }
+    if (_loading) {
+      return Scaffold(
+          appBar: AppBar(title: const Text('Atlas quiz')),
+          body: const Center(
+              child: CircularProgressIndicator(
+                  semanticsLabel: 'Opening saved quiz')));
+    }
+    if (_conflict && _round != null) {
+      return Scaffold(
+          appBar: AppBar(title: const Text('Saved Atlas round')),
+          body: Center(
+              child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text(
+                        'You have a saved ${_round!.request.requestedCount}-question round with different settings.'),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                        onPressed:
+                            _busy ? null : () => _load(resumeExisting: true),
+                        child: const Text('Resume saved round')),
+                    TextButton(
+                        onPressed: _busy ? null : _startNew,
+                        child: const Text('Start selected quiz')),
+                    if (_saveError != null) _recoveryControls(),
+                  ]))));
+    }
+    if (_activeQuiz == null) {
+      return Scaffold(
+          appBar: AppBar(title: const Text('Atlas quiz recovery')),
+          body: Center(
+              child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: _recoveryControls())));
     }
     if (_quiz.finished) {
       return Scaffold(
@@ -217,7 +427,14 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                 style:
                     const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
             Text('+${_quiz.score * 10} XP'),
+            if (_saveError != null) _recoveryControls(),
             const SizedBox(height: 20),
+            FilledButton(
+                onPressed: _busy || !_round!.rewardAck ? null : _showOutro,
+                child: const Text('Review round')),
+            TextButton(
+                onPressed: _busy || !_round!.rewardAck ? null : _startNew,
+                child: const Text('Start new round')),
             FilledButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Back to Anatomy Lab')),
@@ -225,6 +442,8 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
     }
     final question = _quiz.current;
     final questionIndex = _quiz.index;
+    final modelAttempt = _attemptId;
+    final modelSession = _modelSession;
     final audio = NorieAudioManager.instance;
     return Scaffold(
         appBar: AppBar(
@@ -261,6 +480,7 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
           Expanded(
               flex: 4,
               child: AnatomyAtlasModelView(
+                  key: ValueKey('atlas-model:$_attemptId:$_modelSession'),
                   controller: _controller,
                   reference: question.target.reference,
                   systems: question.target.systems,
@@ -268,6 +488,9 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                   onLoaded: (ready) {
                     if (mounted &&
                         _stillCurrent() &&
+                        _attemptId == modelAttempt &&
+                        _modelSession == modelSession &&
+                        _quiz.current.target.id == question.target.id &&
                         _quiz.index == questionIndex &&
                         _modelReady != ready) {
                       setState(() => _modelReady = ready);
@@ -280,6 +503,10 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                   controller: _questionScroll,
                   padding: const EdgeInsets.all(12),
                   child: Column(children: [
+                    if (_busy)
+                      const LinearProgressIndicator(
+                          semanticsLabel: 'Saving quiz progress'),
+                    if (_saveError != null) _recoveryControls(),
                     Text(question.prompt),
                     const SizedBox(height: 12),
                     if (_hintVisible)
@@ -316,7 +543,10 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                                               : null,
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 12)),
-                                  onPressed: _quiz.checked || !_modelReady
+                                  onPressed: _busy ||
+                                          _saveError != null ||
+                                          _quiz.checked ||
+                                          !_modelReady
                                       ? null
                                       : () {
                                           NorieAudioManager.instance
@@ -341,11 +571,13 @@ class _AnatomyAtlasQuizScreenState extends State<AnatomyAtlasQuizScreen> {
                     SizedBox(
                         width: double.infinity,
                         child: FilledButton(
-                            onPressed: _quiz.checked
-                                ? _next
-                                : _choice == null || !_modelReady
-                                    ? null
-                                    : _check,
+                            onPressed: _busy || _saveError != null
+                                ? null
+                                : _quiz.checked
+                                    ? _next
+                                    : _choice == null || !_modelReady
+                                        ? null
+                                        : _check,
                             child: Text(_quiz.checked
                                 ? (_quiz.index + 1 == _quiz.questions.length
                                     ? 'Finish quiz'
