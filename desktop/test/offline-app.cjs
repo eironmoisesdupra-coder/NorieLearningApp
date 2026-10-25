@@ -96,7 +96,7 @@ async function main() {
     await page.getByRole('button', { name: 'Quiz', exact: true }).click();
     await page.getByRole('button', { name: 'Start 20-question quiz', exact: true }).click();
     await page.getByText('Identify · 1/20', { exact: true }).waitFor();
-    let quizFrame = page.frames().filter(frame => frame.url().includes('atlas-viewer.html')).at(-1);
+    let quizFrame;
     const beforeHintCredits = await page.evaluate(() => localStorage.getItem('flutter.norie.credits'));
     await page.getByRole('button', { name: 'Need a hint?', exact: true }).first().click();
     await page.getByText(/Examine the object.*overall proportions/).waitFor();
@@ -123,11 +123,30 @@ async function main() {
         return typeof value === 'string' ? JSON.parse(value) : value;
       });
     }
+    async function quizRenderer(target) {
+      // The lab viewer remains mounted underneath the quiz route. Frame-tree
+      // order is not route order, and async restore can attach the quiz later.
+      // Wait for an actual quiz configure command bound to this saved target.
+      await page.waitForFunction(id => Array.from(document.querySelectorAll(
+        'iframe[title="NorieLearning interactive anatomy atlas"]')).some(element => {
+        try {
+          const command = element.contentWindow?.atlasCommands?.filter(c => c.type === 'configure').at(-1);
+          return command?.payload.quiz === true && command.payload.target === id;
+        } catch { return false; }
+      }), target);
+      const observed = [];
+      for (const frame of page.frames().filter(frame => frame.url().includes('atlas-viewer.html'))) {
+        const command = await frame.evaluate(() => window.atlasCommands?.filter(c => c.type === 'configure').at(-1));
+        observed.push(command);
+        if (command?.payload.quiz === true && command.payload.target === target) return frame;
+      }
+      throw new Error(`Saved quiz target ${target} has no matching renderer: ${JSON.stringify(observed)}`);
+    }
 
     for (let item = 0; item < 20; item++) {
       await page.getByText(`Identify · ${item + 1}/20`, { exact: true }).waitFor();
       const saved = await savedAtlas();
-      await quizFrame.waitForFunction(id => window.atlasCommands.filter(c => c.type === 'configure').at(-1)?.payload.target === id, saved.questions[item].id);
+      quizFrame = await quizRenderer(saved.questions[item].id);
       const target = await quizFrame.evaluate(() => window.atlasCommands.filter(c => c.type === 'configure').at(-1).payload.target);
       const answer = catalog.structures.find(s => s.id === target).name;
       await answerClick(page.getByRole('button', { name: answer, exact: true }));
@@ -153,7 +172,7 @@ async function main() {
         await resumed.or(resumeChoice).first().waitFor();
         if (await resumeChoice.isVisible()) await resumeChoice.click();
         await resumed.waitFor();
-        quizFrame = page.frames().filter(frame => frame.url().includes('atlas-viewer.html')).at(-1);
+        quizFrame = await quizRenderer(retained.questions[1].id);
         const restored = await savedAtlas();
         assert.equal(restored.attemptId, retained.attemptId);
         assert.equal(restored.index, retained.index);
