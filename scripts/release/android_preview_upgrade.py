@@ -39,7 +39,7 @@ def inspect(apk, signer, aapt):
     output = run([signer, 'verify', '--verbose', '--print-certs', str(apk)])
     identities = re.findall(r'Signer #\d+ certificate SHA-256 digest:\s*([0-9a-fA-F:]+)', output)
     if len(identities) != 1:
-        raise ValueError('Exactly one verified APK signer required')
+        raise ValueError(f'Exactly one verified APK signer required (found {len(identities)})')
     certificate = identities[0].replace(':', '').lower()
     if not re.fullmatch('[0-9a-f]{64}', certificate):
         raise ValueError('Invalid signer SHA-256')
@@ -65,11 +65,16 @@ def main():
     parser.add_argument('--require-compatible', action='store_true')
     args = parser.parse_args()
     try:
-        result = inspect(args.apk, args.apksigner or sdk_tool('apksigner'), args.aapt or sdk_tool('aapt'))
+        signer = args.apksigner or sdk_tool('apksigner')
+        aapt = args.aapt or sdk_tool('aapt')
+        print(f'APK verification tools: apksigner={signer}, aapt={aapt}')
+        result = inspect(args.apk, signer, aapt)
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
-        parser.exit(2, 'APK compatibility verification failed: ' + type(error).__name__ + '\n')
+        # These diagnostics contain only tool/metadata validation errors. Keep
+        # the reason visible so CI failures can be investigated, not bypassed.
+        parser.exit(2, 'APK compatibility verification failed: ' + type(error).__name__ + ': ' + str(error) + '\n')
     if not result['compatible']:
         print('Upgrade blocked: package or signing identity differs from the published baseline. Preserve installed learner data; original signing authority or reviewed migration is required.')
         return 1 if args.require_compatible else 0

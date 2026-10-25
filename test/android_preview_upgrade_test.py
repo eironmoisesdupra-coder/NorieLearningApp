@@ -60,6 +60,7 @@ class PreviewUpgradeTest(unittest.TestCase):
         result, report = self.invoke(fingerprint='missing')
         self.assertNotEqual(result.returncode, 0)
         self.assertIsNone(report)
+        self.assertIn('Exactly one verified APK signer required', result.stderr)
 
 
 if __name__ == '__main__':
