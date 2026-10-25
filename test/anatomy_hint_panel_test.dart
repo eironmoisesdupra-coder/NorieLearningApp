@@ -1,3 +1,4 @@
+import 'atlas_quiz_test_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,7 @@ import 'package:norie_learning/features/learning/presentation/anatomy_atlas_mode
 import 'package:norie_learning/features/learning/presentation/anatomy_atlas_quiz_screen.dart';
 
 void main() {
+  setUp(prepareAtlasWidgetTest);
   for (final changedAsset in [false, true]) {
     testWidgets(
         'quiz binds structural help to current renderer and asset (changed=$changedAsset)',
@@ -53,21 +55,26 @@ void main() {
         requestedCount: 5,
         hints: library,
       )));
+      await waitForAtlasIo(tester);
       await tester.tap(find.byTooltip('Need a hint?'));
       await tester.pump();
+      await waitForAtlasIo(tester);
       await tester.ensureVisible(find.text('Structure clue · Free'));
       await tester.tap(find.text('Structure clue · Free'));
       await tester.pump();
+      await waitForAtlasIo(tester);
       expect(find.text(left.structuralHint), findsNothing);
       final viewer = tester
           .widget<AnatomyAtlasModelView>(find.byType(AnatomyAtlasModelView));
       viewer.onLoaded!(true);
       await tester.pump();
+      await waitForAtlasIo(tester);
       expect(find.text(left.structuralHint),
           changedAsset ? findsNothing : findsOneWidget);
       if (!changedAsset) {
         viewer.onLoaded!(false);
         await tester.pump();
+        await waitForAtlasIo(tester);
         expect(find.text(left.structuralHint), findsNothing);
       }
       await tester.pumpWidget(const SizedBox.shrink());

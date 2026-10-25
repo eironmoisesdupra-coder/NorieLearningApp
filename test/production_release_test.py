@@ -72,11 +72,25 @@ class ProductionReleaseTest(unittest.TestCase):
 
     def test_actual_apk_verifier_output_requires_one_pinned_signer(self):
         self.assertTrue(hasattr(m, 'verify_android'))
-        with patch.object(m, 'run', return_value='Signer #1 certificate SHA-256 digest: ' + 'a'*64) as command:
+        with patch.object(m, 'run', return_value='Number of signers: 1\nSigner #1 certificate SHA-256 digest: ' + 'a'*64) as command:
             m.verify_android(Path('app.apk'), 'a'*64)
             self.assertEqual(command.call_args.args[0][:3], ['apksigner', 'verify', '--verbose'])
         for output in ('unsigned', 'Signer #1 certificate SHA-256 digest: '+'b'*64, 'Signer #1 certificate SHA-256 digest: '+'a'*64+'\nSigner #2 certificate SHA-256 digest: '+'a'*64):
             with patch.object(m, 'run', return_value=output), self.assertRaises(ValueError):
+                m.verify_android(Path('app.apk'), 'a'*64)
+
+    def test_sdk37_verified_schemes_require_one_consistent_pinned_identity(self):
+        output = 'Number of signers: 1\nV2 Signer: certificate SHA-256 digest: ' + 'a'*64
+        with patch.object(m, 'run', return_value=output):
+            self.assertEqual(m.verify_android(Path('app.apk'), 'a'*64), 'a'*64)
+        with patch.object(m, 'run', return_value=output + '\nV3 Signer: certificate SHA-256 digest: ' + 'a'*64):
+            self.assertEqual(m.verify_android(Path('app.apk'), 'a'*64), 'a'*64)
+        for invalid in [output.replace('signers: 1', 'signers: 2'),
+                        output + '\nV3 Signer: certificate SHA-256 digest: ' + 'b'*64,
+                        output + '\nV3 Signer: certificate SHA-256 digest: malformed',
+                        output + '\nSigner #2 certificate SHA-256 digest: ' + 'a'*64,
+                        output.replace('Number of signers: 1\n', '')]:
+            with patch.object(m, 'run', return_value=invalid), self.assertRaises(ValueError):
                 m.verify_android(Path('app.apk'), 'a'*64)
 
     def test_windows_rejects_invalid_signature_missing_timestamp_and_wrong_pin(self):

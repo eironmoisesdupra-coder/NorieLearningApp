@@ -96,7 +96,7 @@ async function main() {
     await page.getByRole('button', { name: 'Quiz', exact: true }).click();
     await page.getByRole('button', { name: 'Start 20-question quiz', exact: true }).click();
     await page.getByText('Identify · 1/20', { exact: true }).waitFor();
-    const quizFrame = page.frames().filter(frame => frame.url().includes('atlas-viewer.html')).at(-1);
+    let quizFrame;
     const beforeHintCredits = await page.evaluate(() => localStorage.getItem('flutter.norie.credits'));
     await page.getByRole('button', { name: 'Need a hint?', exact: true }).first().click();
     await page.getByText(/Examine the object.*overall proportions/).waitFor();
@@ -111,15 +111,80 @@ async function main() {
     await page.getByRole('button', { name: 'Hide hint', exact: true }).click();
     console.log('PASS: phone-sized free general help and missing-content fallback; detailed hint locked, Credits unchanged');
 
+    async function savedAtlas() {
+      return page.evaluate(() => {
+        const value = JSON.parse(localStorage.getItem('flutter.norie.atlasQuiz.round.v1.guest'));
+        return (typeof value === 'string' ? JSON.parse(value) : value).round;
+      });
+    }
+    async function atlasMastery() {
+      return page.evaluate(() => {
+        const value = JSON.parse(localStorage.getItem('flutter.norie.topicMastery'));
+        return typeof value === 'string' ? JSON.parse(value) : value;
+      });
+    }
+    async function quizRenderer(target) {
+      // The lab viewer remains mounted underneath the quiz route. Frame-tree
+      // order is not route order, and async restore can attach the quiz later.
+      // Wait for an actual quiz configure command bound to this saved target.
+      await page.waitForFunction(id => Array.from(document.querySelectorAll(
+        'iframe[title="NorieLearning interactive anatomy atlas"]')).some(element => {
+        try {
+          const command = element.contentWindow?.atlasCommands?.filter(c => c.type === 'configure').at(-1);
+          return command?.payload.quiz === true && command.payload.target === id;
+        } catch { return false; }
+      }), target);
+      const observed = [];
+      for (const frame of page.frames().filter(frame => frame.url().includes('atlas-viewer.html'))) {
+        const command = await frame.evaluate(() => window.atlasCommands?.filter(c => c.type === 'configure').at(-1));
+        observed.push(command);
+        if (command?.payload.quiz === true && command.payload.target === target) return frame;
+      }
+      throw new Error(`Saved quiz target ${target} has no matching renderer: ${JSON.stringify(observed)}`);
+    }
+
     for (let item = 0; item < 20; item++) {
       await page.getByText(`Identify · ${item + 1}/20`, { exact: true }).waitFor();
-      await quizFrame.waitForFunction(index => window.atlasCommands.filter(c => c.type === 'configure').length >= index + 1, item);
+      const saved = await savedAtlas();
+      quizFrame = await quizRenderer(saved.questions[item].id);
       const target = await quizFrame.evaluate(() => window.atlasCommands.filter(c => c.type === 'configure').at(-1).payload.target);
       const answer = catalog.structures.find(s => s.id === target).name;
       await answerClick(page.getByRole('button', { name: answer, exact: true }));
       await answerClick(page.getByRole('button', { name: 'Check answer', exact: true }));
       await page.getByText(`Correct: ${answer}`, { exact: true }).waitFor();
       await answerClick(page.getByRole('button', { name: item === 19 ? 'Finish quiz' : 'Next structure', exact: true }));
+      if (item === 0) {
+        await page.getByText('Identify · 2/20', { exact: true }).waitFor();
+        const retained = await savedAtlas();
+        const mastery = await atlasMastery();
+        await page.reload();
+        await enableAccessibility();
+        await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
+        await page.getByRole('checkbox', { name: 'Activities', exact: true }).click();
+        const lab = page.getByRole('button', { name: /^3D Anatomy Lab/ });
+        await lab.waitFor(); await page.waitForTimeout(350);
+        await lab.click({ position: { x: 40, y: 20 } });
+        await page.getByRole('button', { name: /Open 3D Viewer/ }).click();
+        await page.getByRole('button', { name: 'Quiz', exact: true }).click();
+        await page.getByRole('button', { name: 'Start 20-question quiz', exact: true }).click();
+        const resumed = page.getByText('Identify · 2/20', { exact: true });
+        const resumeChoice = page.getByRole('button', { name: 'Resume saved round', exact: true });
+        await resumed.or(resumeChoice).first().waitFor();
+        if (await resumeChoice.isVisible()) await resumeChoice.click();
+        await resumed.waitFor();
+        quizFrame = await quizRenderer(retained.questions[1].id);
+        const restored = await savedAtlas();
+        assert.equal(restored.attemptId, retained.attemptId);
+        assert.equal(restored.index, retained.index);
+        assert.deepEqual(restored.request, retained.request);
+        assert.deepEqual(restored.questions, retained.questions);
+        assert.deepEqual(restored.responses, retained.responses);
+        await quizFrame.waitForFunction(id => window.atlasCommands.filter(c => c.type === 'configure').at(-1)?.payload.target === id, retained.questions[1].id);
+        assert.deepEqual(await atlasMastery(), mastery);
+        assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), beforeXp);
+        await captureHiddenPage('windows-atlas-resume-phone.png');
+        console.log('PASS: Atlas20 cold reload resumes exact question2, answers and attempt without replaying mastery or XP');
+      }
     }
     await page.getByRole('button', { name: 'Continue', exact: true }).waitFor();
     await page.waitForFunction(xp => Number(localStorage.getItem('flutter.norie.totalXp')) === xp + 200, beforeXp);
@@ -127,6 +192,12 @@ async function main() {
     assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), beforeXp + 200);
     console.log('PASS: phone-sized atlas quiz completed offline and awarded exactly 200 XP once');
     await page.getByText('Atlas quiz setup', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Start 20-question quiz', exact: true }).click();
+    await page.getByText('Atlas quiz complete', { exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => Number(localStorage.getItem('flutter.norie.totalXp'))), beforeXp + 200);
+    await page.getByRole('button', { name: 'Back to Anatomy Lab', exact: true }).click();
+    await page.getByText('Atlas quiz setup', { exact: true }).waitFor();
+    console.log('PASS: completed Atlas round reopens without another XP award');
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     let referenceLabel = 'Adult male · BodyParts3D';
     for (const [label, name, count] of [
