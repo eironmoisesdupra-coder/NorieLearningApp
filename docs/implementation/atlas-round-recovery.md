@@ -28,6 +28,8 @@ The published 0.18 APK uses package `com.example.norie_learning` and certificate
 
 This safeguard prevents incompatible publication; it does not repair signing credentials. Original signing authority or an independently reviewed/tested migration is still required. No new key, production secret or installation/uninstallation is requested. Windows remains unsigned; physical upgrade, hardware and assistive-technology certification remain untested.
 
+Actual SDK 37 testing exposed its new `V2 Signer:` certificate label, replacing SDK 36's `Signer #1`. Both the preview guard and existing APK verifier now share a parser requiring the explicit single-signer count and one consistent SHA-256 certificate across verified schemes. Real SDK 36 and 37 verification of the known baseline APK passed locally; its different certificate still blocks upgrade publication. This changes output parsing, not signing authority or credential gates.
+
 ## Evidence
 
 The original widget audit reproduced 2/5→1/5 before implementation. Current regression commands cover cold recreation, pending answer before/after mastery, failed acknowledgement, 5/10/20-question reward replay, duplicate taps, unmount, progress replacement, owner mismatch, corruption, strict export and backup retirement. Additional existing widget suites cover phone layout, hints, scoring and outro navigation. Exact test counts, full-suite host limitations and compiled Windows reload evidence are recorded in the PR after execution. Do not infer passing CI or release readiness from this document.

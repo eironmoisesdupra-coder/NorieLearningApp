@@ -13,13 +13,14 @@ DIFFERENT = '1a40723df64d4c1a5dd32ba90d49919df1be2dff1b503ed2f18f6c60e600c9a1'
 
 
 class PreviewUpgradeTest(unittest.TestCase):
-    def invoke(self, fingerprint=PREVIOUS, package='com.example.norie_learning', invalid=False, require=True):
+    def invoke(self, fingerprint=PREVIOUS, package='com.example.norie_learning', invalid=False, require=True, signer_output=None):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)
             apk = path / 'fixture.apk'; apk.write_bytes(b'only a subprocess boundary fixture')
             signer = path / 'apksigner'
+            output = signer_output if signer_output is not None else f'Number of signers: 1\nSigner #1 certificate SHA-256 digest: {fingerprint}'
             signer.write_text('#!' + sys.executable + '\nimport sys\n'
-                              + ('sys.exit(1)\n' if invalid else f'print("Signer #1 certificate SHA-256 digest: {fingerprint}")\n'))
+                              + ('sys.exit(1)\n' if invalid else f'print({output!r})\n'))
             signer.chmod(0o755)
             aapt = path / 'aapt'
             aapt.write_text('#!' + sys.executable + f'\nprint("package: name=\'{package}\' versionCode=\'25\' versionName=\'0.19.0\'")\n')
@@ -61,6 +62,25 @@ class PreviewUpgradeTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIsNone(report)
         self.assertIn('Exactly one verified APK signer required', result.stderr)
+
+    def test_sdk37_scheme_label_preserves_the_exact_certificate_gate(self):
+        output = f'Number of signers: 1\nV2 Signer: certificate SHA-256 digest: {PREVIOUS}'
+        result, report = self.invoke(signer_output=output)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(report['certificate_sha256'], PREVIOUS)
+        result, report = self.invoke(signer_output=output.replace(PREVIOUS, DIFFERENT))
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertFalse(report['compatible'])
+
+    def test_multiple_or_conflicting_scheme_signers_cannot_pass(self):
+        for output in [
+            f'Number of signers: 2\nV2 Signer: certificate SHA-256 digest: {PREVIOUS}',
+            f'Number of signers: 1\nV2 Signer: certificate SHA-256 digest: {PREVIOUS}\nV3 Signer: certificate SHA-256 digest: {DIFFERENT}',
+            f'V2 Signer: certificate SHA-256 digest: {PREVIOUS}',
+        ]:
+            result, report = self.invoke(signer_output=output)
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertIsNone(report)
 
 
 if __name__ == '__main__':

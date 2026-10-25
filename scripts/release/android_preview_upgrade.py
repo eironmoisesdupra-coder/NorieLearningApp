@@ -8,7 +8,7 @@ import re
 import shutil
 import subprocess
 
-from production_release import run
+from production_release import run, verified_apk_signer
 
 # Public identities independently extracted from the exact published v0.18 APK.
 # Changing these requires a reviewed migration, not an automatically rotated key.
@@ -37,12 +37,7 @@ def inspect(apk, signer, aapt):
     # A successful subprocess is required: extracted certificate bytes alone
     # are not cryptographic APK signature verification.
     output = run([signer, 'verify', '--verbose', '--print-certs', str(apk)])
-    identities = re.findall(r'Signer #\d+ certificate SHA-256 digest:\s*([0-9a-fA-F:]+)', output)
-    if len(identities) != 1:
-        raise ValueError(f'Exactly one verified APK signer required (found {len(identities)})')
-    certificate = identities[0].replace(':', '').lower()
-    if not re.fullmatch('[0-9a-f]{64}', certificate):
-        raise ValueError('Invalid signer SHA-256')
+    certificate = verified_apk_signer(output)
     package = re.search(r"^package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'", run([aapt, 'dump', 'badging', str(apk)]), re.M)
     if package is None:
         raise ValueError('Cannot establish APK package/version identity')
