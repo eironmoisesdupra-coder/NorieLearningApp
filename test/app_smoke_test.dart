@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/app/norie_app.dart';
+import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
 import 'package:norie_learning/features/navigation/presentation/main_shell.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,10 +34,12 @@ void main() {
     await tester.tap(find.text('Grade 1').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
-    await tester.tap(find.text('Counting to 100').first);
+    final lesson =
+        NorieFoundationCurriculum.topicsFor('Mathematics', 'g1').first;
+    await tester.tap(find.text(lesson.title).first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('Counting to 100'), findsWidgets);
+    expect(find.text(lesson.title), findsWidgets);
     expect(find.text('Norie Account'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
+import 'package:norie_learning/features/content/data/norie_grade1_science_curriculum.dart';
 import 'package:norie_learning/features/content/domain/norie_content_models.dart';
 import 'package:norie_learning/features/content/presentation/norie_grade1_science_visual.dart';
 import 'package:norie_learning/features/content/presentation/norie_lesson_screen.dart';
@@ -10,9 +10,8 @@ import 'package:norie_learning/features/content/presentation/norie_practice_mode
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
-  test('materials completes the same Grade 1 progression with approved scope',
-      () {
-    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1')[4];
+  test('historical materials lesson retains its approved scope', () {
+    final topic = NorieGrade1ScienceCurriculum.topics.last;
     expect(topic.id, 'science.g1.materials-around-us');
     expect(topic.prerequisiteTopicId, 'science.g1.weather');
     expect(topic.order, 5);
@@ -52,7 +51,7 @@ void main() {
   });
 
   testWidgets('materials practice offers only multiple choice', (tester) async {
-    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1')[4];
+    final topic = NorieGrade1ScienceCurriculum.topics.last;
     await tester
         .pumpWidget(MaterialApp(home: NoriePracticeModeScreen(topic: topic)));
     expect(find.text('Multiple Choice'), findsOneWidget);
@@ -125,7 +124,7 @@ void main() {
   testWidgets(
       'materials quick check reveals its explanation after learner action',
       (tester) async {
-    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1')[4];
+    final topic = NorieGrade1ScienceCurriculum.topics.last;
     final json = topic.toJson();
     final lesson = Map<String, dynamic>.from(json['lesson'] as Map);
     lesson['sections'] = topic.lesson.sections
@@ -182,7 +181,7 @@ void main() {
   });
   test('every approved learner sentence survives and all diagrams are offline',
       () {
-    final topics = NorieFoundationCurriculum.topicsFor('Science', 'g1');
+    final topics = NorieGrade1ScienceCurriculum.topics;
     for (var index = 0; index < 5; index++) {
       final source = File('test/fixtures/grade1_science/lesson${index + 1}.txt')
           .readAsStringSync()
@@ -233,8 +232,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    for (final topic
-        in NorieFoundationCurriculum.topicsFor('Science', 'g1').take(5)) {
+    for (final topic in NorieGrade1ScienceCurriculum.topics) {
       await tester
           .pumpWidget(MaterialApp(home: NorieLessonScreen(topic: topic)));
       await tester.pump();
@@ -255,7 +253,7 @@ void main() {
 
   test('approved Grade 1 science contains real lesson prose and independent MC',
       () {
-    final topics = NorieFoundationCurriculum.topicsFor('Science', 'g1').take(5);
+    final topics = NorieGrade1ScienceCurriculum.topics;
     for (final topic in topics) {
       expect(topic.lesson.sections.length, greaterThan(15));
       expect(topic.lesson.sections.map((s) => s.title),
@@ -275,7 +273,7 @@ void main() {
 
   testWidgets('quick check shows its prompt before each answer is revealed',
       (tester) async {
-    final topic = NorieFoundationCurriculum.topicsFor('Science', 'g1').first;
+    final topic = NorieGrade1ScienceCurriculum.topics.first;
     final json = topic.toJson();
     final lesson = Map<String, dynamic>.from(json['lesson'] as Map);
     lesson['sections'] = topic.lesson.sections

@@ -59,6 +59,9 @@ Previously earned XP and completion records remain in local storage. A retained,
 equivalent lesson keeps its ID; an unrelated new outcome does not inherit old
 completion credit. Historical authored packs remain available to regression
 tests without being silently republished over the replacement paths.
+Saved reading links and existing seasonal missions can still resolve historical
+lessons. Active published lessons take priority when an equivalent ID is reused;
+historical completions do not count as completion of unrelated new outcomes.
 
 Tests check real publication, unique IDs, prerequisite validity, answer keys,
 question explanations, offline model registration, readable phone rendering,

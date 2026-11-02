@@ -1,28 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
 import 'package:norie_learning/features/content/data/science/science_curriculum.dart';
+import 'package:norie_learning/features/content/data/science/science_expansion.dart';
 
 void main() {
   test('lens focal-point question states the principal-axis assumption', () {
-    final lens = NorieFoundationCurriculum.topicsFor('Science', 'g10').last;
+    final lens = ScienceExpansion.lessons['g10']!;
     expect(lens.quiz.questions.first.prompt,
         contains('parallel to the principal axis'));
   });
   test(
-      'each Science grade gains a real authored sixth lesson without replacing its cohort',
+      'historical Science extensions retain their teaching and assessment contracts',
       () {
     for (final grade in NorieFoundationCurriculum.gradeLevels) {
-      final topics = NorieFoundationCurriculum.topicsFor('Science', grade.id);
-      expect(topics.length, greaterThanOrEqualTo(6), reason: grade.id);
-      if (grade.id != 'g1') {
-        expect(
-            topics.take(5), orderedEquals(ScienceCurriculum.grades[grade.id]!));
-      }
-      final added = topics[5];
-      expect(NorieFoundationCurriculum.lessonTitles('Science', grade.id).last,
-          added.title);
+      final added = ScienceExpansion.lessons[grade.id]!;
       expect(added.order, 6);
-      expect(added.prerequisiteTopicId, topics[4].id);
+      expect(
+          NorieFoundationCurriculum.historicalTopicById(
+                  added.prerequisiteTopicId!)!
+              .order,
+          5);
       expect(added.quiz.questions.length, greaterThanOrEqualTo(5));
       expect(added.challenge.rounds, hasLength(3));
       expect(added.challenge.rounds.every((q) => q.difficulty == 'advanced'),

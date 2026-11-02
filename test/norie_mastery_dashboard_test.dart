@@ -22,7 +22,7 @@ void main() {
     await NorieProgression.instance.importCloudState(state);
     final result = NorieMasteryDashboardPolicy.derive();
     expect(result.subjects.length, 5);
-    expect(result.subjects.fold<int>(0, (n, s) => n + s.total), 249);
+    expect(result.subjects.fold<int>(0, (n, s) => n + s.total), 347);
     expect(result.completedLessons, 0);
     expect(result.availablePaths, 41);
   });

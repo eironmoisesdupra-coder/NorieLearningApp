@@ -398,8 +398,9 @@ async function main() {
     await page.getByRole('checkbox', { name: 'Subjects', exact: true }).click();
     await page.getByRole('button', { name: /^Mathematics\b/ }).click();
     await page.getByRole('button', { name: /Grade 1 / }).first().click();
-    await page.getByRole('button', { name: /Counting to 100/ }).click();
+    await page.getByRole('button', { name: /Shapes and Numbers to 100/ }).click();
     await page.getByRole('button', { name: 'Start mission', exact: true }).click();
+    await captureHiddenPage('windows-curriculum-lesson.png');
     // Flutter builds the long lesson lazily as the learner scrolls down.
     await page.mouse.move(700, 600);
     for (let scroll = 0; scroll < 8; scroll++) {

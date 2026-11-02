@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:norie_learning/core/progression/norie_lesson_journey.dart';
 import 'package:norie_learning/features/content/data/standards/ched_general_education.dart';
 import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
 import 'package:norie_learning/features/content/presentation/authored_lesson_visual_view.dart';
@@ -7,6 +8,11 @@ import 'package:norie_learning/features/content/presentation/norie_grade_lessons
 import 'package:norie_learning/features/content/presentation/norie_lesson_screen.dart';
 
 void main() {
+  setUp(() {
+    NorieLessonJourney.instance
+        .recordOffset(ChedGeneralEducation.topics['Mathematics']!.first.id, 0);
+  });
+
   testWidgets('college references are readable offline on a small phone',
       (tester) async {
     tester.view.physicalSize = const Size(320, 640);
@@ -20,9 +26,7 @@ void main() {
         accent: Colors.cyan,
       ),
     ));
-    final references = find.text('Curriculum references and scope');
-    await tester.scrollUntilVisible(references, 200,
-        scrollable: find.byType(Scrollable).first);
+    final references = find.byTooltip('Curriculum references and scope');
     await tester.tap(references);
     await tester.pumpAndSettle();
     expect(find.text(ChedGeneralEducation.sources.first), findsOneWidget);

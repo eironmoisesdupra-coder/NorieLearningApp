@@ -46,6 +46,26 @@ abstract final class NorieFoundationCurriculum {
     'Araling Panlipunan',
   ];
 
+  static final Map<String, NorieTopicContent> _historicalTopics = {
+    for (final topic in [
+      ...NorieGrade1ScienceCurriculum.topics,
+      ...ScienceCurriculum.grades.values.expand((topics) => topics),
+      ...ScienceExpansion.lessons.values,
+      ...NorieGrade1MathCurriculum.topics,
+      ...AuthoredSubjectCurriculum.mathematics.values,
+      ...AuthoredSubjectCurriculum.english.values,
+      ...CoreEnglishCurriculum.grades.values.expand((topics) => topics),
+      ...CoreMathematicsCurriculum.grades.values.expand((topics) => topics),
+      ...NorieAdditionalSubjectCurriculum.allTopics,
+    ])
+      topic.id: topic,
+  };
+
+  static NorieTopicContent? historicalTopicById(String id) {
+    final topic = _historicalTopics[id];
+    return topic?.available == true ? topic : null;
+  }
+
   static final Set<String> _authoredIds = {
     ...depedEnglish.values.expand((topics) => topics).map((topic) => topic.id),
     ...depedScience.values.expand((topics) => topics).map((topic) => topic.id),
@@ -59,21 +79,7 @@ abstract final class NorieFoundationCurriculum {
     ...ChedGeneralEducation.topics.values
         .expand((topics) => topics)
         .map((topic) => topic.id),
-    ...NorieGrade1ScienceCurriculum.topics.map((topic) => topic.id),
-    ...ScienceCurriculum.grades.values
-        .expand((topics) => topics)
-        .map((topic) => topic.id),
-    ...ScienceExpansion.lessons.values.map((topic) => topic.id),
-    ...NorieGrade1MathCurriculum.topics.map((topic) => topic.id),
-    ...AuthoredSubjectCurriculum.mathematics.values.map((topic) => topic.id),
-    ...AuthoredSubjectCurriculum.english.values.map((topic) => topic.id),
-    ...CoreEnglishCurriculum.grades.values
-        .expand((topics) => topics)
-        .map((topic) => topic.id),
-    ...CoreMathematicsCurriculum.grades.values
-        .expand((topics) => topics)
-        .map((topic) => topic.id),
-    ...NorieAdditionalSubjectCurriculum.allTopics.map((topic) => topic.id),
+    ..._historicalTopics.keys,
   };
 
   static bool isAuthored(NorieTopicContent topic) =>
