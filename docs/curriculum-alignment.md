@@ -63,6 +63,11 @@ Saved reading links and existing seasonal missions can still resolve historical
 lessons. Active published lessons take priority when an equivalent ID is reused;
 historical completions do not count as completion of unrelated new outcomes.
 
+After packaging the Windows app, `node desktop\test\offline-app.cjs
+--curriculum-only` checks the replacement lesson offline, its eight practice
+items and three mastery rounds, and XP persistence after restarting. The default
+desktop test also exercises anatomy and the separate native study-quiz feature.
+
 Tests check real publication, unique IDs, prerequisite validity, answer keys,
 question explanations, offline model registration, readable phone rendering,
 and preservation of existing progress. Passing these tests is not proof of
