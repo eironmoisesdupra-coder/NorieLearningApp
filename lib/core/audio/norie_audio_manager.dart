@@ -18,11 +18,11 @@ class NorieAudioManager extends ChangeNotifier {
   }
   static final instance = NorieAudioManager();
   static const expectedMusic = [
-    'audio/music/synthwave_4k.mp3',
-    'audio/music/vaporware.mp3',
-    'audio/music/lifewave_2k.mp3',
-    'audio/music/synthwave_15k.mp3',
-    'audio/music/synthwave_421k.mp3'
+    'audio/music/norie_starbound.mp3',
+    'audio/music/norie_bright_horizons.mp3',
+    'audio/music/norie_discovery_run.mp3',
+    'audio/music/norie_cosmic_trail.mp3',
+    'audio/music/norie_next_frontier.mp3'
   ];
   // No placeholder or remote music. Add only licensed, bundled production files.
   static const List<String> availableMusic = expectedMusic;

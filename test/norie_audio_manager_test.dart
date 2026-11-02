@@ -73,6 +73,13 @@ void main() {
   test('production playlist contains five bundled music tracks', () {
     expect(NorieAudioManager.availableMusic, hasLength(5));
     expect(NorieAudioManager.availableMusic.toSet(), hasLength(5));
+    expect(NorieAudioManager.availableMusic, [
+      'audio/music/norie_starbound.mp3',
+      'audio/music/norie_bright_horizons.mp3',
+      'audio/music/norie_discovery_run.mp3',
+      'audio/music/norie_cosmic_trail.mp3',
+      'audio/music/norie_next_frontier.mp3',
+    ]);
     for (final asset in NorieAudioManager.availableMusic) {
       expect(asset, startsWith('audio/music/'));
       expect(asset, endsWith('.mp3'));

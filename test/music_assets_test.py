@@ -41,6 +41,22 @@ class MusicAssetsTest(unittest.TestCase):
                 music.fetch_track(self.track, folder)
             self.assertEqual(target.read_bytes(), self.data)
 
+    def test_original_tracks_require_exact_bundled_bytes_and_never_download(self):
+        original = {key: value for key, value in self.track.items() if key != 'download'}
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            target = folder / 'song.mp3'
+            with patch.object(music, 'urlopen') as download:
+                with self.assertRaisesRegex(ValueError, 'Bundled music'):
+                    music.fetch_track(original, folder, bundled=True)
+                target.write_bytes(b'changed recording')
+                with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+                    music.fetch_track(original, folder, bundled=True)
+                self.assertEqual(target.read_bytes(), b'changed recording')
+                target.write_bytes(self.data)
+                music.fetch_track(original, folder, bundled=True)
+                download.assert_not_called()
+
     def test_rejects_unsafe_paths_urls_and_hashes_before_downloading(self):
         with tempfile.TemporaryDirectory() as directory:
             for changes in [dict(file='../song.mp3'), dict(file='C:/song.mp3'),

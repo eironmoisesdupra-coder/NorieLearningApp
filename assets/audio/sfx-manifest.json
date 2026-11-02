@@ -1,74 +1,98 @@
 [
   {
-    "file": "achievement.mp3",
-    "seconds": 1.76,
-    "bytes": 29300,
-    "sha256": "6407c1145a2127dd3d0870d60ae1bdc17dfdeb43ed61769c3442b21124de0875"
-  },
-  {
-    "file": "challenge_start.mp3",
-    "seconds": 1.2,
-    "bytes": 20105,
-    "sha256": "c6b240960edc36b0563edbe14acd8b313765707bef28d2acc18843e4e3122522"
-  },
-  {
-    "file": "complete.mp3",
-    "seconds": 0.618,
-    "bytes": 10910,
-    "sha256": "e65292734efa4e0bd2e8a894e31e145cc2be2a8cdeb305c89c1f9c9695e0e446"
-  },
-  {
-    "file": "correct.mp3",
-    "seconds": 1.0,
-    "bytes": 17179,
-    "sha256": "db8c85bad3961db889096e4de67ede152a7d600aa932e0428e4710f4d2c6f903"
-  },
-  {
-    "file": "level_up.mp3",
-    "seconds": 0.77,
-    "bytes": 13417,
-    "sha256": "229faebbb648abc2180b60970d22721c3c868c163b910d45b2dd82afd16743dd"
-  },
-  {
-    "file": "perfect.mp3",
-    "seconds": 2.0,
-    "bytes": 33061,
-    "sha256": "5e367140edd99b7510c2063a108ebda250d23fbf0fc9883337104c2a26900861"
-  },
-  {
-    "file": "quiz_select.mp3",
-    "seconds": 0.309,
-    "bytes": 5894,
-    "sha256": "838bb5455f3345f7189b21e4d81b64e7684c691337f00ef58bbeedc458d98e6f"
-  },
-  {
-    "file": "ui_back.mp3",
-    "seconds": 0.6,
-    "bytes": 10492,
-    "sha256": "df9f460843dd7fa6a9c1b92e64aed27a7cb5ad1997fdc389c10fcd7b622035cb"
-  },
-  {
-    "file": "ui_open.mp3",
-    "seconds": 0.68,
-    "bytes": 12163,
-    "sha256": "81ef0d6d5394c59d65c8375406e3fad37c1f485332161ca2ed9ec4fb2373d86c"
+    "file": "ui_tap.mp3",
+    "seconds": 0.192,
+    "bytes": 4222,
+    "sha256": "db27b6b948264ef4ae80373381c73797fa97c6d2d616217b3a9f424697e8321a",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "ui_tap"
   },
   {
     "file": "ui_select.mp3",
-    "seconds": 0.448,
-    "bytes": 8402,
-    "sha256": "8607dafc45e3a2ec95c427202714edfeb9ba2e64d7cd9b9f7c598156f72a265f"
+    "seconds": 0.255,
+    "bytes": 5058,
+    "sha256": "9e3a3a0968be1d850f3460a8f152e3370f4858301749dbc09c8603ea25678ce2",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "ui_select"
   },
   {
-    "file": "ui_tap.mp3",
-    "seconds": 0.196,
-    "bytes": 4222,
-    "sha256": "45bbf083e67549e8517057e6d26e87cef29ffec5869642b9a12a2134e708f27c"
+    "file": "ui_open.mp3",
+    "seconds": 0.37,
+    "bytes": 7148,
+    "sha256": "91f8e84a85cd2ea48c46aad69939098ec22caff58a4f3d9c4a8bab535c1cbc31",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "ui_open"
+  },
+  {
+    "file": "ui_back.mp3",
+    "seconds": 0.275,
+    "bytes": 5476,
+    "sha256": "98eb227b56883953ca1c3ce8f31017db4adf0d6f606b83b36b7a33122bb2f5a1",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "ui_back"
+  },
+  {
+    "file": "quiz_select.mp3",
+    "seconds": 0.245,
+    "bytes": 5058,
+    "sha256": "ea691cee37256322364ea79c3357d610cf5a2d4a019f7971b3cd78fea9f9bce3",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "quiz_select"
+  },
+  {
+    "file": "correct.mp3",
+    "seconds": 0.67,
+    "bytes": 11745,
+    "sha256": "dac6d5629b95f56b27e1e2d062ba4264744883011467b79e312ff664d816ac47",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "correct"
   },
   {
     "file": "wrong.mp3",
-    "seconds": 0.88,
-    "bytes": 15089,
-    "sha256": "bbe32190be7c5002b6090e5b9b337be4942b49a225d5f7eaab263ec4403534fd"
+    "seconds": 0.4,
+    "bytes": 7566,
+    "sha256": "e8c1b104040183a9c56444145fd70a13e37a5a5fc663dda6a80dbd0cc0f20774",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "wrong"
+  },
+  {
+    "file": "challenge_start.mp3",
+    "seconds": 0.82,
+    "bytes": 14253,
+    "sha256": "be80f455150a2e6239e9082ee426dd90933b889891c1cb8d8d4506515169e3bb",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "challenge_start"
+  },
+  {
+    "file": "complete.mp3",
+    "seconds": 0.82,
+    "bytes": 14253,
+    "sha256": "56de83a38345db845d851f8256f8a0fae41647e6a46997fafb2d0cb152090edd",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "complete"
+  },
+  {
+    "file": "achievement.mp3",
+    "seconds": 0.9,
+    "bytes": 15507,
+    "sha256": "33873b7a3c9d807019e7d8b17620b0e2b744ea201fb59ba2abbb25e643289ef5",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "achievement"
+  },
+  {
+    "file": "level_up.mp3",
+    "seconds": 0.8,
+    "bytes": 13835,
+    "sha256": "0095166533f79386345e740ef8f1c7f209df39e279ed127b1a9f138b86b20637",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "level_up"
+  },
+  {
+    "file": "perfect.mp3",
+    "seconds": 1.22,
+    "bytes": 20523,
+    "sha256": "417e88d0bbf78d54bd110cb4c937d3b45bc0ed42a17c1169f4aac64feaf043fa",
+    "generator": "scripts/generate_adventure_audio.py",
+    "recipe": "perfect"
   }
 ]
