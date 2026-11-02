@@ -77,7 +77,7 @@ test('privacy follow-up explicitly denies server-only tables and indexes all twe
   assert.match(followup,/league_receipts\(user_id\)/);
   assert.match(followup,/league_memberships\(user_id\)/);
 });
-test('six eligible lesson opportunities can reach every calibrated private tier without changing point awards', () => {
+test('six successful lesson passes can reach every calibrated private tier', () => {
   const name = readdirSync(new URL('../supabase/migrations/',import.meta.url)).find(n => n.endsWith('_league_tier_calibration.sql'));
   const followup = readFileSync(new URL(`../supabase/migrations/${name}`,import.meta.url),'utf8');
   assert.match(followup,/create or replace function public\.league_finish_verified/);
@@ -123,17 +123,28 @@ test('Edge authentication/admission excludes editable metadata and private cohor
   assert.match(edge,/verifyAnswers\(attempt,lesson,body\.answers,bank\.version,Date\.now\(\)\)/);
   assert.equal(/body\.(?:score|xp|points|correctIndex|correct)/.test(edge),false);
 });
-test('bank manifest contains actual authored items in 39 separate subject-grade cohorts', () => {
+test('bank manifest matches the 332 published lessons across all 39 cohorts', () => {
   const bank = JSON.parse(readFileSync(new URL('../supabase/functions/verified-leagues/ranked-bank.json',import.meta.url),'utf8'));
   assert.match(bank.version,/^authored-[a-f0-9]+$/);
-  assert.equal(bank.lessons.length,234);
+  assert.equal(bank.lessons.length,332);
   const opportunities = new Map();
   for (const lesson of bank.lessons) {
     const cohort=`${lesson.subject}.${lesson.grade}`;
     opportunities.set(cohort,(opportunities.get(cohort) ?? 0)+1);
   }
   assert.equal(opportunities.size,39);
-  for (const count of opportunities.values()) assert.equal(count,6,'tier calibration must be reviewed if eligible cohort content changes');
+  assert.deepEqual(Object.fromEntries([...opportunities].sort(([a],[b]) => a.localeCompare(b))),{
+    'english.college':6,'english.g1':6,'english.g10':7,'english.g11':12,'english.g12':12,
+    'english.g2':6,'english.g3':6,'english.g4':6,'english.g5':6,'english.g6':6,
+    'english.g7':6,'english.g8':7,'english.g9':8,
+    'mathematics.college':6,'mathematics.g1':8,'mathematics.g10':10,'mathematics.g11':12,
+    'mathematics.g12':12,'mathematics.g2':9,'mathematics.g3':9,'mathematics.g4':10,
+    'mathematics.g5':9,'mathematics.g6':9,'mathematics.g7':14,'mathematics.g8':9,
+    'mathematics.g9':11,
+    'science.college':6,'science.g1':8,'science.g10':8,'science.g11':12,'science.g12':12,
+    'science.g2':8,'science.g3':8,'science.g4':8,'science.g5':8,'science.g6':8,
+    'science.g7':8,'science.g8':8,'science.g9':8,
+  });
   assert.equal(new Set(bank.lessons.map(l => l.id)).size,bank.lessons.length);
   for (const lesson of bank.lessons) {
     assert.ok(['science','mathematics','english'].includes(lesson.subject));
