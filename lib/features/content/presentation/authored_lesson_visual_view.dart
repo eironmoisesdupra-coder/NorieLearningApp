@@ -41,6 +41,10 @@ class AuthoredLessonVisualView extends StatelessWidget {
                           '${visual.labels[i]} leads to ${visual.labels[i + 1]}'))
               : const SizedBox(height: 10),
       ],
+      if (visual.note.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        SelectableText(visual.note),
+      ],
     ]);
   }
 }
