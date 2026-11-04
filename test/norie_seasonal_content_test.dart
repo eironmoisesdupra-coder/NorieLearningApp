@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:norie_learning/core/progression/norie_lesson_journey.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/features/seasonal/data/norie_seasonal_catalog.dart';
 import 'package:norie_learning/features/seasonal/data/norie_seasonal_store.dart';
@@ -9,16 +10,15 @@ void main() {
   final season = NorieSeasonalCatalog.seasons.single;
   final completed = season.missions.expand((m) => m.topicIds).toSet();
   final now = DateTime.utc(2026, 10, 17);
-  test('published missions resolve authored lessons in a single grade', () {
+  test('existing missions retain their authored lessons after replacement', () {
     expect(season.missions.map((m) => m.gradeId).toSet(), {'g1'});
     for (final m in season.missions) {
-      final topics = NorieFoundationCurriculum.topicsFor(m.subject, m.gradeId);
       for (final id in m.topicIds) {
-        expect(topics.where((t) => t.id == id), hasLength(1));
-        expect(
-            NorieFoundationCurriculum.isAuthored(
-                topics.singleWhere((t) => t.id == id)),
-            isTrue);
+        final topic = NorieLessonJourney.resolveTopic(id);
+        expect(topic, isNotNull);
+        expect(topic!.subject, m.subject);
+        expect(topic.gradeLevel, m.gradeId);
+        expect(NorieFoundationCurriculum.isAuthored(topic), isTrue);
       }
     }
   });

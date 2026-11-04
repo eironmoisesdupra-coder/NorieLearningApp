@@ -9,6 +9,11 @@ import 'advanced_english.dart';
 import 'grade1_math_visuals.dart';
 import 'core_english_curriculum.dart';
 import 'core_mathematics_curriculum.dart';
+import '../standards/ched_general_education.dart';
+import '../standards/deped_english.dart';
+import '../standards/deped_mathematics.dart';
+import '../standards/deped_senior_high.dart';
+import '../standards/deped_science.dart';
 
 abstract final class AuthoredSubjectCurriculum {
   static final Map<String, NorieTopicContent> mathematics = {
@@ -31,6 +36,11 @@ abstract final class AuthoredSubjectCurriculum {
     ...primaryEnglishVisuals,
     ...secondaryEnglishVisuals,
     ...advancedEnglishVisuals,
+    ...ChedGeneralEducation.visuals,
+    ...depedMathematicsVisuals,
+    ...depedScienceVisuals,
+    ...depedEnglishVisuals,
+    ...DepedSeniorHigh.visuals,
   };
   static NorieTopicContent? lesson(String subject, String grade) =>
       switch (subject.toLowerCase()) {

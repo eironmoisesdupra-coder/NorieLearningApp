@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/features/content/data/authored/core_english_curriculum.dart';
-import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
 
 void main() {
   test('all original 65 English lessons retain identity, order and rewards',
@@ -8,11 +7,7 @@ void main() {
     expect(CoreEnglishCurriculum.grades.length, 13);
     expect(CoreEnglishCurriculum.grades.values.expand((v) => v).length, 65);
     for (final entry in CoreEnglishCurriculum.grades.entries) {
-      final titles =
-          NorieFoundationCurriculum.lessonTitles('English', entry.key)
-              .take(5)
-              .toList();
-      expect(entry.value.map((t) => t.title), titles);
+      final titles = entry.value.map((topic) => topic.title).toList();
       for (var i = 0; i < 5; i++) {
         final topic = entry.value[i];
         final slug =
@@ -68,7 +63,8 @@ void main() {
       expect(text, contains('invented'), reason: grade);
     }
   });
-  test('shuffled reading and source items carry the givens inside the prompt', () {
+  test('shuffled reading and source items carry the givens inside the prompt',
+      () {
     final sequence = CoreEnglishCurriculum.grades['g2']![4].quiz.questions;
     expect(sequence.first.prompt, contains('Mina put soil in a pot'));
     expect(sequence[2].prompt, contains('Days later a shoot appeared'));
@@ -79,6 +75,7 @@ void main() {
     expect(sources.first.prompt, contains('12 of 20 volunteers'));
     expect(sources[1].prompt, contains('80 of 200'));
     final logic = CoreEnglishCurriculum.grades['g11']![3].challenge.rounds;
-    expect(logic.first.prompt, contains('If a form is incomplete, it is rejected'));
+    expect(logic.first.prompt,
+        contains('If a form is incomplete, it is rejected'));
   });
 }

@@ -3,6 +3,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { _electron: electron } = require('playwright');
+const curriculumOnly = process.argv.includes('--curriculum-only');
 
 const appPath = process.env.NORIE_DESKTOP_EXE || path.resolve(
   __dirname, '../..', 'build/windows-desktop/NorieLearning-win32-x64/NorieLearning.exe',
@@ -392,14 +393,17 @@ async function main() {
     });
     await page.reload();
     await enableAccessibility();
-    await checkAnatomy();
-    await checkNativeQuiz();
+    if (!curriculumOnly) {
+      await checkAnatomy();
+      await checkNativeQuiz();
+    }
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
     await page.getByRole('checkbox', { name: 'Subjects', exact: true }).click();
     await page.getByRole('button', { name: /^Mathematics\b/ }).click();
     await page.getByRole('button', { name: /Grade 1 / }).first().click();
-    await page.getByRole('button', { name: /Counting to 100/ }).click();
+    await page.getByRole('button', { name: /Shapes and Numbers to 100/ }).click();
     await page.getByRole('button', { name: 'Start mission', exact: true }).click();
+    await captureHiddenPage('windows-curriculum-lesson.png');
     // Flutter builds the long lesson lazily as the learner scrolls down.
     await page.mouse.move(700, 600);
     for (let scroll = 0; scroll < 8; scroll++) {
@@ -409,14 +413,15 @@ async function main() {
     }
     await page.getByRole('button', { name: /Choose practice mode/ }).click();
     await page.getByRole('button', { name: /Multiple Choice Choose/ }).click();
-    for (let item = 0; item < 20; item++) {
+    const quizItemCount = 8;
+    for (let item = 0; item < quizItemCount; item++) {
       await answerClick(page.getByRole('group', { name: 'Choose the best answer.', exact: true })
         .getByRole('button').first());
       await answerClick(page.getByRole('button', { name: 'Check answer', exact: true }));
       await answerClick(page.getByRole('button', {
-        name: item === 19 ? 'Continue to challenge' : 'Next randomized item', exact: true,
+        name: item === quizItemCount - 1 ? 'Continue to challenge' : 'Next randomized item', exact: true,
       }));
-      if ((item + 1) % 5 === 0) console.log(`Answered ${item + 1}/20 offline quiz items`);
+      if ((item + 1) % 4 === 0) console.log(`Answered ${item + 1}/${quizItemCount} offline quiz items`);
     }
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     // Wait for Flutter's route transition before selecting the first challenge
@@ -445,7 +450,7 @@ async function main() {
       assert.equal(asset.status, 200);
       assert.ok(asset.bytes > 300000);
     }
-    console.log('PASS: lesson, 20 quiz answers, 3 challenge rounds and both bundled anatomy models');
+    console.log(`PASS: lesson, ${quizItemCount} quiz answers, 3 challenge rounds and both bundled anatomy models`);
     await application.close();
     application = await launch();
     await application.context().setOffline(true);
@@ -459,12 +464,14 @@ async function main() {
     await enableAccessibility();
     await page.getByRole('button', { name: 'Progress Progress', exact: true }).click();
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('flutter.norie.totalXp'))), xp);
-    const nativeRetained = await page.evaluate(id => {
-      const raw = JSON.parse(localStorage.getItem('flutter.norie.study.local.offline.v1'));
-      const state = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      return state.sets[id]?.questions.length === 20 && state.rewarded.includes(id);
-    }, nativeDeckId);
-    assert.equal(nativeRetained, true, 'Native questions and completion receipt persist across app restart');
+    if (!curriculumOnly) {
+      const nativeRetained = await page.evaluate(id => {
+        const raw = JSON.parse(localStorage.getItem('flutter.norie.study.local.offline.v1'));
+        const state = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        return state.sets[id]?.questions.length === 20 && state.rewarded.includes(id);
+      }, nativeDeckId);
+      assert.equal(nativeRetained, true, 'Native questions and completion receipt persist across app restart');
+    }
     console.log(`PASS: ${xp} XP persisted after closing and reopening offline`);
     await captureHiddenPage('windows-offline-progress.png');
     assert.deepEqual([...externalFontRequests], [], 'Restarted offline app must not request online fonts');

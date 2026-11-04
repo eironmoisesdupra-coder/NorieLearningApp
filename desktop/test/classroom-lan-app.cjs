@@ -84,8 +84,8 @@ async function main(){
     await title.pressSequentially('LAN discovery practice');
     await page.waitForFunction(()=>[...document.querySelectorAll('input,textarea')].some(e=>e.value==='LAN discovery practice'),null,{timeout:5000});
     console.log('Assignment title entered');
-    await click(page.getByText(/Living & Nonliving Things/).first());
-    const question=page.getByRole('checkbox',{name:'Which thing is living?',exact:true});
+    await click(page.getByText(/Senses Give Us Clues/).first());
+    const question=page.getByRole('checkbox',{name:'Which model part helps you find a red crayon?',exact:true});
     await select(question);
     console.log('Authored question selected');
     await click(page.getByRole('button',{name:'Save assignment',exact:true}));

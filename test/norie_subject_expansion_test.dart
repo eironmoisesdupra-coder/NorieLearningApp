@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:norie_learning/features/content/data/norie_foundation_curriculum.dart';
 import 'package:norie_learning/features/content/data/authored/authored_subject_curriculum.dart';
+import 'package:norie_learning/features/content/data/norie_grade1_math_curriculum.dart';
 
 void main() {
   test('context substitution describes fragility rather than a completed break',
       () {
-    final topic = NorieFoundationCurriculum.topicsFor('English', 'g3').last;
+    final topic = AuthoredSubjectCurriculum.english['g3']!;
     final explanation = topic.lesson.sections
         .firstWhere((s) => s.title == 'Explore the idea')
         .body!;
@@ -21,15 +22,17 @@ void main() {
     expect(prose, isNot(contains('empty shelves')));
   });
   for (final subject in ['Mathematics', 'English']) {
-    test('$subject adds a focused authored lesson at every grade', () {
+    test('$subject historical extensions retain teaching contracts', () {
       for (final grade in NorieFoundationCurriculum.gradeLevels) {
-        final topics = NorieFoundationCurriculum.topicsFor(subject, grade.id);
-        expect(topics, hasLength(6), reason: '$subject ${grade.id}');
-        final lesson = topics.last;
+        final lesson = AuthoredSubjectCurriculum.lesson(subject, grade.id)!;
         expect(lesson.id, startsWith('${subject.toLowerCase()}.${grade.id}.'));
         expect(lesson.order, 6);
         expect(NorieFoundationCurriculum.isAuthored(lesson), isTrue);
-        expect(lesson.prerequisiteTopicId, topics[4].id);
+        expect(
+            NorieFoundationCurriculum.historicalTopicById(
+                    lesson.prerequisiteTopicId!)!
+                .order,
+            5);
         expect(lesson.quiz.questions, hasLength(8));
         expect(lesson.challenge.rounds, hasLength(3));
         expect(
@@ -76,7 +79,7 @@ void main() {
         expect(topics.take(5).map(NorieFoundationCurriculum.isAuthored),
             everyElement(true));
         expect(NorieFoundationCurriculum.coverageLabel(subject, grade.id),
-            '6 authored lessons');
+            '${topics.length} authored lessons');
       }
     }
   });
@@ -91,7 +94,7 @@ void main() {
       'subtraction-basics',
       'shapes-patterns'
     ];
-    final topics = NorieFoundationCurriculum.topicsFor('Mathematics', 'g1');
+    final topics = NorieGrade1MathCurriculum.topics;
     expect(topics[3].quiz.questions.last.prompt, contains('taken out'));
     for (var i = 0; i < 5; i++) {
       final topic = topics[i];

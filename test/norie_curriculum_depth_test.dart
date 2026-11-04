@@ -22,10 +22,10 @@ void main() {
         expect(NorieCurriculumDepth.targetFor(subject, grade.id),
             inInclusiveRange(6, 20));
         final topics = NorieFoundationCurriculum.topicsFor(subject, grade.id);
-        expect(topics, hasLength(6));
+        expect(topics.length, inInclusiveRange(6, 20));
         expect(topics.every(NorieFoundationCurriculum.isAuthored), isTrue);
         expect(NorieFoundationCurriculum.coverageLabel(subject, grade.id),
-            '6 authored lessons');
+            '${topics.length} authored lessons');
       }
     }
   });

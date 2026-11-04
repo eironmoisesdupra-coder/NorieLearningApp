@@ -5,9 +5,13 @@ import 'package:norie_learning/features/content/data/norie_foundation_curriculum
 import 'package:norie_learning/features/content/domain/norie_content_models.dart';
 import 'package:norie_learning/features/content/presentation/norie_lesson_screen.dart';
 
-NorieTopicContent pilot(String subject, String grade, String id) =>
-    NorieFoundationCurriculum.topicsFor(subject, grade)
-        .singleWhere((topic) => topic.id == id);
+NorieTopicContent pilot(String subject, String grade, String id) {
+  final topic = NorieFoundationCurriculum.historicalTopicById(id);
+  if (topic == null || topic.subject != subject || topic.gradeLevel != grade) {
+    throw StateError('Historical pilot not registered: $id');
+  }
+  return topic;
+}
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));

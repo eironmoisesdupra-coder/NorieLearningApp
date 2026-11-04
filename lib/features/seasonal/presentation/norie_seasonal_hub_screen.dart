@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../../../core/account/norie_account_service.dart';
 import 'package:flutter/material.dart';
+import '../../../core/progression/norie_lesson_journey.dart';
 import '../../content/domain/norie_content_models.dart';
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
@@ -199,11 +200,12 @@ class _NorieSeasonalHubScreenState extends State<NorieSeasonalHubScreen> {
 
   Widget _lesson(BuildContext context, NorieSeasonMission mission, String id,
       bool complete) {
-    final topics =
-        NorieFoundationCurriculum.topicsFor(mission.subject, mission.gradeId)
-            .where((t) => t.id == id);
-    if (topics.length != 1) return const Text('Lesson unavailable');
-    final topic = topics.single;
+    final topic = NorieLessonJourney.resolveTopic(id);
+    if (topic == null ||
+        topic.subject != mission.subject ||
+        topic.gradeLevel != mission.gradeId) {
+      return const Text('Lesson unavailable');
+    }
     return TextButton.icon(
       key: ValueKey(id),
       icon: Icon(complete ? Icons.check_circle : Icons.menu_book),
