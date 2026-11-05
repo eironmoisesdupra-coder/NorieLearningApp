@@ -80,11 +80,58 @@ async function main() {
       event => event.type === 'play' && event.source.endsWith('/correct.mp3')).length);
     await page.reload();
     await enableAccessibility();
+    const musicManifest = JSON.parse(await fs.readFile(
+      path.resolve(__dirname, '../../assets/audio/music-manifest.json'), 'utf8'));
+    const sfxManifest = JSON.parse(await fs.readFile(
+      path.resolve(__dirname, '../../assets/audio/sfx-manifest.json'), 'utf8'));
+    const decoded = await page.evaluate(async entries => {
+      const context = new AudioContext();
+      try {
+        const results = [];
+        for (const entry of entries) {
+          const response = await fetch(`assets/assets/audio/${entry.folder}/${entry.file}`);
+          if (!response.ok) throw new Error(`Missing bundled audio: ${entry.file}`);
+          const audio = await context.decodeAudioData(await response.arrayBuffer());
+          const left = audio.getChannelData(0);
+          const right = audio.getChannelData(1);
+          let peak = 0, power = 0, dc = 0, difference = 0, onset = -1;
+          for (let i = 0; i < left.length; i++) {
+            peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+            power += (left[i] ** 2 + right[i] ** 2) / 2;
+            dc += left[i];
+            difference += Math.abs(left[i] - right[i]);
+            if (onset < 0 && Math.max(Math.abs(left[i]), Math.abs(right[i])) > .003) {
+              onset = i / audio.sampleRate;
+            }
+          }
+          results.push({ ...entry, duration: audio.duration, peak,
+            rms: Math.sqrt(power / left.length), dc: dc / left.length,
+            stereoDifference: difference / left.length, onset });
+        }
+        return results;
+      } finally {
+        await context.close();
+      }
+    }, [
+      ...musicManifest.tracks.map(track => ({ ...track, folder: 'music' })),
+      ...sfxManifest.map(effect => ({ ...effect, folder: 'sfx' })),
+    ]);
+    for (const audio of decoded) {
+      assert.ok(Math.abs(audio.duration - audio.seconds) < .1, audio.file);
+      assert.ok(audio.peak < .9 && audio.peak > .1, `${audio.file}: decoded headroom`);
+      assert.ok(audio.rms > .025 && audio.rms < .23, `${audio.file}: audible, controlled level`);
+      assert.ok(Math.abs(audio.dc) < .005, `${audio.file}: no DC offset`);
+      assert.ok(audio.stereoDifference > .0001, `${audio.file}: stereo image`);
+      assert.ok(audio.onset >= 0 && audio.onset < .04, `${audio.file}: prompt attack`);
+    }
+    console.log(`PASS: ${decoded.length} bundled recordings decoded offline; durations, headroom, levels, stereo and attacks verified`);
     // Semantic buttons bypass Flutter's widget pointer Listener. A real click
     // must still reach the browser gesture capture and prime all six players.
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
     await page.waitForFunction(() => window.norieAudioEvents.filter(
       event => event.type === 'play' && event.source.startsWith('data:audio/wav')).length === 6);
+    await page.waitForFunction(() => window.norieAudioEvents.some(event =>
+      event.type === 'play' && event.source.includes('/audio/music/norie_')));
     await openSettings();
     const testSound = page.getByRole('button', { name: 'Test Sound', exact: true });
     async function playTestSound() {
