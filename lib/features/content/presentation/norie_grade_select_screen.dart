@@ -76,9 +76,13 @@ class NorieGradeSelectScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 22),
-                  Text('Choose a grade',
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.w800)),
+                  const Text(
+                    'Choose a grade',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   for (final grade
                       in NorieFoundationCurriculum.availableGradeLevels(
