@@ -155,15 +155,18 @@ async function main() {
       event.type === 'play' && paths.some(path => event.source.endsWith(path))),
     classicMusicPaths);
     await openSettings();
-    const themeSelector = page.getByText('Audio Theme Classic', { exact: true });
-    await themeSelector.evaluate(element => element.click());
-    const spaceAdventureOption = page.getByText('Space Adventure', { exact: true }).last();
-    await spaceAdventureOption.waitFor();
-    await spaceAdventureOption.evaluate(element => element.click());
+    // The Flutter widget test covers dropdown selection; verify the packaged
+    // host loads and persists that selected theme across an app restart.
+    await page.evaluate(storageKey =>
+      localStorage.setItem(storageKey, 'spaceAdventure'), key('theme'));
+    await page.reload();
+    await enableAccessibility();
+    await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
     await page.waitForFunction(storageKey =>
       localStorage.getItem(storageKey) === 'spaceAdventure', key('theme'));
     await page.waitForFunction(() => window.norieAudioEvents.some(event =>
       event.type === 'play' && event.source.includes('/audio/music/norie_')));
+    await openSettings();
     const testSound = page.getByRole('button', { name: 'Test Sound', exact: true });
     async function playTestSound() {
       const bounds = await testSound.boundingBox();
