@@ -80,8 +80,12 @@ async function main() {
       event => event.type === 'play' && event.source.endsWith('/correct.mp3')).length);
     await page.reload();
     await enableAccessibility();
+    const classicMusicManifest = JSON.parse(await fs.readFile(
+      path.resolve(__dirname, '../../assets/audio/music-classic-manifest.json'), 'utf8'));
     const musicManifest = JSON.parse(await fs.readFile(
       path.resolve(__dirname, '../../assets/audio/music-manifest.json'), 'utf8'));
+    const classicSfxManifest = JSON.parse(await fs.readFile(
+      path.resolve(__dirname, '../../assets/audio/sfx-classic-manifest.json'), 'utf8'));
     const sfxManifest = JSON.parse(await fs.readFile(
       path.resolve(__dirname, '../../assets/audio/sfx-manifest.json'), 'utf8'));
     const decoded = await page.evaluate(async entries => {
@@ -113,7 +117,9 @@ async function main() {
         await context.close();
       }
     }, [
+      ...classicMusicManifest.tracks.map(track => ({ ...track, folder: 'music' })),
       ...musicManifest.tracks.map(track => ({ ...track, folder: 'music' })),
+      ...classicSfxManifest.map(effect => ({ ...effect, folder: 'sfx/classic' })),
       ...sfxManifest.map(effect => ({ ...effect, folder: 'sfx' })),
     ]);
     for (const audio of decoded) {
@@ -131,8 +137,14 @@ async function main() {
     await page.waitForFunction(() => window.norieAudioEvents.filter(
       event => event.type === 'play' && event.source.startsWith('data:audio/wav')).length === 6);
     await page.waitForFunction(() => window.norieAudioEvents.some(event =>
-      event.type === 'play' && event.source.includes('/audio/music/norie_')));
+      event.type === 'play' && event.source.includes('/audio/music/synthwave_')));
     await openSettings();
+    await page.getByRole('combobox', { name: 'Audio Theme' }).click();
+    await page.getByText('Space Adventure', { exact: true }).last().click();
+    await page.waitForFunction(storageKey =>
+      localStorage.getItem(storageKey) === 'spaceAdventure', key('theme'));
+    await page.waitForFunction(() => window.norieAudioEvents.some(event =>
+      event.type === 'play' && event.source.includes('/audio/music/norie_')));
     const testSound = page.getByRole('button', { name: 'Test Sound', exact: true });
     async function playTestSound() {
       const bounds = await testSound.boundingBox();
@@ -178,6 +190,7 @@ async function main() {
     await enableAccessibility();
     await openSettings();
     assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), key('sfxEnabled')), 'false');
+    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), key('theme')), 'spaceAdventure');
     assert.equal(await testSound.isEnabled(), false);
     await playTestSound();
     await page.waitForTimeout(250);

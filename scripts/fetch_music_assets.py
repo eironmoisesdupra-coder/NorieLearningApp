@@ -57,13 +57,21 @@ def fetch_track(track, folder, *, bundled=False):
 
 
 def main():
-    manifest = json.loads((ROOT / 'assets/audio/music-manifest.json').read_text(encoding='utf-8'))
-    tracks = manifest['tracks']
-    if manifest['license'] != 'CC0-1.0' or len({track['file'] for track in tracks}) != len(tracks):
-        raise ValueError('Invalid licensed music manifest')
-    for track in tracks:
-        fetch_track(track, ROOT / 'assets/audio/music',
-                    bundled=manifest.get('origin') == 'original-synthesis')
+    names = ('music-classic-manifest.json', 'music-manifest.json')
+    filenames = set()
+    for name in names:
+        manifest = json.loads(
+            (ROOT / 'assets/audio' / name).read_text(encoding='utf-8'))
+        tracks = manifest['tracks']
+        track_names = {track['file'] for track in tracks}
+        if (manifest['license'] != 'CC0-1.0' or len(tracks) != 5
+                or len(track_names) != len(tracks)
+                or filenames.intersection(track_names)):
+            raise ValueError(f'Invalid licensed music manifest: {name}')
+        filenames.update(track_names)
+        for track in tracks:
+            fetch_track(track, ROOT / 'assets/audio/music',
+                        bundled=manifest.get('origin') == 'original-synthesis')
 
 
 if __name__ == '__main__':

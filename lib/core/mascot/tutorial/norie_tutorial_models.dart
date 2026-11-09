@@ -482,7 +482,7 @@ abstract final class NorieTutorialCatalog {
             id: 'settings-silent',
             title: 'Troubleshoot missing audio',
             message:
-                'Tap or press a key in the app to allow browser audio. Enable Background Music and raise its volume for the five-track soundtrack. Enable Sound Effects and choose Test Sound to check feedback audio. Also check device volume, browser tab mute, and the selected output device. Web music needs its first online asset download before offline use. Visual feedback remains usable without sound.'),
+                'Tap or press a key in the app to allow browser audio. Choose Classic or Space Adventure under Audio Theme, then enable Background Music and raise its volume. Enable Sound Effects and choose Test Sound to check feedback audio. Also check device volume, browser tab mute, and the selected output device. Web music needs its first online asset download before offline use. Visual feedback remains usable without sound.'),
       ]);
 
   static const offline = NorieTutorialDefinition(

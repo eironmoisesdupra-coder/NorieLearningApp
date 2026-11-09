@@ -27,16 +27,18 @@ test('all twelve production SFX are real small files with documented provenance'
 test('audio assets are included by Flutter and the deployed offline asset manifest', () => {
   const pubspec = fs.readFileSync(path.join(root, 'pubspec.yaml'), 'utf8');
   assert.ok(pubspec.includes('- assets/audio/sfx/'));
+  assert.ok(pubspec.includes('- assets/audio/sfx/classic/'));
   assert.ok(pubspec.includes('- assets/audio/music/'));
   const deployment = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
   assert.ok(deployment.includes('"assets/**/*"'));
   const worker = fs.readFileSync(path.join(root, 'branding/web/norie-sw.js'), 'utf8');
   assert.ok(worker.includes('/*__NORIE_EXTRA_ASSETS__*/'));
   const manager = fs.readFileSync(path.join(root, 'lib/core/audio/norie_audio_manager.dart'), 'utf8');
-  assert.ok(manager.includes('availableMusic = expectedMusic'));
+  assert.ok(manager.includes('availableMusic = classicMusic'));
+  assert.ok(manager.includes('NorieAudioTheme.spaceAdventure'));
 });
 
-test('five original adventure tracks match the bundled manifest and playlist', () => {
+test('five adventure tracks match the bundled manifest and playlist', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'assets/audio/music-manifest.json')));
   const manager = fs.readFileSync(path.join(root, 'lib/core/audio/norie_audio_manager.dart'), 'utf8');
   const credits = fs.readFileSync(path.join(root, 'assets/audio/music/README.md'), 'utf8');
@@ -59,5 +61,33 @@ test('five original adventure tracks match the bundled manifest and playlist', (
     assert.equal(track.bars, 48);
     assert.equal(track.generator, 'scripts/generate_adventure_audio.py');
     assert.ok(!track.download, 'Bundled originals never require a download');
+  }
+});
+
+test('Classic tracks and effects retain their licensed bytes and selectable paths', () => {
+  const musicManifest = JSON.parse(fs.readFileSync(
+    path.join(root, 'assets/audio/music-classic-manifest.json')));
+  const sfxManifest = JSON.parse(fs.readFileSync(
+    path.join(root, 'assets/audio/sfx-classic-manifest.json')));
+  const manager = fs.readFileSync(
+    path.join(root, 'lib/core/audio/norie_audio_manager.dart'), 'utf8');
+  const credits = fs.readFileSync(
+    path.join(root, 'assets/audio/music/README.md'), 'utf8');
+  assert.equal(musicManifest.license, 'CC0-1.0');
+  assert.equal(musicManifest.tracks.length, 5);
+  assert.equal(sfxManifest.length, 12);
+  assert.ok(manager.includes("? 'classic/' : ''"));
+  for (const track of musicManifest.tracks) {
+    const bytes = fs.readFileSync(path.join(root, 'assets/audio/music', track.file));
+    assert.equal(bytes.length, track.bytes, track.file);
+    assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), track.sha256);
+    assert.ok(manager.includes(`'audio/music/${track.file}'`));
+    assert.ok(credits.includes(track.title));
+  }
+  for (const effect of sfxManifest) {
+    const bytes = fs.readFileSync(
+      path.join(root, 'assets/audio/sfx/classic', effect.file));
+    assert.equal(bytes.length, effect.bytes, effect.file);
+    assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), effect.sha256);
   }
 });

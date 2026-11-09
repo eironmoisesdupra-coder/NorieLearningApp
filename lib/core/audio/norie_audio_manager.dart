@@ -6,17 +6,28 @@ import 'norie_audio_backend.dart';
 
 enum NorieAudioContext { menu, lesson, quiz, anatomy }
 
+enum NorieAudioTheme { classic, spaceAdventure }
+
 class NorieAudioManager extends ChangeNotifier {
   NorieAudioManager(
       {NorieAudioBackend? backend,
-      List<String> playlist = availableMusic,
+      List<String>? playlist,
       Random? random})
       : _backend = backend ?? createNorieAudioBackend(),
-        _playlist = List.unmodifiable(playlist),
+        _playlistOverride = playlist == null ? null : List.unmodifiable(playlist),
+        _playlist = List.unmodifiable(
+            playlist ?? musicForTheme(NorieAudioTheme.classic)),
         _random = random ?? Random() {
     _positionSubscription = _backend.musicPositions.listen(_onPosition);
   }
   static final instance = NorieAudioManager();
+  static const classicMusic = [
+    'audio/music/synthwave_4k.mp3',
+    'audio/music/vaporware.mp3',
+    'audio/music/lifewave_2k.mp3',
+    'audio/music/synthwave_15k.mp3',
+    'audio/music/synthwave_421k.mp3'
+  ];
   static const expectedMusic = [
     'audio/music/norie_starbound.mp3',
     'audio/music/norie_bright_horizons.mp3',
@@ -24,12 +35,15 @@ class NorieAudioManager extends ChangeNotifier {
     'audio/music/norie_cosmic_trail.mp3',
     'audio/music/norie_next_frontier.mp3'
   ];
-  // No placeholder or remote music. Add only licensed, bundled production files.
-  static const List<String> availableMusic = expectedMusic;
+  static const List<String> availableMusic = classicMusic;
+  static List<String> musicForTheme(NorieAudioTheme theme) =>
+      theme == NorieAudioTheme.classic ? classicMusic : expectedMusic;
   static const crossfadeDuration = Duration(milliseconds: 2500);
   final NorieAudioBackend _backend;
-  final List<String> _playlist;
+  final List<String>? _playlistOverride;
+  List<String> _playlist;
   final Random _random;
+  NorieAudioTheme _theme = NorieAudioTheme.classic;
   late final StreamSubscription<MusicPosition> _positionSubscription;
   final _contexts = <Object, NorieAudioContext>{};
   final _lastEffects = <String, DateTime>{};
@@ -52,6 +66,7 @@ class NorieAudioManager extends ChangeNotifier {
   bool get quietLessons => _quietLessons;
   double get musicVolume => _musicVolume;
   double get sfxVolume => _sfxVolume;
+  NorieAudioTheme get theme => _theme;
   bool get musicAvailable => _playlist.isNotEmpty;
   String get musicStatus =>
       musicAvailable ? 'Music available offline' : 'Soundtrack coming soon';
@@ -67,6 +82,41 @@ class NorieAudioManager extends ChangeNotifier {
     return _musicEnabled && _foreground ? _musicVolume * gain * _duck : 0;
   }
 
+  Future<void> _switchTheme() async {
+    if (!_started) return;
+    _fadeTimer?.cancel();
+    var outgoing = _activeChannel;
+    final other = 1 - outgoing;
+    if (_transitioning && _weights[other] > _weights[outgoing]) {
+      outgoing = other;
+    }
+    final incoming = 1 - outgoing;
+    _transitioning = false;
+    if (!_unlocked || !_musicEnabled || !_foreground) {
+      await _backend.stopMusic(0);
+      await _backend.stopMusic(1);
+      _weights[0] = 0;
+      _weights[1] = 0;
+      _started = false;
+      _activeChannel = 0;
+      return;
+    }
+    await _backend.stopMusic(incoming);
+    _weights[outgoing] = 1;
+    _weights[incoming] = 0;
+    await _backend.setMusicVolume(outgoing, effectiveMusicVolume);
+    _track = _random.nextInt(_playlist.length);
+    try {
+      await _backend.startMusic(incoming, _playlist[_track]);
+      _activeChannel = incoming;
+      _beginFade(outgoing, incoming);
+    } catch (_) {
+      _started = false;
+      _unlocked = false;
+      rethrow;
+    }
+  }
+
   Future<void> load() => _loading ??= _load();
   Future<void> _load() async {
     _prefs = await SharedPreferences.getInstance();
@@ -75,6 +125,11 @@ class NorieAudioManager extends ChangeNotifier {
     _quietLessons = _prefs!.getBool('norie.audio.quietLessons') ?? true;
     _musicVolume = _clamp(_prefs!.getDouble('norie.audio.musicVolume') ?? .3);
     _sfxVolume = _clamp(_prefs!.getDouble('norie.audio.sfxVolume') ?? .68);
+    _theme = _prefs!.getString('norie.audio.theme') == 'spaceAdventure'
+        ? NorieAudioTheme.spaceAdventure
+        : NorieAudioTheme.classic;
+    _playlist =
+        List.unmodifiable(_playlistOverride ?? musicForTheme(_theme));
     _notify();
   }
 
@@ -83,6 +138,27 @@ class NorieAudioManager extends ChangeNotifier {
   void _notify() {
     if (!_disposed) notifyListeners();
   }
+
+  Future<void> setTheme(NorieAudioTheme value) async {
+    await load();
+    if (_theme == value) return;
+    _theme = value;
+    _playlist = List.unmodifiable(_playlistOverride ?? musicForTheme(value));
+    _notify();
+    await _prefs!.setString('norie.audio.theme', value.name);
+    if (_unlocked) {
+      await _queueEffect(_backend.stopSfx);
+      unawaited(_safe(() => _backend.preload(_commonEffects)));
+    }
+    await _queue(_switchTheme);
+  }
+
+  List<String> get _commonEffects => [
+        _effectAsset('ui_tap'),
+        _effectAsset('quiz_select'),
+        _effectAsset('correct'),
+        _effectAsset('wrong')
+      ];
 
   Future<void> _safe(Future<void> Function() action) async {
     try {
@@ -105,12 +181,7 @@ class NorieAudioManager extends ChangeNotifier {
     if (_disposed || _unlocked) return;
     _unlocked = true;
     await load();
-    unawaited(_safe(() => _backend.preload([
-          'audio/sfx/ui_tap.mp3',
-          'audio/sfx/quiz_select.mp3',
-          'audio/sfx/correct.mp3',
-          'audio/sfx/wrong.mp3'
-        ])));
+    unawaited(_safe(() => _backend.preload(_commonEffects)));
     await _queue(_syncMusic);
   }
 
@@ -281,10 +352,13 @@ class NorieAudioManager extends ChangeNotifier {
     }
     await _queueEffect(() async {
       if (_sfxEnabled && _foreground && _sfxVolume > 0) {
-        await _backend.playSfx('audio/sfx/$name.mp3', _sfxVolume * gain);
+        await _backend.playSfx(_effectAsset(name), _sfxVolume * gain);
       }
     });
   }
+
+  String _effectAsset(String name) =>
+      'audio/sfx/${_theme == NorieAudioTheme.classic ? 'classic/' : ''}$name.mp3';
 
   Future<void> playUiTap() => _effect('ui_tap', .45);
   Future<void> playUiSelect() => _effect('ui_select', .55);

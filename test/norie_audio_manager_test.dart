@@ -70,17 +70,25 @@ class RecordingBackend implements NorieAudioBackend, GestureAudioBackend {
 }
 
 void main() {
-  test('production playlist contains five bundled music tracks', () {
+  test('both selectable playlists contain five unique local tracks', () {
     expect(NorieAudioManager.availableMusic, hasLength(5));
     expect(NorieAudioManager.availableMusic.toSet(), hasLength(5));
     expect(NorieAudioManager.availableMusic, [
-      'audio/music/norie_starbound.mp3',
-      'audio/music/norie_bright_horizons.mp3',
-      'audio/music/norie_discovery_run.mp3',
-      'audio/music/norie_cosmic_trail.mp3',
-      'audio/music/norie_next_frontier.mp3',
+      'audio/music/synthwave_4k.mp3',
+      'audio/music/vaporware.mp3',
+      'audio/music/lifewave_2k.mp3',
+      'audio/music/synthwave_15k.mp3',
+      'audio/music/synthwave_421k.mp3',
     ]);
-    for (final asset in NorieAudioManager.availableMusic) {
+    expect(NorieAudioManager.expectedMusic, hasLength(5));
+    expect(NorieAudioManager.expectedMusic.toSet(), hasLength(5));
+    expect(
+        NorieAudioManager.musicForTheme(NorieAudioTheme.spaceAdventure),
+        NorieAudioManager.expectedMusic);
+    for (final asset in [
+      ...NorieAudioManager.availableMusic,
+      ...NorieAudioManager.expectedMusic
+    ]) {
       expect(asset, startsWith('audio/music/'));
       expect(asset, endsWith('.mp3'));
     }
@@ -113,7 +121,8 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     backend.releaseSfx!.complete();
     await Future.wait([playing, queued, muting]);
-    expect(backend.events, ['audio/sfx/ui_tap.mp3', 'stopSfx']);
+    expect(
+        backend.events, ['audio/sfx/classic/ui_tap.mp3', 'stopSfx']);
     await audio.playUiBack();
     expect(backend.events.last, 'stopSfx');
     audio.dispose();
@@ -196,18 +205,18 @@ void main() {
       await play();
     }
     expect(backend.events.toSet(), {
-      'audio/sfx/ui_tap.mp3',
-      'audio/sfx/ui_select.mp3',
-      'audio/sfx/ui_open.mp3',
-      'audio/sfx/ui_back.mp3',
-      'audio/sfx/quiz_select.mp3',
-      'audio/sfx/correct.mp3',
-      'audio/sfx/wrong.mp3',
-      'audio/sfx/challenge_start.mp3',
-      'audio/sfx/complete.mp3',
-      'audio/sfx/achievement.mp3',
-      'audio/sfx/level_up.mp3',
-      'audio/sfx/perfect.mp3'
+      'audio/sfx/classic/ui_tap.mp3',
+      'audio/sfx/classic/ui_select.mp3',
+      'audio/sfx/classic/ui_open.mp3',
+      'audio/sfx/classic/ui_back.mp3',
+      'audio/sfx/classic/quiz_select.mp3',
+      'audio/sfx/classic/correct.mp3',
+      'audio/sfx/classic/wrong.mp3',
+      'audio/sfx/classic/challenge_start.mp3',
+      'audio/sfx/classic/complete.mp3',
+      'audio/sfx/classic/achievement.mp3',
+      'audio/sfx/classic/level_up.mp3',
+      'audio/sfx/classic/perfect.mp3'
     });
     audio.dispose();
   });
@@ -240,6 +249,48 @@ void main() {
     a.dispose();
     b.dispose();
   });
+  test('theme defaults to Classic and persists the selected theme', () async {
+    SharedPreferences.setMockInitialValues({});
+    final first = NorieAudioManager(backend: RecordingBackend());
+    await first.load();
+    expect(first.theme, NorieAudioTheme.classic);
+    await first.setTheme(NorieAudioTheme.spaceAdventure);
+    expect(first.theme, NorieAudioTheme.spaceAdventure);
+    first.dispose();
+
+    final second = NorieAudioManager(backend: RecordingBackend());
+    await second.load();
+    expect(second.theme, NorieAudioTheme.spaceAdventure);
+    await second.setTheme(NorieAudioTheme.classic);
+    expect(second.theme, NorieAudioTheme.classic);
+    second.dispose();
+  });
+  testWidgets('theme changes crossfade music and select matching effects',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final backend = RecordingBackend();
+    final audio = NorieAudioManager(backend: backend);
+    await audio.load();
+    await audio.unlock();
+    await tester.pump(const Duration(milliseconds: 250));
+    await audio.setTheme(NorieAudioTheme.spaceAdventure);
+    var started = backend.events.where((e) => e.startsWith('start:')).toList();
+    expect(started, hasLength(2));
+    expect(started.first, contains('audio/music/synthwave_'));
+    expect(started.last, contains('audio/music/norie_'));
+    expect(backend.events, contains('stop:1'));
+    await audio.playUiTap();
+    expect(backend.events.last, 'audio/sfx/ui_tap.mp3');
+
+    await tester.pump(const Duration(seconds: 3));
+    await audio.setTheme(NorieAudioTheme.classic);
+    started = backend.events.where((e) => e.startsWith('start:')).toList();
+    expect(started, hasLength(3));
+    expect(started.last, contains('audio/music/synthwave_'));
+    await audio.playUiSelect();
+    expect(backend.events.last, 'audio/sfx/classic/ui_select.mp3');
+    audio.dispose();
+  });
   test(
       'feedback selects correct asset, suppresses duplicates and respects mute',
       () async {
@@ -251,7 +302,7 @@ void main() {
     await a.playCorrect();
     await a.playWrong();
     expect(backend.events.where((e) => e.endsWith('.mp3')),
-        ['audio/sfx/correct.mp3', 'audio/sfx/wrong.mp3']);
+        ['audio/sfx/classic/correct.mp3', 'audio/sfx/classic/wrong.mp3']);
     await a.setSfxEnabled(false);
     await a.playUiTap();
     expect(backend.events.last, 'stopSfx');

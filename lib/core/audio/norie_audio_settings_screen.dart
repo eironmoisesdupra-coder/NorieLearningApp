@@ -42,6 +42,27 @@ class _NorieAudioSettingsScreenState extends State<NorieAudioSettingsScreen> {
                             const SizedBox(height: 8),
                             const Text(
                                 'Sound supports the visuals. Your preferences are saved on this device.'),
+                            DropdownButtonFormField<NorieAudioTheme>(
+                                key: ValueKey(_audio.theme),
+                                decoration: const InputDecoration(
+                                    labelText: 'Audio Theme'),
+                                initialValue: _audio.theme,
+                                isExpanded: true,
+                                items: NorieAudioTheme.values
+                                    .map((theme) =>
+                                        DropdownMenuItem<NorieAudioTheme>(
+                                          value: theme,
+                                          child: Text(theme ==
+                                                  NorieAudioTheme.classic
+                                              ? 'Classic'
+                                              : 'Space Adventure'),
+                                        ))
+                                    .toList(),
+                                onChanged: (theme) async {
+                                  if (theme == null) return;
+                                  await _audio.setTheme(theme);
+                                  await _audio.playUiSelect();
+                                }),
                             SwitchListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: const Text('Background Music'),

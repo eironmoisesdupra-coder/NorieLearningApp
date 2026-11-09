@@ -1,6 +1,8 @@
-# NorieLearning soundtrack
+# NorieLearning selectable soundtracks
 
-The active soundtrack is five **original, instrumental synth-adventure**
+Audio Settings provides **Classic** and **Space Adventure**. Classic is selected
+by default to preserve the previous app experience. Space Adventure is five
+**original, instrumental synth-adventure**
 compositions: bright major-key harmonies, melodic plucks, warm pads, rhythmic bass,
 and soft electronic drums. No vocals, sampled recordings, reference songs, or
 artist imitation are used. The original synthetic audio is dedicated under
@@ -19,47 +21,46 @@ breakdown, return, and outro (about 90-101 seconds). The checked-in MP3s are the
 production build inputs; exact hashes, sizes, tempos and composition seeds are
 recorded in [the manifest](../music-manifest.json).
 
-Playback starts after a user gesture at a random position in this list, then
-cycles through all five tracks with 2.5-second crossfades. Music/SFX settings,
-quiet lesson volume, and foreground pause/resume behavior are unchanged. Playback
-requires no account, remote stream, or subscription. Flutter and published web
-offline caches bundle all active tracks.
+Space Adventure playback starts after a user gesture at a random position in
+its list, then cycles through all five tracks with 2.5-second crossfades. Classic
+uses the five Cynic Project tracks listed below. Both themes support the same
+music/SFX settings, quiet lesson volume, and foreground pause/resume behavior.
+Playback requires no account, remote stream, or subscription. Builds and the
+published web offline cache verify and bundle both themes.
 
 ## Building and rendering
 
-`python scripts/fetch_music_assets.py` now verifies the bundled originals without
-network requests. Missing or modified bytes fail the build; the verifier never
-silently substitutes another recording.
+`python scripts/fetch_music_assets.py` verifies bundled Space Adventure
+recordings and downloads any missing Classic tracks from the verified OpenGameArt
+URLs. Missing or modified bytes fail the build; the verifier never silently
+substitutes another recording.
 
-To re-render the compositions and all twelve space-interface effects, use
+To re-render the compositions and all twelve Space Adventure effects, use
 `python scripts/generate_adventure_audio.py` with NumPy and imageio-ffmpeg installed.
 Review the output, then commit the MP3s and regenerated manifests together.
 Different encoder versions can change MP3 hashes; ordinary builds verify existing
 files and do not render them. The generator is deterministic at the PCM/score
 level and contains all melodies, orchestration, tempos, seeds, and effect recipes.
 
-## Retained credits for the previous soundtrack
+## Classic soundtrack credits
 
 Music by **The Cynic Project / cynicmusic.com / pixelsphere.org**, originally
-written for Pixelsphere. These were third-party recordings, not generated Norie
-originals. The artist's five OpenGameArt pages explicitly list **CC0 1.0**
-(verified 2026-10-03). Credit is preserved here even though CC0 does not require
-attribution. No endorsement by the artist is implied.
+written for Pixelsphere. These third-party recordings are the selectable Classic
+soundtrack, not generated Norie originals. The artist's five OpenGameArt pages
+explicitly list **CC0 1.0** (verified 2026-10-03). No endorsement by the artist
+is implied.
 
 License: https://creativecommons.org/publicdomain/zero/1.0/
 Legal text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
 Artist: https://opengameart.org/users/cynicmusic
 
-| Previous file | Original title | Source |
+| File | Original title | Source |
 | --- | --- | --- |
 | synthwave_4k.mp3 | Synthwave 4k | https://opengameart.org/content/calm-ambient-1-synthwave-4k |
 | vaporware.mp3 | Vaporware | https://opengameart.org/content/calm-piano-1-vaporware |
 | lifewave_2k.mp3 | Lifewave 2k | https://opengameart.org/content/calm-ambient-3-lifewave-2k |
 | synthwave_15k.mp3 | Synthwave 15k | https://opengameart.org/content/calm-ambient-2-synthwave-15k |
 | synthwave_421k.mp3 | Synthwave 421k | https://opengameart.org/content/calm-relax-1-synthwave-421k |
-
-Those recordings are no longer in the active playlist. Their attribution and
-license links remain here for older builds; no endorsement is implied.
 
 `../MUSIC_GENERATION_SPEC.md` is a historical specification for a possible future
 original soundtrack, not the provenance of these recordings.
