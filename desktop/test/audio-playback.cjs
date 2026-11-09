@@ -155,8 +155,8 @@ async function main() {
       event.type === 'play' && paths.some(path => event.source.endsWith(path))),
     classicMusicPaths);
     await openSettings();
-    // The Flutter widget test covers dropdown selection; verify the packaged
-    // host loads and persists that selected theme across an app restart.
+    // The Flutter widget test covers selection and persistence; verify the
+    // packaged host loads its selected playlist from web preferences.
     await page.evaluate(storageKey =>
       localStorage.setItem(storageKey, JSON.stringify('spaceAdventure')), key('theme'));
     await page.reload();
