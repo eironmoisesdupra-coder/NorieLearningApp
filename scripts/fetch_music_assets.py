@@ -1,4 +1,4 @@
-"""Fetch licensed build-time music assets; the packaged app plays them offline."""
+"""Verify bundled original music, or fetch verified licensed legacy recordings."""
 import hashlib
 import json
 from pathlib import Path
@@ -11,13 +11,14 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def fetch_track(track, folder):
+def fetch_track(track, folder, *, bundled=False):
     name, digest, size = track['file'], track['sha256'], track['bytes']
-    url = urlsplit(track['download'])
     if (not re.fullmatch(r'[a-z0-9_]+\.mp3', name)
             or not re.fullmatch(r'[a-f0-9]{64}', digest)
-            or not isinstance(size, int) or isinstance(size, bool) or size <= 0
-            or url.scheme != 'https' or url.netloc != 'opengameart.org'
+            or not isinstance(size, int) or isinstance(size, bool) or size <= 0):
+        raise ValueError('Invalid music manifest entry')
+    url = urlsplit(track.get('download', ''))
+    if not bundled and (url.scheme != 'https' or url.netloc != 'opengameart.org'
             or not url.path.startswith('/sites/default/files/')
             or url.query or url.fragment):
         raise ValueError('Invalid music manifest entry')
@@ -30,6 +31,8 @@ def fetch_track(track, folder):
             and hashlib.sha256(target.read_bytes()).hexdigest() == digest):
         print(f'Verified cached {name}')
         return
+    if bundled:
+        raise ValueError(f'Bundled music missing or checksum mismatch: {name}')
     request = Request(track['download'], headers={'User-Agent': 'NorieLearning-build/1.0'})
     temporary = None
     try:
@@ -54,12 +57,21 @@ def fetch_track(track, folder):
 
 
 def main():
-    manifest = json.loads((ROOT / 'assets/audio/music-manifest.json').read_text(encoding='utf-8'))
-    tracks = manifest['tracks']
-    if manifest['license'] != 'CC0-1.0' or len({track['file'] for track in tracks}) != len(tracks):
-        raise ValueError('Invalid licensed music manifest')
-    for track in tracks:
-        fetch_track(track, ROOT / 'assets/audio/music')
+    names = ('music-classic-manifest.json', 'music-manifest.json')
+    filenames = set()
+    for name in names:
+        manifest = json.loads(
+            (ROOT / 'assets/audio' / name).read_text(encoding='utf-8'))
+        tracks = manifest['tracks']
+        track_names = {track['file'] for track in tracks}
+        if (manifest['license'] != 'CC0-1.0' or len(tracks) != 5
+                or len(track_names) != len(tracks)
+                or filenames.intersection(track_names)):
+            raise ValueError(f'Invalid licensed music manifest: {name}')
+        filenames.update(track_names)
+        for track in tracks:
+            fetch_track(track, ROOT / 'assets/audio/music',
+                        bundled=manifest.get('origin') == 'original-synthesis')
 
 
 if __name__ == '__main__':

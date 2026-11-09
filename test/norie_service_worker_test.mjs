@@ -77,6 +77,16 @@ test('organ atlas is cached before the learner opens Anatomy Lab', async () => {
   assert.equal(response.status, 200);
 });
 
+test('both audio themes remain available after the app goes offline', async () => {
+  const app = worker();
+  await app.install();
+  app.goOffline();
+  for (const file of ['sfx/classic/correct.mp3', 'sfx/ui_tap.mp3']) {
+    const response = await app.fetch(new Request(`${base}assets/assets/audio/${file}`));
+    assert.equal(response.status, 200, file);
+  }
+});
+
 test('cached Flutter bootstrap works offline with the build query', async () => {
   const app = worker();
   await app.install();

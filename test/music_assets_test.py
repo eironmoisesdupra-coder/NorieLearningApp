@@ -1,6 +1,7 @@
 import hashlib
 import importlib.util
 import io
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -41,6 +42,22 @@ class MusicAssetsTest(unittest.TestCase):
                 music.fetch_track(self.track, folder)
             self.assertEqual(target.read_bytes(), self.data)
 
+    def test_original_tracks_require_exact_bundled_bytes_and_never_download(self):
+        original = {key: value for key, value in self.track.items() if key != 'download'}
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            target = folder / 'song.mp3'
+            with patch.object(music, 'urlopen') as download:
+                with self.assertRaisesRegex(ValueError, 'Bundled music'):
+                    music.fetch_track(original, folder, bundled=True)
+                target.write_bytes(b'changed recording')
+                with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+                    music.fetch_track(original, folder, bundled=True)
+                self.assertEqual(target.read_bytes(), b'changed recording')
+                target.write_bytes(self.data)
+                music.fetch_track(original, folder, bundled=True)
+                download.assert_not_called()
+
     def test_rejects_unsafe_paths_urls_and_hashes_before_downloading(self):
         with tempfile.TemporaryDirectory() as directory:
             for changes in [dict(file='../song.mp3'), dict(file='C:/song.mp3'),
@@ -51,6 +68,34 @@ class MusicAssetsTest(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         music.fetch_track({**self.track, **changes}, Path(directory))
                     download.assert_not_called()
+
+    def test_build_verifies_both_classic_and_adventure_manifests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            audio = root / 'assets/audio'
+            audio.mkdir(parents=True)
+            classic = dict(license='CC0-1.0', tracks=[
+                dict(file=f'classic_{index}.mp3') for index in range(5)])
+            adventure = dict(origin='original-synthesis', license='CC0-1.0', tracks=[
+                dict(file=f'adventure_{index}.mp3') for index in range(5)])
+            (audio / 'music-classic-manifest.json').write_text(
+                json.dumps(classic), encoding='utf-8')
+            (audio / 'music-manifest.json').write_text(
+                json.dumps(adventure), encoding='utf-8')
+            checked = []
+
+            def record(track, folder, *, bundled=False):
+                checked.append((track['file'], bundled))
+
+            with patch.object(music, 'ROOT', root), patch.object(
+                    music, 'fetch_track', side_effect=record):
+                music.main()
+
+            self.assertEqual(len(checked), 10)
+            self.assertEqual(checked[:5], [
+                (f'classic_{index}.mp3', False) for index in range(5)])
+            self.assertEqual(checked[5:], [
+                (f'adventure_{index}.mp3', True) for index in range(5)])
 
 
 if __name__ == '__main__':

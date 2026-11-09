@@ -25,6 +25,14 @@ void main() {
     expect(audio.sfxEnabled, false);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getBool('norie.audio.sfxEnabled'), false);
+    final theme = find.byType(DropdownButtonFormField<NorieAudioTheme>);
+    await tester.ensureVisible(theme);
+    await tester.tap(theme);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Space Adventure').last);
+    await tester.pumpAndSettle();
+    expect(audio.theme, NorieAudioTheme.spaceAdventure);
+    expect(prefs.getString('norie.audio.theme'), 'spaceAdventure');
     await tester.pumpWidget(const SizedBox());
     audio.dispose();
   });

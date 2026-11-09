@@ -14,7 +14,7 @@ import numpy as np
 def main():
     root = Path(__file__).resolve().parents[1]
     source = root / 'build/audio-originals'
-    output = root / 'assets/audio/sfx'
+    output = root / 'assets/audio/sfx/classic'
     output.mkdir(parents=True, exist_ok=True)
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
     report = []
@@ -43,7 +43,7 @@ def main():
         report.append(dict(file=path.name, seconds=round(len(samples)/44100, 3),
                            bytes=target.stat().st_size,
                            sha256=hashlib.sha256(target.read_bytes()).hexdigest()))
-    (root / 'assets/audio/sfx-manifest.json').write_text(
+    (root / 'assets/audio/sfx-classic-manifest.json').write_text(
         json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(report, indent=2))
 
