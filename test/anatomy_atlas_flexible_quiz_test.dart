@@ -1,3 +1,4 @@
+import 'atlas_quiz_test_support.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +33,7 @@ AnatomyAtlasCatalog fixture({int count = 24, bool ambiguous = false}) =>
     });
 
 void main() {
+  setUp(prepareAtlasWidgetTest);
   for (final count in [5, 10, 20]) {
     test('$count questions stay unique and award ten XP per correct answer',
         () {
@@ -155,12 +157,15 @@ void main() {
     await tester.scrollUntilVisible(shorter, 300);
     await tester.tap(shorter);
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await waitForAtlasIo(tester);
     expect(find.byType(AnatomyAtlasQuizScreen), findsOneWidget);
     expect(tester.getSize(find.byType(AnatomyAtlasModelView)).height,
         greaterThan(120));
     await tester.tap(find.byTooltip('Need a hint?'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     expect(tester.getSize(find.byType(AnatomyAtlasModelView)).height,
         greaterThan(120));
     expect(tester.takeException(), isNull);
@@ -185,10 +190,13 @@ void main() {
           scrollable: setupScroll);
       await tester.tap(find.text(label));
       await tester.pump();
+      await waitForAtlasIo(tester);
     }
     await tester.tap(find.text('Start 5-question quiz'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.pump(const Duration(milliseconds: 400));
+    await waitForAtlasIo(tester);
     expect(find.text('System · 1/5'), findsOneWidget);
     expect(find.byKey(const ValueKey('atlas-quiz-hint')), findsOneWidget);
     expect(find.byType(OutlinedButton), findsNWidgets(2));
@@ -196,17 +204,21 @@ void main() {
         .widget<AnatomyAtlasModelView>(find.byType(AnatomyAtlasModelView));
     viewer.onLoaded!(true);
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.ensureVisible(find.text('Skeletal'));
     await tester.tap(find.text('Skeletal'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     await tester.ensureVisible(find.text('Check answer'));
     await tester.tap(find.text('Check answer'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     expect(find.text('Correct: Skeletal'), findsOneWidget);
     expect(find.textContaining('The atlas catalog lists'), findsOneWidget);
     await tester.ensureVisible(find.text('Next structure'));
     await tester.tap(find.text('Next structure'));
     await tester.pump();
+    await waitForAtlasIo(tester);
     final nextPrompt = find.textContaining('listed under in this atlas?');
     expect(nextPrompt, findsOneWidget);
     expect(tester.getBottomLeft(nextPrompt).dy, lessThan(600));

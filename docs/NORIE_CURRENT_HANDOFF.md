@@ -1,3 +1,11 @@
+# Atlas recovery and signing-compatibility follow-up — 2026-10-25
+
+Baseline develop 2578b809d5b1649e51ef52f72ac007ad8454b3d4, branch `fix/atlas-quiz-recovery`, version 0.19.0+25. See `docs/implementation/atlas-round-recovery.md` and the branch PR for current source/check/merge evidence. This follow-up implements device-local Atlas resume with stable mastery/reward receipts, owner/progression guards, explicit restart/recovery, and a fail-closed Android publication compatibility check. The original 2/5→1/5 regression is retained as an automated test.
+
+The original Android signing authority or a separately reviewed/tested migration remains necessary for existing 0.18 learners. A newly generated debug key is not a signing-continuity fix. Paid hints stay locked: 0 approved records, 30 blank drafts. No publication, main merge, production credential/billing/schema change or physical certification is authorized. Preserve all older feature work; historical integration notes below describe the pre-fix state.
+
+---
+
 # 0.19 educational integration — candidate, not released
 
 Feature PRs78,77,79,72,73,74,75,76 are reviewed and merged into develop in that order. Their final heads passed Flutter/Android/web, packaged Windows offline and Store checks. The0.19.0+25 preparation PR80 is authoritative for its current source, CI, packages and merge/release status. Published downloads remain0.18.0+24 Preview at ed9472dbb437127abd8fd09931a86879d4df5ec5; no0.19 release/tag or paid Anatomy activation. Repair-only PR78 triggered the old automatic web preview once; PR77 removed that develop-push trigger. No later publication was dispatched.

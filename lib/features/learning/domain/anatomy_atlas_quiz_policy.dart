@@ -18,6 +18,13 @@ class AtlasQuizQuestion {
       ? target.name
       : _singleSystem(target)!.label;
 
+  String get masteryTopic =>
+      AnatomyCatalog.systems
+          .where((s) => target.systems.contains(s.id.name))
+          .firstOrNull
+          ?.label ??
+      'Atlas structures';
+
   String get prompt => kind == AtlasQuestionKind.identify
       ? 'Which anatomical structure is shown?'
       : 'Which system is ${target.name} listed under in this atlas?';
@@ -64,8 +71,47 @@ class AtlasQuizSession {
   bool finished = false;
   bool _rewarded = false;
   final _answered = <int>{};
+  final _responses = <int, String>{};
+  List<String?> get responses =>
+      List.generate(questions.length, (i) => _responses[i]);
   AtlasQuizQuestion get current => questions[index];
   bool get checked => _answered.contains(index);
+
+  factory AtlasQuizSession.restore(List<AtlasQuizQuestion> questions,
+      {required int requestedCount,
+      required AtlasQuizDifficulty difficulty,
+      required int index,
+      required bool finished,
+      required List<String?> responses,
+      bool Function()? stillCurrent}) {
+    if (![5, 10, 20].contains(requestedCount) ||
+        questions.isEmpty ||
+        questions.length > requestedCount ||
+        index < 0 ||
+        index >= questions.length ||
+        responses.length != questions.length ||
+        (finished && index != questions.length - 1)) {
+      throw const FormatException('Invalid saved quiz position.');
+    }
+    final quiz = AtlasQuizSession._(
+        List.unmodifiable(questions), requestedCount, difficulty, stillCurrent);
+    for (var i = 0; i < responses.length; i++) {
+      final response = responses[i];
+      if ((i < index || finished) && response == null ||
+          i > index && response != null ||
+          response != null && !questions[i].options.contains(response)) {
+        throw const FormatException('Invalid saved quiz response.');
+      }
+      if (response != null) {
+        quiz._answered.add(i);
+        quiz._responses[i] = response;
+        if (response == questions[i].answer) quiz.score++;
+      }
+    }
+    quiz.index = index;
+    quiz.finished = finished;
+    return quiz;
+  }
 
   static List<AtlasStructure> eligibleStructures(
           AnatomyAtlasCatalog catalog, String reference, Set<String> systems,
@@ -147,6 +193,7 @@ class AtlasQuizSession {
       return null;
     }
     _answered.add(index);
+    _responses[index] = option;
     final correct = option == current.answer;
     if (correct) score++;
     return correct;

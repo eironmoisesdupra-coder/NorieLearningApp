@@ -68,6 +68,8 @@ jobs:
           path: windows-package
           github-token: ${{ github.token }}
           run-id: ${{ steps.gate.outputs.windows_run }}
+      - name: Require Android signing continuity before preparing publication
+        run: python scripts/release/android_preview_upgrade.py --apk android-package/app-release.apk --report android-upgrade-compatibility.json --require-compatible
       - name: Prepare durable packages and checksums
         env:
           RELEASE_TAG: ${{ steps.revision.outputs.tag }}

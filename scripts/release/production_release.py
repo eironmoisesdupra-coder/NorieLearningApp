@@ -63,12 +63,29 @@ def validate_binding(metadata, artifact, revision, version):
 def run(arguments):
     return subprocess.run(arguments, check=True, capture_output=True, text=True).stdout
 
+def verified_apk_signer(output):
+    """Read successful apksigner output from SDK 36 and SDK 37.
+
+    SDK 37 labels certificates by verified scheme (e.g. V2 Signer) instead
+    of Signer #1. Multiple schemes may describe the same single identity;
+    conflicting identities and multiple APK signers must still fail closed.
+    Callers must execute cryptographic verification successfully first.
+    """
+    counts = re.findall(r'^Number of signers:[ \t]*(\d+)[ \t\r]*$', output, re.M)
+    entries = re.findall(
+        r'^(Signer #\d+|V[1-4](?:\.\d+)? Signer:) certificate SHA-256 digest:[ \t]*([^ \t\r\n]+)[ \t\r]*$',
+        output, re.M)
+    fingerprints = {value.replace(':', '').lower() for _, value in entries}
+    if (counts != ['1'] or not entries or len(fingerprints) != 1
+            or any(label.startswith('Signer #') and label != 'Signer #1' for label, _ in entries)
+            or any(not re.fullmatch('[0-9a-f]{64}', value) for value in fingerprints)):
+        raise ValueError('Exactly one verified APK signer required with consistent certificate output')
+    return next(iter(fingerprints))
+
 def verify_android(artifact, expected, apksigner='apksigner'):
     # apksigner cryptographically verifies every APK signature, not just a certificate file.
     output = run([apksigner, 'verify', '--verbose', '--print-certs', str(artifact)])
-    fingerprints = re.findall(r'Signer #\d+ certificate SHA-256 digest:\s*([0-9a-fA-F:]+)', output)
-    if len(fingerprints) != 1: raise ValueError('Exactly one pinned APK signer required')
-    check_fingerprint(fingerprints[0], expected)
+    check_fingerprint(verified_apk_signer(output), expected)
     return expected.replace(':', '').lower()
 
 def verify_aab(artifact, expected):
