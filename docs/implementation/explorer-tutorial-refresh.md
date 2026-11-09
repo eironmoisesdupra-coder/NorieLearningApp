@@ -4,8 +4,7 @@ The 2026-10-23 WIP is a design brief, not a source-code archive. Its five packet
 
 ## Implemented checklist
 
-- [x] Classic Lessons and Adventure Mode in the active grade-selection subject pages, including World Map entry points. Classic keeps the existing lesson/grade destinations.
-- [x] Curriculum-related adventure hub for Mathematics, Science, English, Filipino, and Araling Panlipunan. Only the previously released Science Vanishing Water pilot launches. Other missions explicitly say planned preview/not playable.
+- [x] Direct subject-to-grade lesson entry, including World Map entry points. The subject Adventure Mode and its mission previews have since been removed; avatar cosmetics remain separate.
 - [x] Learner Explorer separate from Norie, visible in the shared Profile/Appearance Studio preview. Original complete vector poses provide idle/blink, preparation, wave and settling; no articulated rig or interpolated still-image rotation is used for this character.
 - [x] Skin, hair, outfit and accessories in the existing isolated studio draft; Save/Cancel/presets/backup/account snapshot hooks remain authoritative. Existing equipped cosmetics and earned unlocks remain intact.
 - [x] Rookie / Explorer / Scholar / Expert / Professor at unchanged Levels 1 / 5 / 15 / 30 / 50, using original educational pencil, compass, book, science flask, and graduation artwork. Internal cosmetic IDs and old-title aliases remain compatible. Private league tiers are a separate unchanged system.
@@ -26,6 +25,6 @@ These changes do not add new playable missions, grade coverage, paid subscriptio
 
 ## Validation record
 
-Tests cover legacy appearance import and presets, draft save/cancel, nine distinct full-body poses and reaction sequence, reduced-motion changes mid-wave, lifecycle/TickerMode, rank thresholds and aliases, real subject entry points, adventure resume/recovery, all 56 guide steps at 320px/2× text, targeted landscape at 2× text, integrated guide minimize/reveal/close and unchanged sample learner storage. The implementation plan and PR record final command results, inspected browser/desktop output and exact-revision CI.
+Tests cover legacy appearance import and presets, draft save/cancel, nine distinct full-body poses and reaction sequence, reduced-motion changes mid-wave, lifecycle/TickerMode, rank thresholds and aliases, direct subject-to-grade entry, the retired adventure-mode absence, all 56 guide steps at 320px/2× text, targeted landscape at 2× text, integrated guide minimize/reveal/close and unchanged sample learner storage. The implementation plan and PR record final command results, inspected browser/desktop output and exact-revision CI.
 
 Download links in the final PR/release handoff must identify the actual revision for both Windows and Android; do not confuse the previous 0.17.0 Preview with this candidate.

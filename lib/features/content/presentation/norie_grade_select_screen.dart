@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
-import '../../learning/presentation/subject_mode_cards.dart';
 import '../data/norie_foundation_curriculum.dart';
 import 'norie_grade_lessons_screen.dart';
 
@@ -20,7 +19,6 @@ class NorieGradeSelectScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradesKey = GlobalKey();
     return Scaffold(
       appBar: AppBar(
         title: Text(subject),
@@ -78,20 +76,7 @@ class NorieGradeSelectScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 22),
-                  SubjectModeCards(
-                    subject: subject,
-                    accent: accent,
-                    onClassicTap: () => Scrollable.ensureVisible(
-                      gradesKey.currentContext!,
-                      alignment: 0,
-                      duration: MediaQuery.disableAnimationsOf(context)
-                          ? Duration.zero
-                          : const Duration(milliseconds: 250),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
                   Text('Choose a grade',
-                      key: gradesKey,
                       style: const TextStyle(
                           fontSize: 20, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 12),

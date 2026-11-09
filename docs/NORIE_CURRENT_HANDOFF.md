@@ -72,13 +72,13 @@ Previous **0.17.0+23 Preview is published**, source `31d24151d2fb05031042df797d9
 
 ---
 
-# Historical: Discovery Adventure MVP candidate
+# Retired: Discovery Adventure MVP
 
 Target **0.17.0+23 Preview**, branch `feat/discovery-adventure-mvp`, [PR #70](https://github.com/eironmoisesdupra-coder/NorieLearningApp/pull/70). Current-develop baseline `899b7ab5458583fd8cc5558aca6cc0ba3c444007`. User confirmed the Discovery Adventure MVP ZIP. Original dirty checkout remains untouched.
 
-Implemented the full optional Vanishing Water case under Learn > Activities: original 2D room, five keyboard/touch/list props, three observations, controlled warm/cool trials, hypothesis plus evidence, fresh application, full-body Norie, owner-scoped save/retry/temporary mode and idempotent local Discovery Journal. No XP/credit/mastery writes or remote dependency. Experimental/ungraded pending teacher review and learner testing.
+The optional Vanishing Water case was implemented under Learn > Activities as an original 2D room with evidence-gated science experiments and a local Discovery Journal. It was experimental and ungraded. The pixel-art investigation, subject Adventure Mode, progress store and runtime entry points are now removed from the app in favor of a direct subject → grade → lessons path. The published v0.19.0+25 build predates that removal and may still include the activity until the next release. This removal does not affect the separately selectable Space Adventure audio theme.
 
-Complete feature revision `07627da38a7f8bc22c20ef29fe6ffa79b53969ce` passed clean analysis, 944 Flutter tests (one existing native interop skip), web build, compiled browser checks at 320/390px and 100/160% text, actual installed-browser offline completion/reload, actual packaged Windows offline mission/reload/replay, independent code/visual review and all three PR CI workflows. Five review issues have RED/GREEN proof. The 0.17 packaging follow-up and a late SharedPreferences cache fix require fresh exact-head CI; four new real-adapter regressions reproduce failed-write retry/phantom-journal behavior and pass after reading durable platform values. Check PR #70 for current-head results rather than treating historical checks as current.
+The feature's original implementation and verification notes are retained as history under `docs/wip/2026-10-22-discovery-adventure`; they are not current product requirements. See `docs/implementation/discovery-adventure.md` for current status.
 
 See [Discovery status, requirement evidence and limitations](implementation/discovery-adventure.md). No public promotion/merge/tag/release has occurred. The owner approved Preview publication after latest-head Flutter/Windows/Store checks, final review, develop merge, merged-source CI/web validation and verified dual-platform versions/checksums. Physical Android certification, qualified teacher/consented learner validation and existing production signing/support/privacy gates remain external. Use the established develop-only, exact-SHA Preview release workflow after approval; never main. Final handoff includes both Windows and Android download links with the real revision.
 

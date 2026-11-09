@@ -31,7 +31,7 @@ class SubjectHubScreen extends StatelessWidget {
                           TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 8),
                   const Text(
-                    'Choose a subject for Classic Lessons and Adventure Mode.',
+                    'Choose a subject, then select a grade to begin its lessons.',
                     style: TextStyle(
                         color: NorieColors.textSecondary, height: 1.45),
                   ),
