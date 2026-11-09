@@ -8,6 +8,7 @@
     {
       "file": "synthwave_4k.mp3",
       "title": "Synthwave 4k",
+      "seconds": 157.896,
       "source": "https://opengameart.org/content/calm-ambient-1-synthwave-4k",
       "download": "https://opengameart.org/sites/default/files/001_Synthwave_4k_0.mp3",
       "bytes": 6322668,
@@ -16,6 +17,7 @@
     {
       "file": "vaporware.mp3",
       "title": "Vaporware",
+      "seconds": 164.955,
       "source": "https://opengameart.org/content/calm-piano-1-vaporware",
       "download": "https://opengameart.org/sites/default/files/003_Vaporware_2.mp3",
       "bytes": 6604773,
@@ -24,6 +26,7 @@
     {
       "file": "lifewave_2k.mp3",
       "title": "Lifewave 2k",
+      "seconds": 187.339,
       "source": "https://opengameart.org/content/calm-ambient-3-lifewave-2k",
       "download": "https://opengameart.org/sites/default/files/006_lifeWave2k_0.mp3",
       "bytes": 7500268,
@@ -32,6 +35,7 @@
     {
       "file": "synthwave_15k.mp3",
       "title": "Synthwave 15k",
+      "seconds": 208.051,
       "source": "https://opengameart.org/content/calm-ambient-2-synthwave-15k",
       "download": "https://opengameart.org/sites/default/files/002_Synthwave_15k.mp3",
       "bytes": 8328872,
@@ -40,6 +44,7 @@
     {
       "file": "synthwave_421k.mp3",
       "title": "Synthwave 421k",
+      "seconds": 474.244,
       "source": "https://opengameart.org/content/calm-relax-1-synthwave-421k",
       "download": "https://opengameart.org/sites/default/files/007_Synthwave_421k.mp3",
       "bytes": 18976382,

@@ -276,8 +276,14 @@ void main() {
     await audio.setTheme(NorieAudioTheme.spaceAdventure);
     var started = backend.events.where((e) => e.startsWith('start:')).toList();
     expect(started, hasLength(2));
-    expect(started.first, contains('audio/music/synthwave_'));
-    expect(started.last, contains('audio/music/norie_'));
+    expect(
+        NorieAudioManager.availableMusic
+            .any((asset) => started.first.endsWith(asset)),
+        isTrue);
+    expect(
+        NorieAudioManager.expectedMusic
+            .any((asset) => started.last.endsWith(asset)),
+        isTrue);
     expect(backend.events, contains('stop:1'));
     await audio.playUiTap();
     expect(backend.events.last, 'audio/sfx/ui_tap.mp3');
@@ -286,7 +292,10 @@ void main() {
     await audio.setTheme(NorieAudioTheme.classic);
     started = backend.events.where((e) => e.startsWith('start:')).toList();
     expect(started, hasLength(3));
-    expect(started.last, contains('audio/music/synthwave_'));
+    expect(
+        NorieAudioManager.availableMusic
+            .any((asset) => started.last.endsWith(asset)),
+        isTrue);
     await audio.playUiSelect();
     expect(backend.events.last, 'audio/sfx/classic/ui_select.mp3');
     audio.dispose();

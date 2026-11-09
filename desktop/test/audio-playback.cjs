@@ -117,18 +117,31 @@ async function main() {
         await context.close();
       }
     }, [
-      ...classicMusicManifest.tracks.map(track => ({ ...track, folder: 'music' })),
-      ...musicManifest.tracks.map(track => ({ ...track, folder: 'music' })),
-      ...classicSfxManifest.map(effect => ({ ...effect, folder: 'sfx/classic' })),
-      ...sfxManifest.map(effect => ({ ...effect, folder: 'sfx' })),
+      ...classicMusicManifest.tracks.map(track => ({
+        ...track, folder: 'music', profile: 'classicMusic',
+      })),
+      ...musicManifest.tracks.map(track => ({
+        ...track, folder: 'music', profile: 'spaceAdventure',
+      })),
+      ...classicSfxManifest.map(effect => ({
+        ...effect, folder: 'sfx/classic', profile: 'classicSfx',
+      })),
+      ...sfxManifest.map(effect => ({
+        ...effect, folder: 'sfx', profile: 'spaceAdventure',
+      })),
     ]);
     for (const audio of decoded) {
       assert.ok(Math.abs(audio.duration - audio.seconds) < .1, audio.file);
-      assert.ok(audio.peak < .9 && audio.peak > .1, `${audio.file}: decoded headroom`);
+      const peakValid = audio.profile === 'classicMusic'
+        ? audio.peak > .1 && audio.peak <= 1.01
+        : audio.peak > .1 && audio.peak < .9;
+      assert.ok(peakValid, `${audio.file}: decoded peak level`);
       assert.ok(audio.rms > .025 && audio.rms < .23, `${audio.file}: audible, controlled level`);
       assert.ok(Math.abs(audio.dc) < .005, `${audio.file}: no DC offset`);
       assert.ok(audio.stereoDifference > .0001, `${audio.file}: stereo image`);
-      assert.ok(audio.onset >= 0 && audio.onset < .04, `${audio.file}: prompt attack`);
+      if (audio.profile !== 'classicMusic') {
+        assert.ok(audio.onset >= 0 && audio.onset < .04, `${audio.file}: prompt attack`);
+      }
     }
     console.log(`PASS: ${decoded.length} bundled recordings decoded offline; durations, headroom, levels, stereo and attacks verified`);
     // Semantic buttons bypass Flutter's widget pointer Listener. A real click

@@ -80,6 +80,7 @@ test('Classic tracks and effects retain their licensed bytes and selectable path
   for (const track of musicManifest.tracks) {
     const bytes = fs.readFileSync(path.join(root, 'assets/audio/music', track.file));
     assert.equal(bytes.length, track.bytes, track.file);
+    assert.ok(track.seconds > 120 && track.seconds < 500, track.file);
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), track.sha256);
     assert.ok(manager.includes(`'audio/music/${track.file}'`));
     assert.ok(credits.includes(track.title));
