@@ -145,7 +145,7 @@ async function main() {
         assert.ok(audio.onset >= 0 && audio.onset < .04, `${audio.file}: prompt attack`);
       }
     }
-    console.log(`PASS: ${decoded.length} bundled recordings decoded offline; durations, headroom, levels, stereo and attacks verified`);
+    console.log(`PASS: ${decoded.length} bundled recordings decoded offline; durations, levels, stereo and attacks verified`);
     // Semantic buttons bypass Flutter's widget pointer Listener. A real click
     // must still reach the browser gesture capture and prime all six players.
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
@@ -155,8 +155,9 @@ async function main() {
       event.type === 'play' && paths.some(path => event.source.endsWith(path))),
     classicMusicPaths);
     await openSettings();
-    await page.getByText('Audio Theme Classic', { exact: true }).click();
-    await page.getByText('Space Adventure', { exact: true }).last().click();
+    await page.getByText('Audio Theme Classic', { exact: true }).press('Enter');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
     await page.waitForFunction(storageKey =>
       localStorage.getItem(storageKey) === 'spaceAdventure', key('theme'));
     await page.waitForFunction(() => window.norieAudioEvents.some(event =>
