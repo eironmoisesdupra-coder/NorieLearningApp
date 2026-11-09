@@ -60,7 +60,7 @@ CurriculumQualityReport scan(List<NorieTopicContent> topics,
 void main() {
   test('published registry is fully scanned including additional subjects', () {
     final report = scanPublishedCurriculum();
-    expect(report.topicCount, 249);
+    expect(report.topicCount, 347);
     expect(report.errors, isEmpty, reason: report.toJson().toString());
   });
   test('short approved prose produces editorial warnings, no hard error', () {

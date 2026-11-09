@@ -10,7 +10,7 @@ import 'package:norie_learning/features/content/domain/norie_content_models.dart
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   test(
-      'Science preserves 60 authored G2–College originals in an expanded 78-topic path',
+      'Science retains 60 historical originals and publishes 110 replacement lessons',
       () {
     final authoredGrades = [
       for (var grade = 2; grade <= 12; grade++) 'g$grade',
@@ -20,18 +20,18 @@ void main() {
     expect(
         ScienceCurriculum.grades.values.expand((pack) => pack), hasLength(60));
     for (final grade in authoredGrades) {
-      expect(NorieFoundationCurriculum.topicsFor('Science', grade).take(5),
-          orderedEquals(ScienceCurriculum.grades[grade]!),
-          reason:
-              '$grade must resolve to its authored pack, not starter content');
+      for (final topic in ScienceCurriculum.grades[grade]!) {
+        expect(NorieFoundationCurriculum.historicalTopicById(topic.id),
+            same(topic));
+      }
     }
     final path = NorieFoundationCurriculum.gradeLevels
         .expand(
             (grade) => NorieFoundationCurriculum.topicsFor('Science', grade.id))
         .toList();
-    expect(path, hasLength(78));
-    expect(path.map((topic) => topic.id).toSet(), hasLength(78));
-    expect(path.where((topic) => topic.gradeLevel == 'g1'), hasLength(6));
+    expect(path, hasLength(110));
+    expect(path.map((topic) => topic.id).toSet(), hasLength(110));
+    expect(path.where((topic) => topic.gradeLevel == 'g1'), hasLength(8));
     final college =
         path.where((topic) => topic.gradeLevel == 'college').toList();
     expect(college, hasLength(6));
@@ -101,8 +101,7 @@ void main() {
         '${grade.key} authored pack preserves progression and assessment integrity',
         () {
       expect(grade.value, hasLength(5));
-      final titles =
-          NorieFoundationCurriculum.lessonTitles('Science', grade.key);
+      final titles = grade.value.map((topic) => topic.title).toList();
       final stems = <String>{};
       final paragraphs = <String>{};
       for (var i = 0; i < grade.value.length; i++) {

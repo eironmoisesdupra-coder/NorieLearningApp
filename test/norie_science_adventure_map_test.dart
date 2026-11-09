@@ -101,7 +101,10 @@ void main() {
       ));
       await tester.pump();
       expect(find.text('$subject Basecamp'), findsOneWidget);
-      expect(find.textContaining('6 authored lessons'), findsOneWidget);
+      expect(
+          find.textContaining(
+              NorieFoundationCurriculum.coverageLabel(subject, 'g2')),
+          findsOneWidget);
       expect(find.text('List'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

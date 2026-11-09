@@ -94,10 +94,7 @@ void main() {
     var count = 0;
     for (final grade in NorieFoundationCurriculum.gradeLevels.skip(1)) {
       final titles = originalTitles[grade.id]!;
-      final topics =
-          NorieFoundationCurriculum.topicsFor('Mathematics', grade.id)
-              .take(5)
-              .toList();
+      final topics = CoreMathematicsCurriculum.grades[grade.id]!;
       for (var index = 0; index < 5; index++) {
         final topic = topics[index];
         count++;

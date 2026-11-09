@@ -1,13 +1,18 @@
 import '../domain/norie_content_models.dart';
 import '../domain/norie_curriculum_depth.dart';
-import 'norie_grade1_science_curriculum.dart';
-import 'science/science_curriculum.dart';
-import 'science/science_expansion.dart';
-import 'norie_grade1_math_curriculum.dart';
+import 'additional_subjects/norie_additional_subject_curriculum.dart';
 import 'authored/authored_subject_curriculum.dart';
 import 'authored/core_english_curriculum.dart';
 import 'authored/core_mathematics_curriculum.dart';
-import 'additional_subjects/norie_additional_subject_curriculum.dart';
+import 'norie_grade1_math_curriculum.dart';
+import 'norie_grade1_science_curriculum.dart';
+import 'science/science_curriculum.dart';
+import 'science/science_expansion.dart';
+import 'standards/ched_general_education.dart';
+import 'standards/deped_english.dart';
+import 'standards/deped_mathematics.dart';
+import 'standards/deped_senior_high.dart';
+import 'standards/deped_science.dart';
 
 class NorieGradeLevel {
   const NorieGradeLevel(this.id, this.label, this.shortLabel);
@@ -17,36 +22,6 @@ class NorieGradeLevel {
 }
 
 abstract final class NorieFoundationCurriculum {
-  static final Set<String> _authoredIds = {
-    ...NorieGrade1ScienceCurriculum.topics.map((topic) => topic.id),
-    ...ScienceCurriculum.grades.values
-        .expand((topics) => topics)
-        .map((topic) => topic.id),
-    ...ScienceExpansion.lessons.values.map((topic) => topic.id),
-    ...NorieGrade1MathCurriculum.topics.map((topic) => topic.id),
-    ...AuthoredSubjectCurriculum.mathematics.values.map((topic) => topic.id),
-    ...AuthoredSubjectCurriculum.english.values.map((topic) => topic.id),
-    ...CoreEnglishCurriculum.grades.values
-        .expand((topics) => topics)
-        .map((topic) => topic.id),
-    ...CoreMathematicsCurriculum.grades.values
-        .expand((topics) => topics)
-        .map((topic) => topic.id),
-    ...NorieAdditionalSubjectCurriculum.allTopics.map((topic) => topic.id),
-  };
-
-  static bool isAuthored(NorieTopicContent topic) =>
-      _authoredIds.contains(topic.id);
-
-  static String coverageLabel(String subject, String gradeId) {
-    final topics = topicsFor(subject, gradeId);
-    final authored = topics.where(isAuthored).length;
-    final starters = topics.length - authored;
-    return starters == 0
-        ? '$authored authored lessons'
-        : '$starters foundation starter lessons + $authored authored lesson${authored == 1 ? '' : 's'}';
-  }
-
   static const gradeLevels = <NorieGradeLevel>[
     NorieGradeLevel('g1', 'Grade 1', 'G1'),
     NorieGradeLevel('g2', 'Grade 2', 'G2'),
@@ -68,8 +43,50 @@ abstract final class NorieFoundationCurriculum {
     'Science',
     'English',
     'Filipino',
-    'Araling Panlipunan'
+    'Araling Panlipunan',
   ];
+
+  static final Map<String, NorieTopicContent> _historicalTopics = {
+    for (final topic in [
+      ...NorieGrade1ScienceCurriculum.topics,
+      ...ScienceCurriculum.grades.values.expand((topics) => topics),
+      ...ScienceExpansion.lessons.values,
+      ...NorieGrade1MathCurriculum.topics,
+      ...AuthoredSubjectCurriculum.mathematics.values,
+      ...AuthoredSubjectCurriculum.english.values,
+      ...CoreEnglishCurriculum.grades.values.expand((topics) => topics),
+      ...CoreMathematicsCurriculum.grades.values.expand((topics) => topics),
+      ...NorieAdditionalSubjectCurriculum.allTopics,
+    ])
+      topic.id: topic,
+  };
+
+  static NorieTopicContent? historicalTopicById(String id) {
+    final topic = _historicalTopics[id];
+    return topic?.available == true ? topic : null;
+  }
+
+  static final Set<String> _authoredIds = {
+    ...depedEnglish.values.expand((topics) => topics).map((topic) => topic.id),
+    ...depedScience.values.expand((topics) => topics).map((topic) => topic.id),
+    ...DepedSeniorHigh.topics.values
+        .expand((grades) => grades.values)
+        .expand((topics) => topics)
+        .map((topic) => topic.id),
+    ...depedMathematics.values
+        .expand((topics) => topics)
+        .map((topic) => topic.id),
+    ...ChedGeneralEducation.topics.values
+        .expand((topics) => topics)
+        .map((topic) => topic.id),
+    ..._historicalTopics.keys,
+  };
+
+  static bool isAuthored(NorieTopicContent topic) =>
+      _authoredIds.contains(topic.id);
+
+  static String coverageLabel(String subject, String gradeId) =>
+      '${topicsFor(subject, gradeId).length} authored lessons';
 
   static List<NorieGradeLevel> availableGradeLevels(String subject) {
     final normalized = subject.toLowerCase();
@@ -85,311 +102,32 @@ abstract final class NorieFoundationCurriculum {
   static bool supportsAdventureMap(String subject) => supportedSubjects
       .any((item) => item.toLowerCase() == subject.toLowerCase());
 
-  static const _math = <String, List<String>>{
-    'g1': [
-      'Counting to 100',
-      'Place Value',
-      'Addition Basics',
-      'Subtraction Basics',
-      'Shapes & Patterns'
-    ],
-    'g2': [
-      'Place Value to 1000',
-      'Addition Strategies',
-      'Subtraction Strategies',
-      'Equal Groups',
-      'Length, Time & Money'
-    ],
-    'g3': [
-      'Multiplication Facts',
-      'Division Facts',
-      'Fractions',
-      'Area & Perimeter',
-      'Data & Graphs'
-    ],
-    'g4': [
-      'Multi-Digit Operations',
-      'Factors & Multiples',
-      'Equivalent Fractions',
-      'Decimals',
-      'Angles & Symmetry'
-    ],
-    'g5': [
-      'Fraction Operations',
-      'Decimal Operations',
-      'Volume',
-      'Coordinate Plane',
-      'Numerical Expressions'
-    ],
-    'g6': [
-      'Ratios & Rates',
-      'Percent',
-      'Integers',
-      'Expressions & Variables',
-      'Statistics'
-    ],
-    'g7': [
-      'Rational Numbers',
-      'Proportions',
-      'Algebraic Expressions',
-      'Equations & Inequalities',
-      'Geometry & Probability'
-    ],
-    'g8': [
-      'Linear Equations',
-      'Functions',
-      'Systems of Equations',
-      'Exponents & Radicals',
-      'Pythagorean Theorem'
-    ],
-    'g9': [
-      'Polynomials',
-      'Quadratic Foundations',
-      'Coordinate Geometry',
-      'Similarity & Congruence',
-      'Intro Statistics'
-    ],
-    'g10': [
-      'Quadratic Equations',
-      'Functions & Graphs',
-      'Trigonometry Basics',
-      'Circles',
-      'Probability & Combinatorics'
-    ],
-    'g11': [
-      'Advanced Algebra',
-      'Sequences & Series',
-      'Trigonometric Functions',
-      'Analytic Geometry',
-      'Intro Calculus'
-    ],
-    'g12': [
-      'Limits',
-      'Derivatives',
-      'Integrals',
-      'Probability Distributions',
-      'Applied Mathematics'
-    ],
-    'college': [
-      'College Algebra',
-      'Precalculus',
-      'Differential Calculus',
-      'Integral Calculus',
-      'Linear Algebra'
-    ],
-  };
+  static List<String> lessonTitles(String subject, String gradeId) =>
+      List.unmodifiable(
+          topicsFor(subject, gradeId).map((topic) => topic.title));
 
-  static const _english = <String, List<String>>{
-    'g1': [
-      'Letters & Sounds',
-      'Sight Words',
-      'Nouns',
-      'Action Words',
-      'Simple Sentences'
-    ],
-    'g2': [
-      'Phonics Patterns',
-      'Pronouns',
-      'Present & Past Verbs',
-      'Adjectives',
-      'Story Sequence'
-    ],
-    'g3': [
-      'Parts of Speech',
-      'Subject & Predicate',
-      'Verb Tenses',
-      'Context Clues',
-      'Paragraph Basics'
-    ],
-    'g4': [
-      'Sentence Types',
-      'Subject–Verb Agreement',
-      'Adverbs',
-      'Main Idea & Details',
-      'Paragraph Organization'
-    ],
-    'g5': [
-      'Grammar Review',
-      'Complex Sentences',
-      'Vocabulary Strategies',
-      'Text Structure',
-      'Opinion Writing'
-    ],
-    'g6': [
-      'Clauses & Phrases',
-      'Pronoun Agreement',
-      'Figurative Language',
-      'Inference',
-      'Essay Foundations'
-    ],
-    'g7': [
-      'Sentence Variety',
-      'Verb Voice',
-      'Vocabulary in Context',
-      'Literary Elements',
-      'Expository Writing'
-    ],
-    'g8': [
-      'Grammar & Usage',
-      'Active & Passive Voice',
-      'Rhetorical Devices',
-      'Reading Arguments',
-      'Argument Writing'
-    ],
-    'g9': [
-      'Advanced Grammar',
-      'Academic Vocabulary',
-      'Literary Analysis',
-      'Evidence & Citation',
-      'Analytical Essays'
-    ],
-    'g10': [
-      'Style & Syntax',
-      'Research Skills',
-      'Critical Reading',
-      'Persuasive Techniques',
-      'Research Writing'
-    ],
-    'g11': [
-      'Academic Reading',
-      'Rhetoric',
-      'Source Evaluation',
-      'Argumentation',
-      'Research Paper Structure'
-    ],
-    'g12': [
-      'College-Ready Grammar',
-      'Critical Analysis',
-      'Synthesis of Sources',
-      'Academic Writing',
-      'Oral Communication'
-    ],
-    'college': [
-      'Academic English',
-      'Critical Reading',
-      'Research & Citation',
-      'Argumentative Writing',
-      'Professional Communication'
-    ],
-  };
-
-  static const _science = <String, List<String>>{
-    'g1': [
-      'Living & Nonliving Things',
-      'Plants & Animals',
-      'Our Body & Senses',
-      'Weather',
-      'Materials Around Us'
-    ],
-    'g2': [
-      'Life Cycles',
-      'Habitats',
-      'States of Matter',
-      'Light & Sound',
-      'Earth & Sky'
-    ],
-    'g3': [
-      'Plant Parts',
-      'Animal Adaptations',
-      'Matter & Changes',
-      'Force & Motion',
-      'Weather Patterns'
-    ],
-    'g4': [
-      'Ecosystems',
-      'Human Body Systems',
-      'Energy',
-      'Rocks & Minerals',
-      'Earth, Moon & Sun'
-    ],
-    'g5': [
-      'Cells Introduction',
-      'Food Webs',
-      'Properties of Matter',
-      'Simple Machines',
-      'Water Cycle'
-    ],
-    'g6': [
-      'Organisms & Classification',
-      'Mixtures & Solutions',
-      'Electricity',
-      'Plate Tectonics',
-      'Solar System'
-    ],
-    'g7': [
-      'Scientific Investigation',
-      'Cells & Microscopy',
-      'Matter & Particles',
-      'Force & Motion',
-      'Earth Systems'
-    ],
-    'g8': [
-      'Genetics Basics',
-      'Chemical Reactions',
-      'Work & Energy',
-      'Waves',
-      'Weather & Climate'
-    ],
-    'g9': [
-      'Biology Foundations',
-      'Atomic Structure',
-      'Chemical Bonding',
-      'Motion & Forces',
-      'Plate Tectonics'
-    ],
-    'g10': [
-      'Evolution',
-      'Periodic Table',
-      'Acids & Bases',
-      'Electricity & Magnetism',
-      'Ecosystems'
-    ],
-    'g11': [
-      'Cell Biology',
-      'Stoichiometry',
-      'Mechanics',
-      'Earth Materials',
-      'Scientific Data Analysis'
-    ],
-    'g12': [
-      'Genetics & Molecular Biology',
-      'Chemical Equilibrium',
-      'Electric Fields',
-      'Geologic Processes',
-      'Ecology'
-    ],
-    'college': [
-      'General Biology',
-      'General Chemistry',
-      'University Physics',
-      'Earth Science',
-      'Scientific Research'
-    ],
-  };
-
-  static List<String> lessonTitles(String subject, String gradeId) {
+  static List<String> sourcesFor(String subject, String gradeId) {
     if (!availableGradeLevels(subject).any((grade) => grade.id == gradeId)) {
       return const [];
     }
-    final additional =
-        NorieAdditionalSubjectCurriculum.topicsFor(subject, gradeId);
-    if (additional.isNotEmpty) {
-      return List.unmodifiable(additional.map((topic) => topic.title));
+    if (gradeId == 'college') return ChedGeneralEducation.sources;
+    if (gradeId == 'g11' || gradeId == 'g12') {
+      return DepedSeniorHigh.sourcesFor(gradeId);
     }
-    final source = switch (subject.toLowerCase()) {
-      'mathematics' => _math,
-      'english' => _english,
-      'science' => _science,
-      _ => const <String, List<String>>{},
-    };
-    return List.unmodifiable([
-      ...?source[gradeId],
-      if (subject.toLowerCase() == 'science' &&
-          ScienceExpansion.lessons.containsKey(gradeId))
-        ScienceExpansion.lessons[gradeId]!.title,
-      if (AuthoredSubjectCurriculum.lesson(subject, gradeId) case final lesson?)
-        lesson.title,
-    ]);
+    if (subject.toLowerCase() == 'mathematics') {
+      return List.unmodifiable([
+        ...?depedMathematicsSources[gradeId],
+        ...?depedMathematicsCoverageNotes['all'],
+        ...?depedMathematicsCoverageNotes[gradeId],
+      ]);
+    }
+    if (subject.toLowerCase() == 'science') {
+      return depedScienceSources[gradeId] ?? const [];
+    }
+    if (subject.toLowerCase() == 'english') {
+      return depedEnglishSources[gradeId] ?? const [];
+    }
+    return const [];
   }
 
   static List<NorieTopicContent> topicsFor(String subject, String gradeId) {
@@ -401,38 +139,27 @@ abstract final class NorieFoundationCurriculum {
     if (additional.isNotEmpty) {
       return _finalizePath(subject, gradeId, additional);
     }
-    if (subject.toLowerCase() == 'science') {
-      final original = gradeId == 'g1'
-          ? NorieGrade1ScienceCurriculum.topics
-          : ScienceCurriculum.grades[gradeId];
-      if (original != null) {
-        return _finalizePath(subject, gradeId, [
-          ...original,
-          if (ScienceExpansion.lessons[gradeId] case final lesson?) lesson,
-        ]);
-      }
+    final normalized = subject.toLowerCase();
+    final canonicalSubject = supportedSubjects
+        .firstWhere((item) => item.toLowerCase() == normalized);
+    final school = switch (normalized) {
+      'mathematics' => depedMathematics,
+      'science' => depedScience,
+      'english' => depedEnglish,
+      _ => null,
+    };
+    final replacement = switch (gradeId) {
+      'college' => ChedGeneralEducation.topics[canonicalSubject],
+      'g11' || 'g12' => DepedSeniorHigh.topics[canonicalSubject]?[gradeId],
+      _ => school?[gradeId],
+    };
+    if (replacement == null) {
+      throw StateError(
+          'No authored curriculum registered for $subject/$gradeId.');
     }
-    final level = gradeLevels.firstWhere((item) => item.id == gradeId);
-    final titles = lessonTitles(subject, gradeId);
-    final originalTitles = titles.take(5).toList();
-    return _finalizePath(subject, gradeId, [
-      if (subject.toLowerCase() == 'mathematics' && gradeId == 'g1')
-        ...NorieGrade1MathCurriculum.topics
-      else if (subject.toLowerCase() == 'mathematics' &&
-          CoreMathematicsCurriculum.grades[gradeId] != null)
-        ...CoreMathematicsCurriculum.grades[gradeId]!
-      else if (subject.toLowerCase() == 'english' &&
-          CoreEnglishCurriculum.grades[gradeId] != null)
-        ...CoreEnglishCurriculum.grades[gradeId]!
-      else
-        for (var i = 0; i < originalTitles.length; i++)
-          _topic(subject, level, originalTitles[i], i + 1),
-      if (AuthoredSubjectCurriculum.lesson(subject, gradeId) case final lesson?)
-        lesson,
-    ]);
+    return _finalizePath(subject, gradeId, replacement);
   }
 
-  /// Validate the published registry, not legacy references or planning targets.
   static List<NorieTopicContent> _finalizePath(
     String subject,
     String gradeId,
@@ -448,172 +175,5 @@ abstract final class NorieFoundationCurriculum {
           '$subject/$gradeId contains unpublished lesson content.');
     }
     return List.unmodifiable(topics);
-  }
-
-  static NorieTopicContent _topic(
-    String subject,
-    NorieGradeLevel level,
-    String title,
-    int order,
-  ) {
-    if (subject.toLowerCase() == 'science' && level.id == 'g1' && order <= 5) {
-      return NorieGrade1ScienceCurriculum.topic(order);
-    }
-    final slug = title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
-    final subjectSlug = subject.toLowerCase();
-    final accent = switch (subjectSlug) {
-      'mathematics' => 'cyan',
-      'english' => 'orange',
-      _ => 'green',
-    };
-    final visual = switch (subjectSlug) {
-      'mathematics' => 'math',
-      'english' => 'language',
-      _ => title.toLowerCase().contains('atom') ? 'atom' : 'science',
-    };
-
-    final core = _coreIdeas(subject, title, level.label);
-    return NorieTopicContent(
-      id: '$subjectSlug.${level.id}.$slug',
-      subject: subject,
-      category: level.label,
-      gradeLevel: level.id,
-      title: title,
-      subtitle: 'Foundation lesson · ${level.label}',
-      order: order,
-      accent: accent,
-      visualType: visual,
-      prerequisiteTopicId: order == 1
-          ? null
-          : '$subjectSlug.${level.id}.${lessonTitles(subject, level.id)[order - 2].toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}',
-      lesson: NorieLessonContent(
-        heading: title,
-        introduction:
-            'Build a clear ${level.label} foundation in $title through short explanations, visual cues, examples, and active recall.',
-        sections: [
-          NorieLessonSection(
-            title: 'Understand',
-            symbol: '1',
-            accent: accent,
-            points: core.take(2).toList(),
-          ),
-          NorieLessonSection(
-            title: 'Connect',
-            symbol: '2',
-            accent: 'violet',
-            points: core.skip(2).take(2).toList(),
-          ),
-          const NorieLessonSection(
-            title: 'Apply',
-            symbol: '3',
-            accent: 'orange',
-            points: [
-              'Explain the idea in your own words before checking an answer.',
-              'Use the worked visual as a guide, then solve or classify a new example.',
-            ],
-          ),
-        ],
-        keyConceptTitle: 'Foundation checkpoint',
-        keyConceptBody:
-            'Master the meaning and basic application of $title before moving to the next lesson.',
-      ),
-      quiz: NorieQuizContent(
-        questions: _questions(subject, level.label, title, core),
-      ),
-      challenge: NorieChallengeContent(
-        title: '$title Challenge',
-        description: 'Finish three quick checks without relying on hints.',
-        xpPerCorrect: 25,
-        rounds: _questions(subject, level.label, title, core).take(3).toList(),
-      ),
-    );
-  }
-
-  static List<String> _coreIdeas(String subject, String title, String level) {
-    if (subject == 'Mathematics') {
-      return [
-        '$title is learned by identifying the quantities, relationships, or patterns in a problem.',
-        'Use symbols, models, or diagrams to represent the information before calculating.',
-        'Check each step and compare the result with the original conditions.',
-        'A correct solution should be explainable, not only memorized.',
-      ];
-    }
-    if (subject == 'English') {
-      return [
-        '$title develops accurate reading, writing, speaking, or language use at the $level level.',
-        'Meaning depends on how words and sentences work together in context.',
-        'Examples help reveal patterns in grammar, vocabulary, and communication.',
-        'Strong language skills combine accuracy, clarity, and understanding.',
-      ];
-    }
-    return [
-      '$title is studied by observing evidence, identifying patterns, and connecting causes with effects.',
-      'Scientific explanations should match observations and measurable evidence.',
-      'Models and diagrams can make structures, systems, and processes easier to understand.',
-      'New evidence can refine a scientific explanation.',
-    ];
-  }
-
-  static List<NorieQuestionContent> _questions(
-    String subject,
-    String level,
-    String title,
-    List<String> ideas,
-  ) {
-    final questions = <NorieQuestionContent>[];
-    for (var i = 0; i < 20; i++) {
-      final idea = ideas[i % ideas.length];
-      final type = i % 4;
-      final prompt = switch (type) {
-        0 => 'Which study habit best supports learning $title?',
-        1 => 'What should you focus on first when working with $title?',
-        2 =>
-          'Which statement best describes a strong $level learning approach to $title?',
-        _ => 'Why are examples and checks useful when learning $title?',
-      };
-      final correct = switch (subject) {
-        'Mathematics' => type == 0
-            ? 'Represent the information and check each step'
-            : type == 1
-                ? 'The quantities, relationships, and conditions'
-                : type == 2
-                    ? 'Understand the reasoning behind each step'
-                    : 'They help test whether the reasoning fits the problem',
-        'English' => type == 0
-            ? 'Read examples in context and explain the pattern'
-            : type == 1
-                ? 'Meaning and how language is used in context'
-                : type == 2
-                    ? 'Combine accuracy with clear understanding'
-                    : 'They show how language patterns work in context',
-        _ => type == 0
-            ? 'Connect observations with evidence'
-            : type == 1
-                ? 'Evidence, patterns, causes, and effects'
-                : type == 2
-                    ? 'Use evidence to support explanations'
-                    : 'They help compare a model or explanation with evidence',
-      };
-      questions.add(
-        NorieQuestionContent(
-          id: '${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}-q${i + 1}',
-          prompt: prompt,
-          options: [
-            correct,
-            'Memorize a choice without understanding it',
-            'Ignore the conditions and examples',
-            'Choose the longest answer automatically',
-          ],
-          correctIndex: 0,
-          explanation: idea,
-          difficulty: i < 7
-              ? 'foundation'
-              : i < 15
-                  ? 'intermediate'
-                  : 'advanced',
-        ),
-      );
-    }
-    return questions;
   }
 }

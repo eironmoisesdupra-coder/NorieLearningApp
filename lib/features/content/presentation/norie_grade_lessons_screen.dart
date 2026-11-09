@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/progression/norie_progression.dart';
 import '../../../core/theme/norie_theme.dart';
+import '../data/norie_deped_curriculum_basis.dart';
 import '../data/norie_foundation_curriculum.dart';
 import '../domain/norie_content_models.dart';
 import 'norie_lesson_screen.dart';
@@ -43,12 +44,49 @@ class _NorieGradeLessonsScreenState extends State<NorieGradeLessonsScreen> {
       widget.subject,
       widget.grade.id,
     );
+    final references =
+        NorieFoundationCurriculum.sourcesFor(widget.subject, widget.grade.id);
 
     return Scaffold(
       appBar: AppBar(
         title: Text('${widget.subject} · ${widget.grade.label}'),
         backgroundColor: Colors.transparent,
         actions: [
+          if (references.isNotEmpty)
+            IconButton(
+              tooltip: 'Curriculum references and scope',
+              icon: const Icon(Icons.menu_book_rounded),
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) => SafeArea(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                        maxHeight: MediaQuery.sizeOf(context).height * .8),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text('Curriculum references and scope',
+                              style: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w900)),
+                          const SizedBox(height: 12),
+                          Text(NorieDepedCurriculumBasis.rolloutForGrade(
+                              widget.grade.id)),
+                          const SizedBox(height: 12),
+                          const Text(NorieDepedCurriculumBasis.mappingNotice),
+                          for (final reference in references) ...[
+                            const SizedBox(height: 12),
+                            SelectableText(reference),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (_supportsMap)
             IconButton(
               tooltip: 'Boss Missions',

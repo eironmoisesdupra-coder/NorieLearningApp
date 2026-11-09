@@ -62,7 +62,8 @@ class NorieLessonJourney extends ChangeNotifier {
         }
       }
     }
-    final legacy = NorieContentCatalog.topicById(id);
+    final legacy = NorieFoundationCurriculum.historicalTopicById(id) ??
+        NorieContentCatalog.topicById(id);
     return legacy?.available == true ? legacy : null;
   }
 

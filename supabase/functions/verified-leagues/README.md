@@ -23,8 +23,8 @@ membership, and the learner must separately opt in before being displayed or
 opening ranked practice. There is no automatic classroom enrollment.
 
 Each cohort has one subject, grade and season. All current ranked content is
-authored Science, Mathematics and English: 234 lessons in 39 subject-grade/course
-cohorts, with six eligible opportunities per cohort. These boards compare only
+authored Science, Mathematics and English: 332 lessons in 39 subject-grade/course
+cohorts, with 6–14 eligible opportunities per cohort. These boards compare only
 their own subject and grade; there is no combined cross-subject ranking.
 Display rows
 contain a random membership ID, assigned `Learner xxxxxx` nickname, verified
@@ -64,11 +64,13 @@ further classroom use. Nickname editing and public profile search are absent.
 * Ties share competition ranks (1, 1, 3). The UI shows the learner's nearby ranks.
   Explorer starts at 0 points; Pathfinder/Scholar/Specialist/Master start at
   20/30/40/60. The first verified pass earns the Explorer cosmetic emblem.
-  Each current subject-grade cohort has six eligible authored lessons, so all
-  five tiers are attainable with the same 10-point first-pass rule. The 200-point
-  cap remains an upper bound for future content, not the current attainable
-  total. Review cohort opportunities and calibration before changing the bank;
-  there is no automatic points multiplier or claim of fairness across subjects.
+  Each current subject-grade cohort has 6–14 eligible authored lessons, so all
+  five tiers remain attainable with the same 10-point first-pass rule. Available
+  first-pass points currently range from 60 to 140 by cohort; larger catalogs
+  therefore offer more scoring opportunities. The 200-point cap remains an upper
+  bound for future content, not the current attainable total. Review cohort
+  opportunities and calibration before changing the bank; there is no automatic
+  points multiplier or claim of fairness across subjects.
   Higher emblems are durable server receipts and can be equipped on a private
   display. These perks do not change lessons, assessment access, XP or currency.
 

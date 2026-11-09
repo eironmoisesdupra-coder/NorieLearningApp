@@ -47,9 +47,9 @@ async function serve(){
   const teacher=await open();await classroom(teacher);
   await click(teacher,teacher.getByRole('button',{name:'Build assignment',exact:true}));
   const title=teacher.getByRole('textbox',{name:'Assignment title'});await title.click();await title.pressSequentially('Discovery practice');
-  const note=teacher.getByRole('textbox',{name:'Teacher note'});await note.click();await note.pressSequentially('Look closely at the living things.');
-  const topic=teacher.getByText(/Living & Nonliving Things/).first();await click(teacher,topic);
-  const check=teacher.getByRole('checkbox',{name:'Which thing is living?',exact:true});for(let attempt=0;attempt<4&&!await check.isChecked();attempt++){await seek(teacher,check);await dismiss(teacher);const cb=await check.boundingBox();await teacher.mouse.click(cb.x+24,cb.y+cb.height/2);await teacher.waitForTimeout(200);}assert.equal(await check.isChecked(),true);
+  const note=teacher.getByRole('textbox',{name:'Teacher note'});await note.click();await note.pressSequentially('Use your eyes to find the red crayon.');
+  const topic=teacher.getByText(/Senses Give Us Clues/).first();await click(teacher,topic);
+  const check=teacher.getByRole('checkbox',{name:'Which model part helps you find a red crayon?',exact:true});for(let attempt=0;attempt<4&&!await check.isChecked();attempt++){await seek(teacher,check);await dismiss(teacher);const cb=await check.boundingBox();await teacher.mouse.click(cb.x+24,cb.y+cb.height/2);await teacher.waitForTimeout(200);}assert.equal(await check.isChecked(),true);
   await click(teacher,teacher.getByRole('button',{name:'Save assignment',exact:true}));
   await teacher.getByRole('heading',{name:'Offline Classroom',exact:true}).waitFor();
   const assignment=await download(teacher,teacher.getByRole('button',{name:'Export assignment',exact:true}),'build/qa-assignment.norieclass');
@@ -57,7 +57,7 @@ async function serve(){
   await upload(learner,learner.getByRole('button',{name:'Import assignment',exact:true}),assignment);
   await click(learner,learner.getByRole('button',{name:'Start practice',exact:true}));
   const alias=learner.getByRole('textbox',{name:'Classroom alias'});await alias.click();await alias.pressSequentially('Mina');
-  const option=learner.getByRole('button',{name:'Dog',exact:true});await click(learner,option);
+  const option=learner.getByRole('button',{name:'Eyes: seeing',exact:true});await click(learner,option);
   await click(learner,learner.getByRole('button',{name:'Finish assignment',exact:true}));
   await learner.getByRole('heading',{name:'Classroom result',exact:true}).waitFor();
   const submission=await download(learner,learner.getByRole('button',{name:'Export submission',exact:true}),'build/qa-submission.noriesubmission');
