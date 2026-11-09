@@ -127,7 +127,10 @@ async function main(){
     let stopped=false;
     for(let attempt=0;attempt<20&&!stopped;attempt++){
       try{await fetch(endpoint+'/v1/hello',{signal:AbortSignal.timeout(1000)});}
-      catch(error){if(error.cause?.code==='ECONNREFUSED')stopped=true;else throw error;}
+      catch(error){
+        if(['ECONNREFUSED','ECONNRESET'].includes(error.cause?.code))stopped=true;
+        else throw error;
+      }
       if(!stopped)await page.waitForTimeout(100);
     }
     assert.ok(stopped,'Leaving the teacher route must close its listener');
