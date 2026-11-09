@@ -32,6 +32,18 @@ const REQUIRED_ASSETS = [
   './assets/assets/audio/sfx/achievement.mp3',
   './assets/assets/audio/sfx/level_up.mp3',
   './assets/assets/audio/sfx/perfect.mp3',
+  './assets/assets/audio/sfx/classic/ui_tap.mp3',
+  './assets/assets/audio/sfx/classic/ui_select.mp3',
+  './assets/assets/audio/sfx/classic/ui_open.mp3',
+  './assets/assets/audio/sfx/classic/ui_back.mp3',
+  './assets/assets/audio/sfx/classic/quiz_select.mp3',
+  './assets/assets/audio/sfx/classic/correct.mp3',
+  './assets/assets/audio/sfx/classic/wrong.mp3',
+  './assets/assets/audio/sfx/classic/challenge_start.mp3',
+  './assets/assets/audio/sfx/classic/complete.mp3',
+  './assets/assets/audio/sfx/classic/achievement.mp3',
+  './assets/assets/audio/sfx/classic/level_up.mp3',
+  './assets/assets/audio/sfx/classic/perfect.mp3',
   './assets/packages/model_viewer_plus/assets/model-viewer.min.js',
 ];
 
