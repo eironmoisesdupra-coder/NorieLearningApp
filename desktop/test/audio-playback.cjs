@@ -158,12 +158,12 @@ async function main() {
     // The Flutter widget test covers dropdown selection; verify the packaged
     // host loads and persists that selected theme across an app restart.
     await page.evaluate(storageKey =>
-      localStorage.setItem(storageKey, 'spaceAdventure'), key('theme'));
+      localStorage.setItem(storageKey, JSON.stringify('spaceAdventure')), key('theme'));
     await page.reload();
     await enableAccessibility();
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
     await page.waitForFunction(storageKey =>
-      localStorage.getItem(storageKey) === 'spaceAdventure', key('theme'));
+      JSON.parse(localStorage.getItem(storageKey)) === 'spaceAdventure', key('theme'));
     await page.waitForFunction(() => window.norieAudioEvents.some(event =>
       event.type === 'play' && event.source.includes('/audio/music/norie_')));
     await openSettings();
@@ -212,7 +212,9 @@ async function main() {
     await enableAccessibility();
     await openSettings();
     assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), key('sfxEnabled')), 'false');
-    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), key('theme')), 'spaceAdventure');
+    assert.equal(
+      await page.evaluate(storageKey => JSON.parse(localStorage.getItem(storageKey)), key('theme')),
+      'spaceAdventure');
     assert.equal(await testSound.isEnabled(), false);
     await playTestSound();
     await page.waitForTimeout(250);
