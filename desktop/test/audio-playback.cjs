@@ -155,9 +155,11 @@ async function main() {
       event.type === 'play' && paths.some(path => event.source.endsWith(path))),
     classicMusicPaths);
     await openSettings();
-    await page.getByText('Audio Theme Classic', { exact: true }).press('Enter');
-    await page.keyboard.press('ArrowDown');
-    await page.keyboard.press('Enter');
+    const themeSelector = page.getByText('Audio Theme Classic', { exact: true });
+    await themeSelector.evaluate(element => element.click());
+    const spaceAdventureOption = page.getByText('Space Adventure', { exact: true }).last();
+    await spaceAdventureOption.waitFor();
+    await spaceAdventureOption.evaluate(element => element.click());
     await page.waitForFunction(storageKey =>
       localStorage.getItem(storageKey) === 'spaceAdventure', key('theme'));
     await page.waitForFunction(() => window.norieAudioEvents.some(event =>
