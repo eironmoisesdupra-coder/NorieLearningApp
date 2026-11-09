@@ -82,6 +82,8 @@ async function main() {
     await enableAccessibility();
     const classicMusicManifest = JSON.parse(await fs.readFile(
       path.resolve(__dirname, '../../assets/audio/music-classic-manifest.json'), 'utf8'));
+    const classicMusicPaths = classicMusicManifest.tracks.map(track =>
+      `/audio/music/${track.file}`);
     const musicManifest = JSON.parse(await fs.readFile(
       path.resolve(__dirname, '../../assets/audio/music-manifest.json'), 'utf8'));
     const classicSfxManifest = JSON.parse(await fs.readFile(
@@ -149,10 +151,11 @@ async function main() {
     await page.getByRole('button', { name: 'Learn Learn', exact: true }).click();
     await page.waitForFunction(() => window.norieAudioEvents.filter(
       event => event.type === 'play' && event.source.startsWith('data:audio/wav')).length === 6);
-    await page.waitForFunction(() => window.norieAudioEvents.some(event =>
-      event.type === 'play' && event.source.includes('/audio/music/synthwave_')));
+    await page.waitForFunction(paths => window.norieAudioEvents.some(event =>
+      event.type === 'play' && paths.some(path => event.source.endsWith(path))),
+    classicMusicPaths);
     await openSettings();
-    await page.getByRole('combobox', { name: 'Audio Theme' }).click();
+    await page.getByText('Audio Theme Classic', { exact: true }).click();
     await page.getByText('Space Adventure', { exact: true }).last().click();
     await page.waitForFunction(storageKey =>
       localStorage.getItem(storageKey) === 'spaceAdventure', key('theme'));
